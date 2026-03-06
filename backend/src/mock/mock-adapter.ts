@@ -63,8 +63,8 @@ function buildGetResponse(url: string): unknown {
   }
 
   return {
-    data: [buildRecord(name), buildRecord(name)],
-    info: { count: 2, more_records: false, page: 1, per_page: 20 },
+    data: [buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name)],
+    info: { count: 5, more_records: false, page: 1, per_page: 20 },
   };
 }
 
