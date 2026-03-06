@@ -1112,7 +1112,8 @@ export class WorkflowBuilderComponent implements OnInit {
   }
 
   // ── DnD ──────────────────────────────────────────────────────────────────
-  onBrowserDrop(_event: CdkDragDrop<EndpointRef[] | ControlFlowRef[]>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onBrowserDrop(_event: CdkDragDrop<any>) {
     // Prevent items from being dragged back into browser – no-op
   }
 
