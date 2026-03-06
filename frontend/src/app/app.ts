@@ -23,7 +23,7 @@ import { AuthService } from './services/auth.service';
   template: `
     <mat-toolbar color="primary" class="app-toolbar">
       @if (auth.isLoggedIn()) {
-        <button mat-icon-button (click)="sidenavOpen.set(!sidenavOpen())" matTooltip="Toggle menu">
+        <button mat-icon-button (click)="sidenavOpen.set(!sidenavOpen())" matTooltip="Toggle menu" style="color:white">
           <mat-icon>menu</mat-icon>
         </button>
       }
