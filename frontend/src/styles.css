@@ -1,0 +1,91 @@
+/* ── Google Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* ── CSS Variables ── */
+:root {
+  --color-primary:      #0284c7;
+  --color-primary-dark: #0369a1;
+  --color-primary-light:#38bdf8;
+  --color-accent:       #06b6d4;
+  --color-success:      #10b981;
+  --color-warn:         #ef4444;
+  --color-surface:      #ffffff;
+  --color-bg:           #f0f9ff;
+  --color-sidebar-from: #0c4a6e;
+  --color-sidebar-to:   #075985;
+  --color-border:       #e0f2fe;
+  --color-text:         #0c1a2e;
+  --color-text-muted:   #64748b;
+  --radius-card:        12px;
+  --shadow-card:        0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+  --shadow-hover:       0 4px 20px rgba(2,132,199,.18);
+  --transition:         .18s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Resets ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', Roboto, 'Helvetica Neue', sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { font-weight: 600; letter-spacing: -.01em; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Code / Pre ── */
+pre {
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+/* ── Cards ── */
+mat-card {
+  border-radius: var(--radius-card) !important;
+  box-shadow: var(--shadow-card) !important;
+  border: 1px solid var(--color-border);
+}
+
+/* ── Light sidenav list items ── */
+.sidenav .mat-mdc-list-item {
+  color: #0c4a6e !important;
+  border-radius: 8px !important;
+  margin: 2px 8px !important;
+  transition: background var(--transition);
+}
+.sidenav .mat-mdc-list-item:hover {
+  background: rgba(2,132,199,.15) !important;
+  color: #0284c7 !important;
+}
+.sidenav .mat-icon {
+  color: #0369a1 !important;
+}
+.sidenav .active-link {
+  background: rgba(2,132,199,.2) !important;
+  color: #0284c7 !important;
+  font-weight: 600;
+}
+.sidenav .active-link .mat-icon {
+  color: #0284c7 !important;
+}
+
+/* ── Material Chip overrides (method badges in headers) ── */
+.mat-mdc-chip.method-get    { --mdc-chip-label-text-color: #fff; background: #10b981 !important; }
+.mat-mdc-chip.method-post   { --mdc-chip-label-text-color: #fff; background: #0284c7 !important; }
+.mat-mdc-chip.method-put    { --mdc-chip-label-text-color: #fff; background: #f59e0b !important; }
+.mat-mdc-chip.method-patch  { --mdc-chip-label-text-color: #fff; background: #8b5cf6 !important; }
+.mat-mdc-chip.method-delete { --mdc-chip-label-text-color: #fff; background: #ef4444 !important; }

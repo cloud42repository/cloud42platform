@@ -1,0 +1,62 @@
+name: Deploy Backend → Azure App Service (Docker)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'apiConnector/**'
+      - 'backend/Dockerfile'
+      - '.github/workflows/azure-app-service.yml'
+
+# ─── Required GitHub Secrets ──────────────────────────────────────────────────
+# AZURE_REGISTRY_LOGIN_SERVER  e.g. cloud42reg.azurecr.io
+# AZURE_REGISTRY_USERNAME      ACR admin username (or service principal client id)
+# AZURE_REGISTRY_PASSWORD      ACR admin password (or service principal secret)
+# AZURE_WEBAPP_NAME            e.g. cloud42-backend
+# AZURE_WEBAPP_SLOT            Optional — leave empty for production slot
+# ──────────────────────────────────────────────────────────────────────────────
+
+env:
+  IMAGE_NAME: cloud42-backend
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    name: Build Docker image & push to ACR
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+
+      - name: Build & push image
+        # Build context is repo root so Dockerfile can copy ../apiConnector/
+        run: |
+          docker build \
+            -f backend/Dockerfile \
+            -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest \
+            .
+          docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    needs: build_and_push
+    runs-on: ubuntu-latest
+    name: Deploy to App Service
+
+    steps:
+      - name: Deploy container to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          slot-name: ${{ secrets.AZURE_WEBAPP_SLOT || 'production' }}
+          images: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}

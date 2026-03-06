@@ -1,0 +1,5 @@
+
+> api-connector-backend@1.0.0 start:mock
+> ts-node -r dotenv/config -r tsconfig-paths/register src/main.ts dotenv_config_path=.env.mock
+
+Terminer le programme de commandes (O/N)ÿ? Terminer le programme de commandes (O/N)ÿ? 

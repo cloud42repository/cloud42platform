@@ -1,0 +1,919 @@
+/**
+ * Single source of truth for API schema metadata.
+ * Derived from the DTO interfaces in each module's *.dto.ts file.
+ * Served to the frontend via GET /schema.
+ */
+
+export type FieldType = 'text' | 'number' | 'email' | 'date' | 'textarea' | 'select';
+
+export interface FieldOption { label: string; value: string; }
+
+export interface FieldSchema {
+  key: string;
+  label: string;
+  type: FieldType;
+  required?: boolean;
+  options?: FieldOption[];
+  placeholder?: string;
+  rows?: number;
+}
+
+export interface EndpointSchema {
+  fields?: FieldSchema[];   // form fields for POST/PUT/PATCH
+  columns?: string[];       // column keys for GET list tables
+}
+
+/** SCHEMA[apiPrefix][endpointId] */
+export const SCHEMA: Record<string, Record<string, EndpointSchema>> = {
+
+  // ────────────────────────────────────────────────
+  '/impossible-cloud': {
+    'list-regions':                     { columns: ['id', 'name', 'country'] },
+    'list-contracts':                   { columns: ['id', 'name', 'status', 'startDate'] },
+    'list-storage-accounts':            { columns: ['id', 'name', 'region', 'quota', 'usedStorage'] },
+    'list-members':                     { columns: ['id', 'email', 'role'] },
+    'list-partner-storage-accounts':    { columns: ['id', 'name', 'region', 'quota'] },
+    'create-storage-account': { fields: [
+      { key: 'name', label: 'Account Name', type: 'text', required: true },
+      { key: 'region', label: 'Region', type: 'text', required: true },
+      { key: 'quota', label: 'Quota (GB)', type: 'number' },
+    ]},
+    'patch-storage-account': { fields: [
+      { key: 'name', label: 'Account Name', type: 'text' },
+      { key: 'quota', label: 'Quota (GB)', type: 'number' },
+    ]},
+    'patch-partner-storage-account': { fields: [
+      { key: 'name', label: 'Account Name', type: 'text' },
+      { key: 'quota', label: 'Quota (GB)', type: 'number' },
+    ]},
+    'create-partner': { fields: [
+      { key: 'name', label: 'Partner Name', type: 'text', required: true },
+      { key: 'email', label: 'Email', type: 'email', required: true },
+      { key: 'company', label: 'Company', type: 'text' },
+    ]},
+    'update-partner': { fields: [
+      { key: 'name', label: 'Partner Name', type: 'text' },
+      { key: 'email', label: 'Email', type: 'email' },
+      { key: 'company', label: 'Company', type: 'text' },
+    ]},
+    'create-member': { fields: [
+      { key: 'email', label: 'Email', type: 'email', required: true },
+      { key: 'role', label: 'Role', type: 'select', options: [
+        { label: 'Admin', value: 'admin' },
+        { label: 'Member', value: 'member' },
+        { label: 'Viewer', value: 'viewer' },
+      ]},
+    ]},
+    'create-partner-storage-account': { fields: [
+      { key: 'name', label: 'Account Name', type: 'text', required: true },
+      { key: 'region', label: 'Region', type: 'text', required: true },
+      { key: 'quota', label: 'Quota (GB)', type: 'number' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/softvalue': {
+    'proxy-post':   { fields: [{ key: 'body', label: 'Request Body (JSON)', type: 'textarea', rows: 6 }] },
+    'proxy-put':    { fields: [{ key: 'body', label: 'Request Body (JSON)', type: 'textarea', rows: 6 }] },
+    'proxy-patch':  { fields: [{ key: 'body', label: 'Request Body (JSON)', type: 'textarea', rows: 6 }] },
+    'update-token': { fields: [
+      { key: 'token', label: 'Token', type: 'text', required: true },
+      { key: 'expiresIn', label: 'Expires In (seconds)', type: 'number' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-analytics': {
+    'list-workspaces':  { columns: ['workspaceName', 'workspaceId', 'planType'] },
+    'list-views':       { columns: ['viewName', 'viewId', 'viewType'] },
+    'list-reports':     { columns: ['reportName', 'reportId', 'reportType'] },
+    'list-dashboards':  { columns: ['dashboardName', 'dashboardId'] },
+    'create-workspace': { fields: [
+      { key: 'workspaceName', label: 'Workspace Name', type: 'text', required: true },
+      { key: 'workspaceDesc', label: 'Description', type: 'textarea' },
+    ]},
+    'create-view': { fields: [
+      { key: 'viewName', label: 'View Name', type: 'text', required: true },
+      { key: 'viewType', label: 'View Type', type: 'select', options: [
+        { label: 'Table', value: 'TABLE' },
+        { label: 'Chart', value: 'CHART' },
+        { label: 'Query Table', value: 'QUERYTABLE' },
+      ]},
+    ]},
+    'import-data': { fields: [
+      { key: 'importType', label: 'Import Type', type: 'select', options: [
+        { label: 'Append', value: 'APPEND' },
+        { label: 'Truncate Add', value: 'TRUNCATEADD' },
+        { label: 'Update Add', value: 'UPDATEADD' },
+      ]},
+      { key: 'fileContent', label: 'File Content (CSV)', type: 'textarea', rows: 8 },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-books': {
+    'list-contacts':  { columns: ['contact_name', 'contact_type', 'email', 'phone'] },
+    'list-invoices':  { columns: ['invoice_number', 'customer_name', 'date', 'due_date', 'total', 'status'] },
+    'list-bills':     { columns: ['bill_number', 'vendor_name', 'date', 'due_date', 'total', 'status'] },
+    'list-expenses':  { columns: ['account_name', 'date', 'amount', 'description'] },
+    'list-payments':  { columns: ['payment_mode', 'amount', 'date', 'reference_number'] },
+    'list-items':     { columns: ['name', 'rate', 'unit', 'product_type'] },
+    'create-contact': { fields: [
+      { key: 'contact_name', label: 'Contact Name', type: 'text', required: true },
+      { key: 'contact_type', label: 'Type', type: 'select', required: true, options: [
+        { label: 'Customer', value: 'customer' }, { label: 'Vendor', value: 'vendor' },
+      ]},
+      { key: 'email', label: 'Email', type: 'email' },
+      { key: 'phone', label: 'Phone', type: 'text' },
+      { key: 'currency_id', label: 'Currency ID', type: 'text' },
+    ]},
+    'update-contact': { fields: [
+      { key: 'contact_name', label: 'Contact Name', type: 'text' },
+      { key: 'contact_type', label: 'Type', type: 'select', options: [
+        { label: 'Customer', value: 'customer' }, { label: 'Vendor', value: 'vendor' },
+      ]},
+      { key: 'email', label: 'Email', type: 'email' },
+      { key: 'phone', label: 'Phone', type: 'text' },
+    ]},
+    'create-invoice': { fields: [
+      { key: 'customer_id', label: 'Customer ID', type: 'text', required: true },
+      { key: 'invoice_number', label: 'Invoice Number', type: 'text' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'due_date', label: 'Due Date', type: 'date' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ]},
+    'update-invoice': { fields: [
+      { key: 'customer_id', label: 'Customer ID', type: 'text' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'due_date', label: 'Due Date', type: 'date' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ]},
+    'create-bill': { fields: [
+      { key: 'vendor_id', label: 'Vendor ID', type: 'text', required: true },
+      { key: 'bill_number', label: 'Bill Number', type: 'text' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'due_date', label: 'Due Date', type: 'date' },
+    ]},
+    'update-bill': { fields: [
+      { key: 'bill_number', label: 'Bill Number', type: 'text' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'due_date', label: 'Due Date', type: 'date' },
+    ]},
+    'create-expense': { fields: [
+      { key: 'account_id', label: 'Account ID', type: 'text', required: true },
+      { key: 'date', label: 'Date', type: 'date', required: true },
+      { key: 'amount', label: 'Amount', type: 'number', required: true },
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ]},
+    'update-expense': { fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ]},
+    'create-payment': { fields: [
+      { key: 'customer_id', label: 'Customer ID', type: 'text', required: true },
+      { key: 'payment_mode', label: 'Payment Mode', type: 'select', options: [
+        { label: 'Cash', value: 'cash' }, { label: 'Check', value: 'check' },
+        { label: 'Bank Transfer', value: 'banktransfer' }, { label: 'Credit Card', value: 'creditcard' },
+      ]},
+      { key: 'amount', label: 'Amount', type: 'number', required: true },
+      { key: 'date', label: 'Date', type: 'date', required: true },
+      { key: 'reference_number', label: 'Reference Number', type: 'text' },
+    ]},
+    'create-item': { fields: [
+      { key: 'name', label: 'Item Name', type: 'text', required: true },
+      { key: 'rate', label: 'Rate', type: 'number', required: true },
+      { key: 'unit', label: 'Unit', type: 'text' },
+      { key: 'product_type', label: 'Product Type', type: 'select', options: [
+        { label: 'Goods', value: 'goods' }, { label: 'Service', value: 'service' },
+      ]},
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ]},
+    'update-item': { fields: [
+      { key: 'name', label: 'Item Name', type: 'text' },
+      { key: 'rate', label: 'Rate', type: 'number' },
+      { key: 'unit', label: 'Unit', type: 'text' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-campaigns': {
+    'list-mailing-lists': { columns: ['listname', 'type', 'noOfSubscribers'] },
+    'list-subscribers':   { columns: ['contact_email', 'first_name', 'last_name', 'status'] },
+    'list-campaigns':     { columns: ['campaigntopic', 'campstatus', 'camptype', 'sent_time'] },
+    'list-topics':        { columns: ['topicid', 'topicname'] },
+    'create-mailing-list': { fields: [
+      { key: 'listname', label: 'List Name', type: 'text', required: true },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'signup_formname', label: 'Signup Form Name', type: 'text' },
+    ]},
+    'add-subscriber': { fields: [
+      { key: 'email', label: 'Email', type: 'email', required: true },
+      { key: 'firstname', label: 'First Name', type: 'text' },
+      { key: 'lastname', label: 'Last Name', type: 'text' },
+      { key: 'company', label: 'Company', type: 'text' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-cliq': {
+    'list-channels':          { columns: ['name', 'description', 'type', 'memberCount'] },
+    'list-channel-messages':  { columns: ['id', 'text', 'creatorName', 'createdTime'] },
+    'list-user-groups':       { columns: ['name', 'description', 'memberCount'] },
+    'list-bots':              { columns: ['name', 'accessLevel'] },
+    'create-channel': { fields: [
+      { key: 'name', label: 'Channel Name', type: 'text', required: true },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'type', label: 'Type', type: 'select', options: [
+        { label: 'Public', value: 'public' }, { label: 'Private', value: 'private' },
+      ]},
+    ]},
+    'send-channel-message': { fields: [
+      { key: 'text', label: 'Message', type: 'textarea', required: true, rows: 3 },
+    ]},
+    'send-direct-message': { fields: [
+      { key: 'text', label: 'Message', type: 'textarea', required: true, rows: 3 },
+    ]},
+    'send-bot-message': { fields: [
+      { key: 'text', label: 'Message', type: 'textarea', required: true, rows: 3 },
+      { key: 'bot_unique_name', label: 'Bot Name', type: 'text', required: true },
+    ]},
+    'create-user-group': { fields: [
+      { key: 'name', label: 'Group Name', type: 'text', required: true },
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-commerce': {
+    'list-products':    { columns: ['name', 'sku', 'price', 'status', 'category_name'] },
+    'list-categories':  { columns: ['name', 'parent_category_name'] },
+    'list-customers':   { columns: ['name', 'email', 'phone', 'created_date'] },
+    'list-orders':      { columns: ['order_id', 'customer_name', 'total', 'status', 'created_date'] },
+    'create-product': { fields: [
+      { key: 'name', label: 'Product Name', type: 'text', required: true },
+      { key: 'sku', label: 'SKU', type: 'text' },
+      { key: 'price', label: 'Price', type: 'number', required: true },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'status', label: 'Status', type: 'select', options: [
+        { label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' },
+      ]},
+    ]},
+    'update-product': { fields: [
+      { key: 'name', label: 'Product Name', type: 'text' },
+      { key: 'price', label: 'Price', type: 'number' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'status', label: 'Status', type: 'select', options: [
+        { label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' },
+      ]},
+    ]},
+    'create-category': { fields: [
+      { key: 'name', label: 'Category Name', type: 'text', required: true },
+      { key: 'parent_category_id', label: 'Parent Category ID', type: 'text' },
+    ]},
+    'create-order': { fields: [
+      { key: 'customer_id', label: 'Customer ID', type: 'text', required: true },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ]},
+    'update-order-status': { fields: [
+      { key: 'status', label: 'Status', type: 'select', required: true, options: [
+        { label: 'Pending', value: 'pending' }, { label: 'Processing', value: 'processing' },
+        { label: 'Shipped', value: 'shipped' }, { label: 'Delivered', value: 'delivered' },
+        { label: 'Cancelled', value: 'cancelled' },
+      ]},
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-creator': {
+    'list-applications': { columns: ['link_name', 'application_name', 'owner_name'] },
+    'list-forms':        { columns: ['link_name', 'display_name'] },
+    'list-reports':      { columns: ['link_name', 'display_name', 'type'] },
+    'list-records':      { columns: ['ID', 'Added_Time', 'Modified_Time'] },
+    'create-record': { fields: [
+      { key: 'data', label: 'Record Data (JSON)', type: 'textarea', required: true, rows: 6 },
+    ]},
+    'update-record': { fields: [
+      { key: 'data', label: 'Record Data (JSON)', type: 'textarea', required: true, rows: 6 },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-crm': {
+    'list-leads':      { columns: ['Last_Name', 'First_Name', 'Email', 'Company', 'Lead_Status'] },
+    'list-contacts':   { columns: ['Last_Name', 'First_Name', 'Email', 'Phone', 'Account_Name'] },
+    'list-accounts':   { columns: ['Account_Name', 'Industry', 'Phone', 'Website'] },
+    'list-deals':      { columns: ['Deal_Name', 'Stage', 'Amount', 'Closing_Date', 'Account_Name'] },
+    'list-tasks':      { columns: ['Subject', 'Status', 'Priority', 'Due_Date'] },
+    'list-notes':      { columns: ['Note_Title', 'Note_Content', 'se_module', 'Created_Time'] },
+    'create-leads': { fields: [
+      { key: 'Last_Name', label: 'Last Name', type: 'text', required: true },
+      { key: 'First_Name', label: 'First Name', type: 'text' },
+      { key: 'Email', label: 'Email', type: 'email' },
+      { key: 'Phone', label: 'Phone', type: 'text' },
+      { key: 'Company', label: 'Company', type: 'text' },
+      { key: 'Lead_Source', label: 'Lead Source', type: 'select', options: [
+        { label: 'Web', value: 'Web' }, { label: 'Cold Call', value: 'Cold Call' },
+        { label: 'Advertisement', value: 'Advertisement' }, { label: 'Referral', value: 'Referral' },
+      ]},
+      { key: 'Lead_Status', label: 'Lead Status', type: 'select', options: [
+        { label: 'Not Contacted', value: 'Not Contacted' },
+        { label: 'Attempted to Contact', value: 'Attempted to Contact' },
+        { label: 'Contacted', value: 'Contacted' },
+        { label: 'Converted', value: 'Converted' },
+      ]},
+    ]},
+    'update-leads': { fields: [
+      { key: 'Last_Name', label: 'Last Name', type: 'text' },
+      { key: 'First_Name', label: 'First Name', type: 'text' },
+      { key: 'Email', label: 'Email', type: 'email' },
+      { key: 'Phone', label: 'Phone', type: 'text' },
+      { key: 'Lead_Status', label: 'Lead Status', type: 'select', options: [
+        { label: 'Not Contacted', value: 'Not Contacted' },
+        { label: 'Contacted', value: 'Contacted' }, { label: 'Converted', value: 'Converted' },
+      ]},
+    ]},
+    'create-contacts': { fields: [
+      { key: 'Last_Name', label: 'Last Name', type: 'text', required: true },
+      { key: 'First_Name', label: 'First Name', type: 'text' },
+      { key: 'Email', label: 'Email', type: 'email' },
+      { key: 'Phone', label: 'Phone', type: 'text' },
+    ]},
+    'update-contacts': { fields: [
+      { key: 'Last_Name', label: 'Last Name', type: 'text' },
+      { key: 'First_Name', label: 'First Name', type: 'text' },
+      { key: 'Email', label: 'Email', type: 'email' },
+    ]},
+    'create-accounts': { fields: [
+      { key: 'Account_Name', label: 'Account Name', type: 'text', required: true },
+      { key: 'Website', label: 'Website', type: 'text' },
+      { key: 'Phone', label: 'Phone', type: 'text' },
+      { key: 'Industry', label: 'Industry', type: 'text' },
+    ]},
+    'update-accounts': { fields: [
+      { key: 'Account_Name', label: 'Account Name', type: 'text' },
+      { key: 'Website', label: 'Website', type: 'text' },
+      { key: 'Phone', label: 'Phone', type: 'text' },
+    ]},
+    'create-deals': { fields: [
+      { key: 'Deal_Name', label: 'Deal Name', type: 'text', required: true },
+      { key: 'Stage', label: 'Stage', type: 'select', required: true, options: [
+        { label: 'Qualification', value: 'Qualification' },
+        { label: 'Needs Analysis', value: 'Needs Analysis' },
+        { label: 'Value Proposition', value: 'Value Proposition' },
+        { label: 'Proposal/Price Quote', value: 'Proposal/Price Quote' },
+        { label: 'Negotiation/Review', value: 'Negotiation/Review' },
+        { label: 'Closed Won', value: 'Closed Won' },
+        { label: 'Closed Lost', value: 'Closed Lost' },
+      ]},
+      { key: 'Amount', label: 'Amount', type: 'number' },
+      { key: 'Closing_Date', label: 'Closing Date', type: 'date' },
+    ]},
+    'update-deals': { fields: [
+      { key: 'Deal_Name', label: 'Deal Name', type: 'text' },
+      { key: 'Stage', label: 'Stage', type: 'select', options: [
+        { label: 'Qualification', value: 'Qualification' },
+        { label: 'Closed Won', value: 'Closed Won' },
+        { label: 'Closed Lost', value: 'Closed Lost' },
+      ]},
+      { key: 'Amount', label: 'Amount', type: 'number' },
+    ]},
+    'create-tasks': { fields: [
+      { key: 'Subject', label: 'Subject', type: 'text', required: true },
+      { key: 'Status', label: 'Status', type: 'select', options: [
+        { label: 'Not Started', value: 'Not Started' },
+        { label: 'In Progress', value: 'In Progress' },
+        { label: 'Completed', value: 'Completed' },
+      ]},
+      { key: 'Priority', label: 'Priority', type: 'select', options: [
+        { label: 'High', value: 'High' }, { label: 'Normal', value: 'Normal' }, { label: 'Low', value: 'Low' },
+      ]},
+      { key: 'Due_Date', label: 'Due Date', type: 'date' },
+    ]},
+    'update-tasks': { fields: [
+      { key: 'Subject', label: 'Subject', type: 'text' },
+      { key: 'Status', label: 'Status', type: 'select', options: [
+        { label: 'Not Started', value: 'Not Started' },
+        { label: 'In Progress', value: 'In Progress' },
+        { label: 'Completed', value: 'Completed' },
+      ]},
+    ]},
+    'create-notes': { fields: [
+      { key: 'Note_Title', label: 'Title', type: 'text' },
+      { key: 'Note_Content', label: 'Content', type: 'textarea', required: true, rows: 4 },
+      { key: 'se_module', label: 'Module', type: 'text' },
+    ]},
+    'create-module-records': { fields: [{ key: 'data', label: 'Record Data (JSON)', type: 'textarea', rows: 6 }] },
+    'update-module-records': { fields: [{ key: 'data', label: 'Record Data (JSON)', type: 'textarea', rows: 6 }] },
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-desk': {
+    'list-tickets':     { columns: ['ticketNumber', 'subject', 'status', 'priority', 'contactId'] },
+    'list-comments':    { columns: ['id', 'content', 'contentType', 'createdTime'] },
+    'list-contacts':    { columns: ['id', 'firstName', 'lastName', 'email'] },
+    'list-agents':      { columns: ['id', 'firstName', 'lastName', 'email', 'roleId'] },
+    'list-departments': { columns: ['id', 'name', 'type'] },
+    'create-ticket': { fields: [
+      { key: 'subject', label: 'Subject', type: 'text', required: true },
+      { key: 'departmentId', label: 'Department ID', type: 'text', required: true },
+      { key: 'contactId', label: 'Contact ID', type: 'text' },
+      { key: 'priority', label: 'Priority', type: 'select', options: [
+        { label: 'Low', value: 'Low' }, { label: 'Medium', value: 'Medium' },
+        { label: 'High', value: 'High' }, { label: 'Urgent', value: 'Urgent' },
+      ]},
+      { key: 'status', label: 'Status', type: 'select', options: [
+        { label: 'Open', value: 'Open' }, { label: 'On Hold', value: 'On Hold' },
+        { label: 'Resolved', value: 'Resolved' }, { label: 'Closed', value: 'Closed' },
+      ]},
+      { key: 'description', label: 'Description', type: 'textarea', rows: 4 },
+      { key: 'email', label: 'Email', type: 'email' },
+    ]},
+    'update-ticket': { fields: [
+      { key: 'subject', label: 'Subject', type: 'text' },
+      { key: 'priority', label: 'Priority', type: 'select', options: [
+        { label: 'Low', value: 'Low' }, { label: 'Medium', value: 'Medium' },
+        { label: 'High', value: 'High' }, { label: 'Urgent', value: 'Urgent' },
+      ]},
+      { key: 'status', label: 'Status', type: 'select', options: [
+        { label: 'Open', value: 'Open' }, { label: 'On Hold', value: 'On Hold' },
+        { label: 'Resolved', value: 'Resolved' }, { label: 'Closed', value: 'Closed' },
+      ]},
+    ]},
+    'add-comment': { fields: [
+      { key: 'content', label: 'Content', type: 'textarea', required: true, rows: 4 },
+      { key: 'isPublic', label: 'Visibility', type: 'select', options: [
+        { label: 'Public', value: 'true' }, { label: 'Private', value: 'false' },
+      ]},
+      { key: 'contentType', label: 'Content Type', type: 'select', options: [
+        { label: 'Plain Text', value: 'plainText' }, { label: 'HTML', value: 'html' },
+      ]},
+    ]},
+    'create-contact': { fields: [
+      { key: 'lastName', label: 'Last Name', type: 'text', required: true },
+      { key: 'firstName', label: 'First Name', type: 'text' },
+      { key: 'email', label: 'Email', type: 'email' },
+      { key: 'phone', label: 'Phone', type: 'text' },
+      { key: 'mobile', label: 'Mobile', type: 'text' },
+    ]},
+    'update-contact': { fields: [
+      { key: 'lastName', label: 'Last Name', type: 'text' },
+      { key: 'firstName', label: 'First Name', type: 'text' },
+      { key: 'email', label: 'Email', type: 'email' },
+      { key: 'phone', label: 'Phone', type: 'text' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-expense': {
+    'list-categories': { columns: ['category_id', 'category_name', 'is_enabled'] },
+    'list-expenses':   { columns: ['expense_id', 'account_name', 'amount', 'date', 'status'] },
+    'list-reports':    { columns: ['report_id', 'report_name', 'from_date', 'to_date', 'total_amount', 'status'] },
+    'list-advances':   { columns: ['advance_id', 'amount', 'date', 'status'] },
+    'create-expense': { fields: [
+      { key: 'account_id', label: 'Account ID', type: 'text', required: true },
+      { key: 'date', label: 'Date', type: 'date', required: true },
+      { key: 'amount', label: 'Amount', type: 'number', required: true },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'currency_id', label: 'Currency ID', type: 'text' },
+    ]},
+    'update-expense': { fields: [
+      { key: 'amount', label: 'Amount', type: 'number' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ]},
+    'create-report': { fields: [
+      { key: 'report_name', label: 'Report Name', type: 'text', required: true },
+      { key: 'from_date', label: 'From Date', type: 'date' },
+      { key: 'to_date', label: 'To Date', type: 'date' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ]},
+    'update-report': { fields: [
+      { key: 'report_name', label: 'Report Name', type: 'text' },
+      { key: 'from_date', label: 'From Date', type: 'date' },
+      { key: 'to_date', label: 'To Date', type: 'date' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-inventory': {
+    'list-items':           { columns: ['name', 'sku', 'rate', 'unit', 'product_type'] },
+    'list-warehouses':      { columns: ['id', 'warehouse_name', 'is_primary'] },
+    'list-sales-orders':    { columns: ['salesorder_number', 'customer_name', 'date', 'shipment_date', 'status'] },
+    'list-purchase-orders': { columns: ['purchaseorder_number', 'vendor_name', 'date', 'delivery_date', 'status'] },
+    'create-item': { fields: [
+      { key: 'name', label: 'Item Name', type: 'text', required: true },
+      { key: 'sku', label: 'SKU', type: 'text' },
+      { key: 'rate', label: 'Rate', type: 'number', required: true },
+      { key: 'unit', label: 'Unit', type: 'text' },
+      { key: 'product_type', label: 'Product Type', type: 'select', options: [
+        { label: 'Goods', value: 'goods' }, { label: 'Service', value: 'service' },
+      ]},
+    ]},
+    'update-item': { fields: [
+      { key: 'name', label: 'Item Name', type: 'text' },
+      { key: 'rate', label: 'Rate', type: 'number' },
+      { key: 'unit', label: 'Unit', type: 'text' },
+    ]},
+    'create-sales-order': { fields: [
+      { key: 'customer_id', label: 'Customer ID', type: 'text', required: true },
+      { key: 'salesorder_number', label: 'Sales Order Number', type: 'text' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'shipment_date', label: 'Shipment Date', type: 'date' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ]},
+    'update-sales-order': { fields: [
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'shipment_date', label: 'Shipment Date', type: 'date' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ]},
+    'create-purchase-order': { fields: [
+      { key: 'vendor_id', label: 'Vendor ID', type: 'text', required: true },
+      { key: 'purchaseorder_number', label: 'PO Number', type: 'text' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'delivery_date', label: 'Delivery Date', type: 'date' },
+    ]},
+    'update-purchase-order': { fields: [
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'delivery_date', label: 'Delivery Date', type: 'date' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-invoice': {
+    'list-customers':           { columns: ['display_name', 'email', 'phone', 'customer_sub_type'] },
+    'list-invoices':            { columns: ['invoice_number', 'customer_name', 'date', 'due_date', 'total', 'status'] },
+    'list-estimates':           { columns: ['estimate_number', 'customer_name', 'date', 'expiry_date', 'status'] },
+    'list-recurring-invoices':  { columns: ['recurrence_name', 'customer_name', 'start_date', 'status'] },
+    'list-payments':            { columns: ['payment_number', 'customer_name', 'amount', 'date', 'payment_mode'] },
+    'create-customer': { fields: [
+      { key: 'display_name', label: 'Display Name', type: 'text', required: true },
+      { key: 'email', label: 'Email', type: 'email' },
+      { key: 'phone', label: 'Phone', type: 'text' },
+      { key: 'customer_sub_type', label: 'Type', type: 'select', options: [
+        { label: 'Individual', value: 'individual' }, { label: 'Business', value: 'business' },
+      ]},
+    ]},
+    'update-customer': { fields: [
+      { key: 'display_name', label: 'Display Name', type: 'text' },
+      { key: 'email', label: 'Email', type: 'email' },
+      { key: 'phone', label: 'Phone', type: 'text' },
+    ]},
+    'create-invoice': { fields: [
+      { key: 'customer_id', label: 'Customer ID', type: 'text', required: true },
+      { key: 'invoice_number', label: 'Invoice Number', type: 'text' },
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'due_date', label: 'Due Date', type: 'date' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ]},
+    'update-invoice': { fields: [
+      { key: 'date', label: 'Date', type: 'date' },
+      { key: 'due_date', label: 'Due Date', type: 'date' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ]},
+    'create-estimate': { fields: [
+      { key: 'customer_id', label: 'Customer ID', type: 'text', required: true },
+      { key: 'estimate_number', label: 'Estimate Number', type: 'text' },
+      { key: 'expiry_date', label: 'Expiry Date', type: 'date' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ]},
+    'update-estimate': { fields: [
+      { key: 'expiry_date', label: 'Expiry Date', type: 'date' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ]},
+    'create-recurring-invoice': { fields: [
+      { key: 'customer_id', label: 'Customer ID', type: 'text', required: true },
+      { key: 'recurrence_name', label: 'Recurrence Name', type: 'text', required: true },
+      { key: 'start_date', label: 'Start Date', type: 'date' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-mail': {
+    'list-accounts':  { columns: ['accountId', 'fromAddress', 'displayName'] },
+    'list-folders':   { columns: ['folderId', 'folderName', 'messageCount'] },
+    'list-messages':  { columns: ['messageId', 'fromAddress', 'subject', 'receivedTime', 'isRead'] },
+    'list-contacts':  { columns: ['firstName', 'lastName', 'email', 'phone'] },
+    'send-message': { fields: [
+      { key: 'fromAddress', label: 'From', type: 'email', required: true },
+      { key: 'toAddress', label: 'To', type: 'email', required: true },
+      { key: 'ccAddress', label: 'CC', type: 'email' },
+      { key: 'subject', label: 'Subject', type: 'text', required: true },
+      { key: 'content', label: 'Body', type: 'textarea', required: true, rows: 6 },
+      { key: 'mailFormat', label: 'Format', type: 'select', options: [
+        { label: 'HTML', value: 'html' }, { label: 'Plain Text', value: 'plaintext' },
+      ]},
+    ]},
+    'create-contact': { fields: [
+      { key: 'firstName', label: 'First Name', type: 'text' },
+      { key: 'lastName', label: 'Last Name', type: 'text', required: true },
+      { key: 'email', label: 'Email', type: 'email', required: true },
+      { key: 'phone', label: 'Phone', type: 'text' },
+    ]},
+    'delete-contact': { fields: [
+      { key: 'email', label: 'Email', type: 'email', required: true },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-payroll': {
+    'list-employees':      { columns: ['employee_id', 'first_name', 'last_name', 'designation', 'date_of_joining'] },
+    'list-pay-runs':       { columns: ['payrun_id', 'payrun_period', 'payrun_type', 'status'] },
+    'list-payslips':       { columns: ['payslip_id', 'employee_name', 'net_pay'] },
+    'list-pay-components': { columns: ['pay_component_id', 'component_name', 'component_type'] },
+    'list-declarations':   { columns: ['declaration_id', 'employee_name', 'declaration_status'] },
+    'create-employee': { fields: [
+      { key: 'first_name', label: 'First Name', type: 'text', required: true },
+      { key: 'last_name', label: 'Last Name', type: 'text', required: true },
+      { key: 'email', label: 'Email', type: 'email', required: true },
+      { key: 'designation', label: 'Designation', type: 'text' },
+      { key: 'date_of_joining', label: 'Date of Joining', type: 'date' },
+      { key: 'department', label: 'Department', type: 'text' },
+    ]},
+    'update-employee': { fields: [
+      { key: 'first_name', label: 'First Name', type: 'text' },
+      { key: 'last_name', label: 'Last Name', type: 'text' },
+      { key: 'designation', label: 'Designation', type: 'text' },
+      { key: 'department', label: 'Department', type: 'text' },
+    ]},
+    'terminate-employee': { fields: [
+      { key: 'termination_date', label: 'Termination Date', type: 'date', required: true },
+      { key: 'reason', label: 'Reason', type: 'textarea' },
+    ]},
+    'create-pay-run': { fields: [
+      { key: 'payrun_period', label: 'Pay Run Period', type: 'text', required: true },
+      { key: 'payrun_type', label: 'Type', type: 'select', options: [
+        { label: 'Regular', value: 'regular' }, { label: 'Off-Cycle', value: 'off_cycle' },
+      ]},
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-people': {
+    'list-employees':      { columns: ['Employee_ID', 'First_Name', 'Last_Name', 'Email', 'Designation'] },
+    'list-departments':    { columns: ['departmentId', 'departmentName'] },
+    'list-leave-types':    { columns: ['leaveTypeId', 'leaveTypeName'] },
+    'list-leave-requests': { columns: ['leaveId', 'employeeName', 'leaveType', 'fromDate', 'toDate', 'status'] },
+    'add-employee': { fields: [
+      { key: 'First_Name', label: 'First Name', type: 'text', required: true },
+      { key: 'Last_Name', label: 'Last Name', type: 'text', required: true },
+      { key: 'Email', label: 'Email', type: 'email', required: true },
+      { key: 'Designation', label: 'Designation', type: 'text' },
+      { key: 'Department', label: 'Department', type: 'text' },
+      { key: 'Date_of_Joining', label: 'Date of Joining', type: 'date' },
+    ]},
+    'update-employee': { fields: [
+      { key: 'First_Name', label: 'First Name', type: 'text' },
+      { key: 'Last_Name', label: 'Last Name', type: 'text' },
+      { key: 'Designation', label: 'Designation', type: 'text' },
+      { key: 'Department', label: 'Department', type: 'text' },
+    ]},
+    'add-leave-request': { fields: [
+      { key: 'leaveTypeId', label: 'Leave Type ID', type: 'text', required: true },
+      { key: 'from', label: 'From Date', type: 'date', required: true },
+      { key: 'to', label: 'To Date', type: 'date', required: true },
+      { key: 'reason', label: 'Reason', type: 'textarea' },
+    ]},
+    'add-form-record': { fields: [
+      { key: 'data', label: 'Record Data (JSON)', type: 'textarea', required: true, rows: 6 },
+    ]},
+    'update-form-record': { fields: [
+      { key: 'data', label: 'Record Data (JSON)', type: 'textarea', required: true, rows: 6 },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-projects': {
+    'list-projects':   { columns: ['id', 'name', 'status', 'start_date', 'end_date'] },
+    'list-tasks':      { columns: ['id', 'name', 'status', 'start_date', 'end_date', 'assigned_to_id'] },
+    'list-milestones': { columns: ['id', 'name', 'status', 'end_date'] },
+    'list-bugs':       { columns: ['id', 'title', 'severity', 'priority', 'status'] },
+    'list-timelogs':   { columns: ['id', 'hours', 'log_date', 'notes'] },
+    'create-project': { fields: [
+      { key: 'name', label: 'Project Name', type: 'text', required: true },
+      { key: 'description', label: 'Description', type: 'textarea' },
+      { key: 'start_date', label: 'Start Date', type: 'date' },
+      { key: 'end_date', label: 'End Date', type: 'date' },
+      { key: 'status', label: 'Status', type: 'select', options: [
+        { label: 'Active', value: 'active' }, { label: 'On Hold', value: 'on_hold' },
+        { label: 'Completed', value: 'completed' },
+      ]},
+    ]},
+    'update-project': { fields: [
+      { key: 'name', label: 'Project Name', type: 'text' },
+      { key: 'start_date', label: 'Start Date', type: 'date' },
+      { key: 'end_date', label: 'End Date', type: 'date' },
+      { key: 'status', label: 'Status', type: 'select', options: [
+        { label: 'Active', value: 'active' }, { label: 'On Hold', value: 'on_hold' },
+        { label: 'Completed', value: 'completed' },
+      ]},
+    ]},
+    'create-task': { fields: [
+      { key: 'name', label: 'Task Name', type: 'text', required: true },
+      { key: 'start_date', label: 'Start Date', type: 'date' },
+      { key: 'end_date', label: 'End Date', type: 'date' },
+      { key: 'status', label: 'Status', type: 'select', options: [
+        { label: 'Open', value: 'open' }, { label: 'In Progress', value: 'inprogress' },
+        { label: 'Closed', value: 'closed' },
+      ]},
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ]},
+    'update-task': { fields: [
+      { key: 'name', label: 'Task Name', type: 'text' },
+      { key: 'end_date', label: 'End Date', type: 'date' },
+      { key: 'status', label: 'Status', type: 'select', options: [
+        { label: 'Open', value: 'open' }, { label: 'In Progress', value: 'inprogress' },
+        { label: 'Closed', value: 'closed' },
+      ]},
+    ]},
+    'create-bug': { fields: [
+      { key: 'title', label: 'Bug Title', type: 'text', required: true },
+      { key: 'severity', label: 'Severity', type: 'select', options: [
+        { label: 'Critical', value: 'critical' }, { label: 'Major', value: 'major' },
+        { label: 'Minor', value: 'minor' }, { label: 'Trivial', value: 'trivial' },
+      ]},
+      { key: 'priority', label: 'Priority', type: 'select', options: [
+        { label: 'High', value: 'high' }, { label: 'Medium', value: 'medium' }, { label: 'Low', value: 'low' },
+      ]},
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ]},
+    'update-bug': { fields: [
+      { key: 'title', label: 'Bug Title', type: 'text' },
+      { key: 'severity', label: 'Severity', type: 'select', options: [
+        { label: 'Critical', value: 'critical' }, { label: 'Major', value: 'major' },
+        { label: 'Minor', value: 'minor' },
+      ]},
+      { key: 'status', label: 'Status', type: 'select', options: [
+        { label: 'Open', value: 'open' }, { label: 'In Progress', value: 'inprogress' },
+        { label: 'Closed', value: 'closed' },
+      ]},
+    ]},
+    'add-timelog': { fields: [
+      { key: 'hours', label: 'Hours', type: 'number', required: true },
+      { key: 'log_date', label: 'Date', type: 'date', required: true },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-recruit': {
+    'list-job-openings': { columns: ['Job_Opening_Name', 'Job_Opening_Status', 'Department_Name', 'No_of_Positions'] },
+    'list-candidates':   { columns: ['Last_Name', 'First_Name', 'Email', 'Current_Job_Title', 'Experience_in_Years'] },
+    'list-interviews':   { columns: ['Event_Name', 'Candidate_Name', 'Interview_Type', 'From', 'Status'] },
+    'list-offers':       { columns: ['Offer_Number', 'Candidate_Name', 'Date', 'Offer_Status'] },
+    'create-job-openings': { fields: [
+      { key: 'Job_Opening_Name', label: 'Job Title', type: 'text', required: true },
+      { key: 'Department_Name', label: 'Department', type: 'text' },
+      { key: 'No_of_Positions', label: 'No. of Positions', type: 'number' },
+      { key: 'Job_Opening_Status', label: 'Status', type: 'select', options: [
+        { label: 'In-Progress', value: 'In-Progress' }, { label: 'Filled', value: 'Filled' },
+        { label: 'Cancelled', value: 'Cancelled' },
+      ]},
+    ]},
+    'update-job-openings': { fields: [
+      { key: 'Job_Opening_Name', label: 'Job Title', type: 'text' },
+      { key: 'Job_Opening_Status', label: 'Status', type: 'select', options: [
+        { label: 'In-Progress', value: 'In-Progress' }, { label: 'Filled', value: 'Filled' },
+        { label: 'Cancelled', value: 'Cancelled' },
+      ]},
+    ]},
+    'create-candidates': { fields: [
+      { key: 'Last_Name', label: 'Last Name', type: 'text', required: true },
+      { key: 'First_Name', label: 'First Name', type: 'text' },
+      { key: 'Email', label: 'Email', type: 'email' },
+      { key: 'Current_Job_Title', label: 'Current Title', type: 'text' },
+      { key: 'Experience_in_Years', label: 'Experience (Years)', type: 'number' },
+    ]},
+    'update-candidates': { fields: [
+      { key: 'Last_Name', label: 'Last Name', type: 'text' },
+      { key: 'Current_Job_Title', label: 'Current Title', type: 'text' },
+      { key: 'Experience_in_Years', label: 'Experience (Years)', type: 'number' },
+    ]},
+    'create-interviews': { fields: [
+      { key: 'Event_Name', label: 'Interview Name', type: 'text', required: true },
+      { key: 'Candidate_Name', label: 'Candidate Name', type: 'text', required: true },
+      { key: 'Interview_Type', label: 'Type', type: 'select', options: [
+        { label: 'Phone', value: 'Phone' }, { label: 'Video', value: 'Video' },
+        { label: 'In-Person', value: 'In-Person' },
+      ]},
+      { key: 'From', label: 'From Date/Time', type: 'text', placeholder: 'YYYY-MM-DDTHH:mm' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-salesiq': {
+    'list-visitors':      { columns: ['visitorId', 'visitorName', 'email', 'city', 'country'] },
+    'list-chats':         { columns: ['chatId', 'visitorName', 'operatorName', 'status', 'startTime'] },
+    'list-chat-messages': { columns: ['id', 'text', 'sender', 'time'] },
+    'list-operators':     { columns: ['operatorId', 'operator_name', 'email', 'availability'] },
+    'list-departments':   { columns: ['id', 'name'] },
+    'list-bots':          { columns: ['id', 'name', 'status'] },
+    'send-chat-message': { fields: [
+      { key: 'message', label: 'Message', type: 'textarea', required: true, rows: 3 },
+    ]},
+    'set-rating': { fields: [
+      { key: 'rating', label: 'Rating', type: 'select', required: true, options: [
+        { label: 'Good', value: 'good' }, { label: 'Bad', value: 'bad' },
+      ]},
+    ]},
+    'set-operator-availability': { fields: [
+      { key: 'availability', label: 'Availability', type: 'select', required: true, options: [
+        { label: 'Online', value: 'online' }, { label: 'Offline', value: 'offline' },
+        { label: 'Busy', value: 'busy' },
+      ]},
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-sign': {
+    'list-requests':   { columns: ['request_name', 'status', 'created_time', 'expiration_days'] },
+    'list-templates':  { columns: ['template_name', 'created_time', 'modified_time'] },
+    'create-request': { fields: [
+      { key: 'request_name', label: 'Request Name', type: 'text', required: true },
+      { key: 'expiration_days', label: 'Expiration (days)', type: 'number' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ]},
+    'create-request-from-template': { fields: [
+      { key: 'request_name', label: 'Request Name', type: 'text', required: true },
+      { key: 'expiration_days', label: 'Expiration (days)', type: 'number' },
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-subscriptions': {
+    'list-plans':         { columns: ['plan_code', 'name', 'price', 'interval_unit'] },
+    'list-addons':        { columns: ['addon_code', 'name', 'price', 'unit'] },
+    'list-coupons':       { columns: ['coupon_code', 'name', 'discount_type', 'discount'] },
+    'list-customers':     { columns: ['display_name', 'email', 'phone', 'company_name'] },
+    'list-subscriptions': { columns: ['subscription_number', 'customer_name', 'plan_name', 'status', 'next_billing_at'] },
+    'create-plan': { fields: [
+      { key: 'plan_code', label: 'Plan Code', type: 'text', required: true },
+      { key: 'name', label: 'Plan Name', type: 'text', required: true },
+      { key: 'price', label: 'Price', type: 'number', required: true },
+      { key: 'interval_unit', label: 'Interval', type: 'select', options: [
+        { label: 'Monthly', value: 'months' }, { label: 'Yearly', value: 'years' },
+        { label: 'Weekly', value: 'weeks' },
+      ]},
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ]},
+    'update-plan': { fields: [
+      { key: 'name', label: 'Plan Name', type: 'text' },
+      { key: 'price', label: 'Price', type: 'number' },
+      { key: 'description', label: 'Description', type: 'textarea' },
+    ]},
+    'create-customer': { fields: [
+      { key: 'display_name', label: 'Display Name', type: 'text', required: true },
+      { key: 'email', label: 'Email', type: 'email', required: true },
+      { key: 'phone', label: 'Phone', type: 'text' },
+      { key: 'company_name', label: 'Company', type: 'text' },
+    ]},
+    'update-customer': { fields: [
+      { key: 'display_name', label: 'Display Name', type: 'text' },
+      { key: 'email', label: 'Email', type: 'email' },
+      { key: 'phone', label: 'Phone', type: 'text' },
+    ]},
+    'create-subscription': { fields: [
+      { key: 'customer_id', label: 'Customer ID', type: 'text', required: true },
+      { key: 'plan_code', label: 'Plan Code', type: 'text', required: true },
+      { key: 'starts_at', label: 'Start Date', type: 'date' },
+    ]},
+    'update-subscription': { fields: [
+      { key: 'plan_code', label: 'Plan Code', type: 'text' },
+      { key: 'end_of_term', label: 'End at Term', type: 'select', options: [
+        { label: 'Yes', value: 'true' }, { label: 'No', value: 'false' },
+      ]},
+    ]},
+  },
+
+  // ────────────────────────────────────────────────
+  '/zoho-workdrive': {
+    'list-teams':             { columns: ['id', 'name', 'owner'] },
+    'list-folder-contents':   { columns: ['id', 'name', 'type', 'size', 'modified_time'] },
+    'list-workspace-members': { columns: ['id', 'email', 'role', 'status'] },
+    'create-folder': { fields: [
+      { key: 'name', label: 'Folder Name', type: 'text', required: true },
+      { key: 'parent_id', label: 'Parent Folder ID', type: 'text', required: true },
+    ]},
+    'copy-file': { fields: [
+      { key: 'parent_id', label: 'Destination Folder ID', type: 'text', required: true },
+    ]},
+    'move-file': { fields: [
+      { key: 'parent_id', label: 'Destination Folder ID', type: 'text', required: true },
+    ]},
+    'create-sharelink': { fields: [
+      { key: 'resource_id', label: 'File/Folder ID', type: 'text', required: true },
+      { key: 'access_type', label: 'Access Type', type: 'select', options: [
+        { label: 'View', value: 'view' }, { label: 'Edit', value: 'edit' },
+      ]},
+      { key: 'expiry_date', label: 'Expiry Date', type: 'date' },
+    ]},
+    'add-workspace-member': { fields: [
+      { key: 'email', label: 'Email', type: 'email', required: true },
+      { key: 'role', label: 'Role', type: 'select', options: [
+        { label: 'Owner', value: 'owner' }, { label: 'Organizer', value: 'organizer' },
+        { label: 'Editor', value: 'editor' }, { label: 'Viewer', value: 'viewer' },
+      ]},
+    ]},
+  },
+};

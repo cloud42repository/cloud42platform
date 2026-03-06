@@ -1,0 +1,988 @@
+﻿import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { ImpossibleCloudService } from './impossible-cloud.service';
+
+@Controller('impossible-cloud')
+export class ImpossibleCloudController {
+  constructor(private readonly service: ImpossibleCloudService) {}
+
+  // Integrations
+  @Get('regions')
+  listRegions() { return this.service.listRegions(); }
+
+  // Contracts
+  @Get('contracts')
+  listContracts() { return this.service.listContracts(); }
+
+  @Get('contracts/:contractId/partners')
+  listContractPartners(@Param('contractId') contractId: string) { return this.service.listContractPartners(contractId); }
+
+  // Partners
+  @Post('partners')
+  createPartner(@Body() data: unknown) { return this.service.createPartner(data); }
+
+  @Get('partners/:partnerId')
+  getPartner(@Param('partnerId') partnerId: string) { return this.service.getPartner(partnerId); }
+
+  @Put('partners/:partnerId')
+  updatePartner(@Param('partnerId') partnerId: string, @Body() data: unknown) { return this.service.updatePartner(partnerId, data); }
+
+  @Delete('partners/:partnerId')
+  deletePartner(@Param('partnerId') partnerId: string) { return this.service.deletePartner(partnerId); }
+
+  // Members
+  @Get('partners/:partnerId/members')
+  listMembers(@Param('partnerId') partnerId: string) { return this.service.listMembers(partnerId); }
+
+  @Post('partners/:partnerId/members')
+  createMember(@Param('partnerId') partnerId: string, @Body() data: unknown) { return this.service.createMember(partnerId, data); }
+
+  @Delete('partners/:partnerId/members/:memberId')
+  deleteMember(@Param('partnerId') partnerId: string, @Param('memberId') memberId: string) { return this.service.deleteMember(partnerId, memberId); }
+
+  // Partner Storage Accounts
+  @Get('partners/:partnerId/storage-accounts')
+  listPartnerStorageAccounts(@Param('partnerId') partnerId: string) { return this.service.listPartnerStorageAccounts(partnerId); }
+
+  @Post('partners/:partnerId/storage-accounts')
+  createPartnerStorageAccount(@Param('partnerId') partnerId: string, @Body() data: unknown) { return this.service.createPartnerStorageAccount(partnerId, data); }
+
+  @Get('partners/:partnerId/storage-accounts/:accountId')
+  getPartnerStorageAccount(@Param('partnerId') partnerId: string, @Param('accountId') accountId: string) { return this.service.getPartnerStorageAccount(partnerId, accountId); }
+
+  @Delete('partners/:partnerId/storage-accounts/:accountId')
+  deletePartnerStorageAccount(@Param('partnerId') partnerId: string, @Param('accountId') accountId: string) { return this.service.deletePartnerStorageAccount(partnerId, accountId); }
+
+  @Patch('partners/:partnerId/storage-accounts/:accountId')
+  patchPartnerStorageAccount(@Param('partnerId') partnerId: string, @Param('accountId') accountId: string, @Body() data: unknown) { return this.service.patchPartnerStorageAccount(partnerId, accountId, data); }
+
+  @Get('partners/:partnerId/storage-accounts/:accountId/usage')
+  getPartnerStorageAccountUsage(
+    @Param('partnerId') partnerId: string,
+    @Param('accountId') accountId: string,
+    @Query() params: Record<string, unknown>,
+  ) { return this.service.getPartnerStorageAccountUsage(partnerId, accountId, params); }
+
+  @Get('partners/:partnerId/usage')
+  getPartnerUsage(@Param('partnerId') partnerId: string, @Query() params: Record<string, unknown>) { return this.service.getPartnerUsage(partnerId, params); }
+
+  // Own Storage Accounts
+  @Post('storage-accounts')
+  createStorageAccount(@Body() data: unknown) { return this.service.createStorageAccount(data); }
+
+  @Get('storage-accounts')
+  listStorageAccounts() { return this.service.listStorageAccounts(); }
+
+  @Get('storage-accounts/usage')
+  getAllStorageAccountsUsage(@Query() params: Record<string, unknown>) { return this.service.getAllStorageAccountsUsage(params); }
+
+  @Get('storage-accounts/:accountId')
+  getStorageAccount(@Param('accountId') accountId: string) { return this.service.getStorageAccount(accountId); }
+
+  @Delete('storage-accounts/:accountId')
+  deleteStorageAccount(@Param('accountId') accountId: string) { return this.service.deleteStorageAccount(accountId); }
+
+  @Patch('storage-accounts/:accountId')
+  patchStorageAccount(@Param('accountId') accountId: string, @Body() data: unknown) { return this.service.patchStorageAccount(accountId, data); }
+
+  @Get('storage-accounts/:accountId/usage')
+  getStorageAccountUsage(@Param('accountId') accountId: string, @Query() params: Record<string, unknown>) { return this.service.getStorageAccountUsage(accountId, params); }
+}
+
+import { All, Body, Controller, Delete, Get, HttpCode, Patch, Post, Put, Query } from '@nestjs/common';
+import { SoftvalueService } from './softvalue.service';
+
+@Controller('softvalue')
+export class SoftvalueController {
+  constructor(private readonly service: SoftvalueService) {}
+
+  @Get('proxy')
+  proxyGet(@Query('path') path: string, @Query() params: Record<string, unknown>) {
+    return this.service.get(path, { params });
+  }
+
+  @Post('proxy')
+  proxyPost(@Query('path') path: string, @Body() data: unknown) {
+    return this.service.post(path, data);
+  }
+
+  @Put('proxy')
+  proxyPut(@Query('path') path: string, @Body() data: unknown) {
+    return this.service.put(path, data);
+  }
+
+  @Patch('proxy')
+  proxyPatch(@Query('path') path: string, @Body() data: unknown) {
+    return this.service.patch(path, data);
+  }
+
+  @Delete('proxy')
+  proxyDelete(@Query('path') path: string) {
+    return this.service.delete(path);
+  }
+
+  @Post('token')
+  @HttpCode(204)
+  updateToken(@Body('token') token: string) {
+    this.service.updateToken(token);
+  }
+
+  @Get('token')
+  getToken() {
+    return { token: this.service.getToken() };
+  }
+}
+
+import {
+  Controller, Get, Post, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoAnalyticsService } from './zoho-analytics.service';
+
+@Controller('zoho-analytics')
+export class ZohoAnalyticsController {
+  constructor(private readonly service: ZohoAnalyticsService) {}
+
+  @Get('workspaces') listWorkspaces() { return this.service.listWorkspaces(); }
+  @Get('workspaces/:id') getWorkspace(@Param('id') id: string) { return this.service.getWorkspace(id); }
+  @Post('workspaces') createWorkspace(@Body() body: unknown) { return this.service.createWorkspace(body); }
+  @Delete('workspaces/:id') deleteWorkspace(@Param('id') id: string) { return this.service.deleteWorkspace(id); }
+
+  @Get('workspaces/:workspaceId/views') listViews(@Param('workspaceId') wsId: string, @Query() q: Record<string, unknown>) { return this.service.listViews(wsId, q); }
+  @Get('workspaces/:workspaceId/views/:viewId') getView(@Param('workspaceId') wsId: string, @Param('viewId') viewId: string) { return this.service.getView(wsId, viewId); }
+  @Post('workspaces/:workspaceId/views') createView(@Param('workspaceId') wsId: string, @Body() body: unknown) { return this.service.createView(wsId, body); }
+  @Delete('workspaces/:workspaceId/views/:viewId') deleteView(@Param('workspaceId') wsId: string, @Param('viewId') viewId: string) { return this.service.deleteView(wsId, viewId); }
+
+  @Get('workspaces/:workspaceId/reports') listReports(@Param('workspaceId') wsId: string) { return this.service.listReports(wsId); }
+  @Get('workspaces/:workspaceId/dashboards') listDashboards(@Param('workspaceId') wsId: string) { return this.service.listDashboards(wsId); }
+
+  @Post('import') importData(@Body() body: { config: unknown; data: unknown }) { return this.service.importData(body.config, body.data); }
+  @Get('workspaces/:workspaceId/views/:viewId/export') exportData(
+    @Param('workspaceId') wsId: string,
+    @Param('viewId') viewId: string,
+    @Query('format') format: 'csv' | 'json' | 'xlsx',
+  ) { return this.service.exportData(wsId, viewId, format); }
+}
+
+import {
+  Controller, Get, Post, Put, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoBooksService } from './zoho-books.service';
+
+@Controller('zoho-books')
+export class ZohoBooksController {
+  constructor(private readonly service: ZohoBooksService) {}
+
+  // Contacts
+  @Get('contacts') listContacts(@Query() q: Record<string, unknown>) { return this.service.listContacts(q); }
+  @Get('contacts/:id') getContact(@Param('id') id: string) { return this.service.getContact(id); }
+  @Post('contacts') createContact(@Body() body: unknown) { return this.service.createContact(body); }
+  @Put('contacts/:id') updateContact(@Param('id') id: string, @Body() body: unknown) { return this.service.updateContact(id, body); }
+  @Delete('contacts/:id') deleteContact(@Param('id') id: string) { return this.service.deleteContact(id); }
+
+  // Invoices
+  @Get('invoices') listInvoices(@Query() q: Record<string, unknown>) { return this.service.listInvoices(q); }
+  @Get('invoices/:id') getInvoice(@Param('id') id: string) { return this.service.getInvoice(id); }
+  @Post('invoices') createInvoice(@Body() body: unknown) { return this.service.createInvoice(body); }
+  @Put('invoices/:id') updateInvoice(@Param('id') id: string, @Body() body: unknown) { return this.service.updateInvoice(id, body); }
+  @Delete('invoices/:id') deleteInvoice(@Param('id') id: string) { return this.service.deleteInvoice(id); }
+  @Post('invoices/:id/send') sendInvoice(@Param('id') id: string, @Body() body: Record<string, unknown>) { return this.service.sendInvoice(id, body); }
+  @Post('invoices/:id/sent') markInvoiceAsSent(@Param('id') id: string) { return this.service.markInvoiceAsSent(id); }
+  @Post('invoices/:id/void') voidInvoice(@Param('id') id: string) { return this.service.voidInvoice(id); }
+
+  // Bills
+  @Get('bills') listBills(@Query() q: Record<string, unknown>) { return this.service.listBills(q); }
+  @Get('bills/:id') getBill(@Param('id') id: string) { return this.service.getBill(id); }
+  @Post('bills') createBill(@Body() body: unknown) { return this.service.createBill(body); }
+  @Put('bills/:id') updateBill(@Param('id') id: string, @Body() body: unknown) { return this.service.updateBill(id, body); }
+  @Delete('bills/:id') deleteBill(@Param('id') id: string) { return this.service.deleteBill(id); }
+
+  // Expenses
+  @Get('expenses') listExpenses(@Query() q: Record<string, unknown>) { return this.service.listExpenses(q); }
+  @Get('expenses/:id') getExpense(@Param('id') id: string) { return this.service.getExpense(id); }
+  @Post('expenses') createExpense(@Body() body: unknown) { return this.service.createExpense(body); }
+  @Put('expenses/:id') updateExpense(@Param('id') id: string, @Body() body: unknown) { return this.service.updateExpense(id, body); }
+  @Delete('expenses/:id') deleteExpense(@Param('id') id: string) { return this.service.deleteExpense(id); }
+
+  // Payments
+  @Get('payments') listPayments(@Query() q: Record<string, unknown>) { return this.service.listPayments(q); }
+  @Get('payments/:id') getPayment(@Param('id') id: string) { return this.service.getPayment(id); }
+  @Post('payments') createPayment(@Body() body: unknown) { return this.service.createPayment(body); }
+  @Delete('payments/:id') deletePayment(@Param('id') id: string) { return this.service.deletePayment(id); }
+
+  // Items
+  @Get('items') listItems(@Query() q: Record<string, unknown>) { return this.service.listItems(q); }
+  @Get('items/:id') getItem(@Param('id') id: string) { return this.service.getItem(id); }
+  @Post('items') createItem(@Body() body: unknown) { return this.service.createItem(body); }
+  @Put('items/:id') updateItem(@Param('id') id: string, @Body() body: unknown) { return this.service.updateItem(id, body); }
+  @Delete('items/:id') deleteItem(@Param('id') id: string) { return this.service.deleteItem(id); }
+}
+
+import {
+  Controller, Get, Post, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoCampaignsService } from './zoho-campaigns.service';
+
+@Controller('zoho-campaigns')
+export class ZohoCampaignsController {
+  constructor(private readonly service: ZohoCampaignsService) {}
+
+  @Get('lists') listMailingLists(@Query() q: Record<string, unknown>) { return this.service.listMailingLists(q); }
+  @Get('lists/:listKey') getMailingList(@Param('listKey') key: string) { return this.service.getMailingList(key); }
+  @Post('lists') createMailingList(@Body() body: unknown) { return this.service.createMailingList(body); }
+  @Delete('lists/:listKey') deleteMailingList(@Param('listKey') key: string) { return this.service.deleteMailingList(key); }
+
+  @Get('lists/:listKey/subscribers') listSubscribers(@Param('listKey') key: string, @Query() q: Record<string, unknown>) { return this.service.listSubscribers(key, q); }
+  @Post('lists/:listKey/subscribers') addSubscriber(@Param('listKey') key: string, @Body() body: unknown) { return this.service.addSubscriber(key, body); }
+  @Delete('lists/:listKey/subscribers') removeSubscriber(@Param('listKey') key: string, @Query('email') email: string) { return this.service.removeSubscriber(key, email); }
+
+  @Get('topics') listTopics() { return this.service.listTopics(); }
+
+  @Get('campaigns') listCampaigns(@Query() q: Record<string, unknown>) { return this.service.listCampaigns(q); }
+  @Get('campaigns/:campaignKey') getCampaign(@Param('campaignKey') key: string) { return this.service.getCampaign(key); }
+  @Post('campaigns/:campaignKey/send') sendCampaign(@Param('campaignKey') key: string) { return this.service.sendCampaign(key); }
+  @Post('campaigns/:campaignKey/schedule') scheduleCampaign(@Param('campaignKey') key: string, @Body() body: { scheduleTime: string }) { return this.service.scheduleCampaign(key, body.scheduleTime); }
+}
+
+import {
+  Controller, Get, Post, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoCliqService } from './zoho-cliq.service';
+
+@Controller('zoho-cliq')
+export class ZohoCliqController {
+  constructor(private readonly service: ZohoCliqService) {}
+
+  @Get('channels') listChannels(@Query() q: Record<string, unknown>) { return this.service.listChannels(q); }
+  @Get('channels/:name') getChannel(@Param('name') name: string) { return this.service.getChannel(name); }
+  @Post('channels') createChannel(@Body() body: unknown) { return this.service.createChannel(body); }
+  @Delete('channels/:name') deleteChannel(@Param('name') name: string) { return this.service.deleteChannel(name); }
+  @Post('channels/:name/members') addChannelMember(@Param('name') name: string, @Body() body: { emails: string[] }) { return this.service.addChannelMember(name, body.emails); }
+  @Delete('channels/:name/members') removeChannelMember(@Param('name') name: string, @Query('email') email: string) { return this.service.removeChannelMember(name, email); }
+
+  @Get('channels/:name/messages') listChannelMessages(@Param('name') name: string) { return this.service.listChannelMessages(name); }
+  @Post('channels/:name/message') sendChannelMessage(@Param('name') name: string, @Body() body: unknown) { return this.service.sendChannelMessage(name, body); }
+  @Delete('channels/:name/messages/:messageId') deleteMessage(@Param('name') name: string, @Param('messageId') mId: string) { return this.service.deleteMessage(name, mId); }
+
+  @Post('direct/:email') sendDirectMessage(@Param('email') email: string, @Body() body: unknown) { return this.service.sendDirectMessage(email, body); }
+
+  @Get('usergroups') listUserGroups() { return this.service.listUserGroups(); }
+  @Get('usergroups/:name') getUserGroup(@Param('name') name: string) { return this.service.getUserGroup(name); }
+  @Post('usergroups') createUserGroup(@Body() body: unknown) { return this.service.createUserGroup(body); }
+
+  @Get('bots') listBots() { return this.service.listBots(); }
+  @Post('bots/:name/message') sendBotMessage(@Param('name') name: string, @Body() body: unknown) { return this.service.sendBotMessage(name, body); }
+}
+
+import {
+  Controller, Get, Post, Put, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoCommerceService } from './zoho-commerce.service';
+
+@Controller('zoho-commerce')
+export class ZohoCommerceController {
+  constructor(private readonly service: ZohoCommerceService) {}
+
+  @Get('products') listProducts(@Query() q: Record<string, unknown>) { return this.service.listProducts(q); }
+  @Get('products/:id') getProduct(@Param('id') id: string) { return this.service.getProduct(id); }
+  @Post('products') createProduct(@Body() body: unknown) { return this.service.createProduct(body); }
+  @Put('products/:id') updateProduct(@Param('id') id: string, @Body() body: unknown) { return this.service.updateProduct(id, body); }
+  @Delete('products/:id') deleteProduct(@Param('id') id: string) { return this.service.deleteProduct(id); }
+
+  @Get('categories') listCategories() { return this.service.listCategories(); }
+  @Get('categories/:id') getCategory(@Param('id') id: string) { return this.service.getCategory(id); }
+  @Post('categories') createCategory(@Body() body: unknown) { return this.service.createCategory(body); }
+  @Delete('categories/:id') deleteCategory(@Param('id') id: string) { return this.service.deleteCategory(id); }
+
+  @Get('customers') listCustomers(@Query() q: Record<string, unknown>) { return this.service.listCustomers(q); }
+  @Get('customers/:id') getCustomer(@Param('id') id: string) { return this.service.getCustomer(id); }
+
+  @Get('orders') listOrders(@Query() q: Record<string, unknown>) { return this.service.listOrders(q); }
+  @Get('orders/:id') getOrder(@Param('id') id: string) { return this.service.getOrder(id); }
+  @Post('orders') createOrder(@Body() body: unknown) { return this.service.createOrder(body); }
+  @Put('orders/:id/status') updateOrderStatus(@Param('id') id: string, @Body() body: { status: string }) { return this.service.updateOrderStatus(id, body.status); }
+  @Post('orders/:id/cancel') cancelOrder(@Param('id') id: string) { return this.service.cancelOrder(id); }
+}
+
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { ZohoCreatorService } from './zoho-creator.service';
+
+@Controller('zoho-creator')
+export class ZohoCreatorController {
+  constructor(private readonly service: ZohoCreatorService) {}
+
+  @Get('applications')
+  listApplications() { return this.service.listApplications(); }
+
+  @Get('applications/:appLinkName')
+  getApplication(@Param('appLinkName') appLinkName: string) { return this.service.getApplication(appLinkName); }
+
+  @Get('applications/:appLinkName/forms')
+  listForms(@Param('appLinkName') appLinkName: string) { return this.service.listForms(appLinkName); }
+
+  @Get('applications/:appLinkName/forms/:formLinkName')
+  getForm(@Param('appLinkName') appLinkName: string, @Param('formLinkName') formLinkName: string) {
+    return this.service.getForm(appLinkName, formLinkName);
+  }
+
+  @Get('applications/:appLinkName/reports/:reportLinkName/records')
+  listRecords(
+    @Param('appLinkName') appLinkName: string,
+    @Param('reportLinkName') reportLinkName: string,
+    @Query() params: Record<string, unknown>,
+  ) { return this.service.listRecords(appLinkName, reportLinkName, params); }
+
+  @Get('applications/:appLinkName/reports/:reportLinkName/records/:id')
+  getRecord(
+    @Param('appLinkName') appLinkName: string,
+    @Param('reportLinkName') reportLinkName: string,
+    @Param('id') id: string,
+  ) { return this.service.getRecord(appLinkName, reportLinkName, id); }
+
+  @Post('applications/:appLinkName/forms/:formLinkName/records')
+  createRecord(
+    @Param('appLinkName') appLinkName: string,
+    @Param('formLinkName') formLinkName: string,
+    @Body() data: unknown,
+  ) { return this.service.createRecord(appLinkName, formLinkName, data); }
+
+  @Put('applications/:appLinkName/reports/:reportLinkName/records/:id')
+  updateRecord(
+    @Param('appLinkName') appLinkName: string,
+    @Param('reportLinkName') reportLinkName: string,
+    @Param('id') id: string,
+    @Body() data: unknown,
+  ) { return this.service.updateRecord(appLinkName, reportLinkName, id, data); }
+
+  @Delete('applications/:appLinkName/reports/:reportLinkName/records/:id')
+  deleteRecord(
+    @Param('appLinkName') appLinkName: string,
+    @Param('reportLinkName') reportLinkName: string,
+    @Param('id') id: string,
+  ) { return this.service.deleteRecord(appLinkName, reportLinkName, id); }
+
+  @Get('applications/:appLinkName/reports/:reportLinkName/records/search')
+  searchRecords(
+    @Param('appLinkName') appLinkName: string,
+    @Param('reportLinkName') reportLinkName: string,
+    @Query('criteria') criteria: string,
+    @Query() params: Record<string, unknown>,
+  ) { return this.service.searchRecords(appLinkName, reportLinkName, criteria, params); }
+
+  @Get('applications/:appLinkName/reports')
+  listReports(@Param('appLinkName') appLinkName: string) { return this.service.listReports(appLinkName); }
+
+  @Post('applications/:appLinkName/workflows/:workflowName/trigger')
+  triggerWorkflow(
+    @Param('appLinkName') appLinkName: string,
+    @Param('workflowName') workflowName: string,
+    @Body() data: Record<string, unknown>,
+  ) { return this.service.triggerWorkflow(appLinkName, workflowName, data); }
+}
+
+import {
+  Controller, Get, Post, Put, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoCrmService } from './zoho-crm.service';
+
+@Controller('zoho-crm')
+export class ZohoCrmController {
+  constructor(private readonly service: ZohoCrmService) {}
+
+  // â”€â”€â”€ Leads â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @Get('leads')
+  listLeads(@Query() params: Record<string, unknown>) { return this.service.listLeads(params); }
+
+  @Get('leads/search')
+  searchLeads(@Query() params: Record<string, unknown>) { return this.service.searchLeads(params); }
+
+  @Get('leads/:id')
+  getLead(@Param('id') id: string) { return this.service.getLead(id); }
+
+  @Post('leads')
+  createLeads(@Body() body: { data: unknown[] }) { return this.service.createLeads(body.data); }
+
+  @Put('leads')
+  updateLeads(@Body() body: { data: unknown[] }) { return this.service.updateLeads(body.data); }
+
+  @Delete('leads/:id')
+  deleteLead(@Param('id') id: string) { return this.service.deleteLead(id); }
+
+  // â”€â”€â”€ Contacts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @Get('contacts')
+  listContacts(@Query() params: Record<string, unknown>) { return this.service.listContacts(params); }
+
+  @Get('contacts/search')
+  searchContacts(@Query() params: Record<string, unknown>) { return this.service.searchContacts(params); }
+
+  @Get('contacts/:id')
+  getContact(@Param('id') id: string) { return this.service.getContact(id); }
+
+  @Post('contacts')
+  createContacts(@Body() body: { data: unknown[] }) { return this.service.createContacts(body.data); }
+
+  @Put('contacts')
+  updateContacts(@Body() body: { data: unknown[] }) { return this.service.updateContacts(body.data); }
+
+  @Delete('contacts/:id')
+  deleteContact(@Param('id') id: string) { return this.service.deleteContact(id); }
+
+  // â”€â”€â”€ Accounts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @Get('accounts')
+  listAccounts(@Query() params: Record<string, unknown>) { return this.service.listAccounts(params); }
+
+  @Get('accounts/:id')
+  getAccount(@Param('id') id: string) { return this.service.getAccount(id); }
+
+  @Post('accounts')
+  createAccounts(@Body() body: { data: unknown[] }) { return this.service.createAccounts(body.data); }
+
+  @Put('accounts')
+  updateAccounts(@Body() body: { data: unknown[] }) { return this.service.updateAccounts(body.data); }
+
+  @Delete('accounts/:id')
+  deleteAccount(@Param('id') id: string) { return this.service.deleteAccount(id); }
+
+  // â”€â”€â”€ Deals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @Get('deals')
+  listDeals(@Query() params: Record<string, unknown>) { return this.service.listDeals(params); }
+
+  @Get('deals/:id')
+  getDeal(@Param('id') id: string) { return this.service.getDeal(id); }
+
+  @Post('deals')
+  createDeals(@Body() body: { data: unknown[] }) { return this.service.createDeals(body.data); }
+
+  @Put('deals')
+  updateDeals(@Body() body: { data: unknown[] }) { return this.service.updateDeals(body.data); }
+
+  @Delete('deals/:id')
+  deleteDeal(@Param('id') id: string) { return this.service.deleteDeal(id); }
+
+  // â”€â”€â”€ Tasks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @Get('tasks')
+  listTasks(@Query() params: Record<string, unknown>) { return this.service.listTasks(params); }
+
+  @Get('tasks/:id')
+  getTask(@Param('id') id: string) { return this.service.getTask(id); }
+
+  @Post('tasks')
+  createTasks(@Body() body: { data: unknown[] }) { return this.service.createTasks(body.data); }
+
+  @Put('tasks')
+  updateTasks(@Body() body: { data: unknown[] }) { return this.service.updateTasks(body.data); }
+
+  @Delete('tasks/:id')
+  deleteTask(@Param('id') id: string) { return this.service.deleteTask(id); }
+
+  // â”€â”€â”€ Notes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @Get('notes')
+  listNotes(@Query() params: Record<string, unknown>) { return this.service.listNotes(params); }
+
+  @Get('notes/:id')
+  getNote(@Param('id') id: string) { return this.service.getNote(id); }
+
+  @Post('notes')
+  createNotes(@Body() body: { data: unknown[] }) { return this.service.createNotes(body.data); }
+
+  @Delete('notes/:id')
+  deleteNote(@Param('id') id: string) { return this.service.deleteNote(id); }
+
+  // â”€â”€â”€ Generic module â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  @Get('modules/:module')
+  listRecords(@Param('module') module: string, @Query() params: Record<string, unknown>) {
+    return this.service.listRecords(module, params);
+  }
+
+  @Get('modules/:module/:id')
+  getRecord(@Param('module') module: string, @Param('id') id: string) {
+    return this.service.getRecord(module, id);
+  }
+
+  @Post('modules/:module')
+  createRecords(@Param('module') module: string, @Body() body: { data: unknown[] }) {
+    return this.service.createRecords(module, body.data);
+  }
+
+  @Put('modules/:module')
+  updateRecords(@Param('module') module: string, @Body() body: { data: unknown[] }) {
+    return this.service.updateRecords(module, body.data);
+  }
+
+  @Delete('modules/:module/:id')
+  deleteRecord(@Param('module') module: string, @Param('id') id: string) {
+    return this.service.deleteRecord(module, id);
+  }
+
+  @Get('modules/:module/search')
+  searchRecords(@Param('module') module: string, @Query() params: Record<string, unknown>) {
+    return this.service.searchRecords(module, params);
+  }
+}
+
+import {
+  Controller, Get, Post, Put, Delete, Patch, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoDeskService } from './zoho-desk.service';
+
+@Controller('zoho-desk')
+export class ZohoDeskController {
+  constructor(private readonly service: ZohoDeskService) {}
+
+  @Get('tickets') listTickets(@Query() q: Record<string, unknown>) { return this.service.listTickets(q); }
+  @Get('tickets/search') searchTickets(@Query() q: Record<string, unknown>) { return this.service.searchTickets(q); }
+  @Get('tickets/:id') getTicket(@Param('id') id: string) { return this.service.getTicket(id); }
+  @Post('tickets') createTicket(@Body() body: unknown) { return this.service.createTicket(body); }
+  @Patch('tickets/:id') updateTicket(@Param('id') id: string, @Body() body: unknown) { return this.service.updateTicket(id, body); }
+  @Delete('tickets/:id') deleteTicket(@Param('id') id: string) { return this.service.deleteTicket(id); }
+
+  @Get('tickets/:ticketId/comments') listComments(@Param('ticketId') ticketId: string) { return this.service.listComments(ticketId); }
+  @Post('tickets/:ticketId/comments') addComment(@Param('ticketId') ticketId: string, @Body() body: unknown) { return this.service.addComment(ticketId, body); }
+  @Delete('tickets/:ticketId/comments/:commentId') deleteComment(@Param('ticketId') ticketId: string, @Param('commentId') commentId: string) { return this.service.deleteComment(ticketId, commentId); }
+
+  @Get('contacts') listContacts(@Query() q: Record<string, unknown>) { return this.service.listContacts(q); }
+  @Get('contacts/:id') getContact(@Param('id') id: string) { return this.service.getContact(id); }
+  @Post('contacts') createContact(@Body() body: unknown) { return this.service.createContact(body); }
+  @Patch('contacts/:id') updateContact(@Param('id') id: string, @Body() body: unknown) { return this.service.updateContact(id, body); }
+  @Delete('contacts/:id') deleteContact(@Param('id') id: string) { return this.service.deleteContact(id); }
+
+  @Get('agents') listAgents(@Query() q: Record<string, unknown>) { return this.service.listAgents(q); }
+  @Get('agents/:id') getAgent(@Param('id') id: string) { return this.service.getAgent(id); }
+
+  @Get('departments') listDepartments() { return this.service.listDepartments(); }
+  @Get('departments/:id') getDepartment(@Param('id') id: string) { return this.service.getDepartment(id); }
+}
+
+import {
+  Controller, Get, Post, Put, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoExpenseService } from './zoho-expense.service';
+
+@Controller('zoho-expense')
+export class ZohoExpenseController {
+  constructor(private readonly service: ZohoExpenseService) {}
+
+  @Get('categories') listCategories() { return this.service.listCategories(); }
+  @Get('categories/:id') getCategory(@Param('id') id: string) { return this.service.getCategory(id); }
+
+  @Get('expenses') listExpenses(@Query() q: Record<string, unknown>) { return this.service.listExpenses(q); }
+  @Get('expenses/:id') getExpense(@Param('id') id: string) { return this.service.getExpense(id); }
+  @Post('expenses') createExpense(@Body() body: unknown) { return this.service.createExpense(body); }
+  @Put('expenses/:id') updateExpense(@Param('id') id: string, @Body() body: unknown) { return this.service.updateExpense(id, body); }
+  @Delete('expenses/:id') deleteExpense(@Param('id') id: string) { return this.service.deleteExpense(id); }
+
+  @Get('reports') listReports(@Query() q: Record<string, unknown>) { return this.service.listReports(q); }
+  @Get('reports/:id') getReport(@Param('id') id: string) { return this.service.getReport(id); }
+  @Post('reports') createReport(@Body() body: unknown) { return this.service.createReport(body); }
+  @Put('reports/:id') updateReport(@Param('id') id: string, @Body() body: unknown) { return this.service.updateReport(id, body); }
+  @Delete('reports/:id') deleteReport(@Param('id') id: string) { return this.service.deleteReport(id); }
+  @Post('reports/:id/submit') submitReport(@Param('id') id: string) { return this.service.submitReport(id); }
+  @Post('reports/:id/approve') approveReport(@Param('id') id: string) { return this.service.approveReport(id); }
+
+  @Get('advances') listAdvances() { return this.service.listAdvances(); }
+  @Get('advances/:id') getAdvance(@Param('id') id: string) { return this.service.getAdvance(id); }
+}
+
+import {
+  Controller, Get, Post, Put, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoInventoryService } from './zoho-inventory.service';
+
+@Controller('zoho-inventory')
+export class ZohoInventoryController {
+  constructor(private readonly service: ZohoInventoryService) {}
+
+  @Get('items') listItems(@Query() q: Record<string, unknown>) { return this.service.listItems(q); }
+  @Get('items/:id') getItem(@Param('id') id: string) { return this.service.getItem(id); }
+  @Post('items') createItem(@Body() body: unknown) { return this.service.createItem(body); }
+  @Put('items/:id') updateItem(@Param('id') id: string, @Body() body: unknown) { return this.service.updateItem(id, body); }
+  @Delete('items/:id') deleteItem(@Param('id') id: string) { return this.service.deleteItem(id); }
+
+  @Get('warehouses') listWarehouses() { return this.service.listWarehouses(); }
+  @Get('warehouses/:id') getWarehouse(@Param('id') id: string) { return this.service.getWarehouse(id); }
+
+  @Get('salesorders') listSalesOrders(@Query() q: Record<string, unknown>) { return this.service.listSalesOrders(q); }
+  @Get('salesorders/:id') getSalesOrder(@Param('id') id: string) { return this.service.getSalesOrder(id); }
+  @Post('salesorders') createSalesOrder(@Body() body: unknown) { return this.service.createSalesOrder(body); }
+  @Put('salesorders/:id') updateSalesOrder(@Param('id') id: string, @Body() body: unknown) { return this.service.updateSalesOrder(id, body); }
+  @Delete('salesorders/:id') deleteSalesOrder(@Param('id') id: string) { return this.service.deleteSalesOrder(id); }
+
+  @Get('purchaseorders') listPurchaseOrders(@Query() q: Record<string, unknown>) { return this.service.listPurchaseOrders(q); }
+  @Get('purchaseorders/:id') getPurchaseOrder(@Param('id') id: string) { return this.service.getPurchaseOrder(id); }
+  @Post('purchaseorders') createPurchaseOrder(@Body() body: unknown) { return this.service.createPurchaseOrder(body); }
+  @Put('purchaseorders/:id') updatePurchaseOrder(@Param('id') id: string, @Body() body: unknown) { return this.service.updatePurchaseOrder(id, body); }
+  @Delete('purchaseorders/:id') deletePurchaseOrder(@Param('id') id: string) { return this.service.deletePurchaseOrder(id); }
+}
+
+import {
+  Controller, Get, Post, Put, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoInvoiceService } from './zoho-invoice.service';
+
+@Controller('zoho-invoice')
+export class ZohoInvoiceController {
+  constructor(private readonly service: ZohoInvoiceService) {}
+
+  @Get('customers') listCustomers(@Query() q: Record<string, unknown>) { return this.service.listCustomers(q); }
+  @Get('customers/:id') getCustomer(@Param('id') id: string) { return this.service.getCustomer(id); }
+  @Post('customers') createCustomer(@Body() body: unknown) { return this.service.createCustomer(body); }
+  @Put('customers/:id') updateCustomer(@Param('id') id: string, @Body() body: unknown) { return this.service.updateCustomer(id, body); }
+  @Delete('customers/:id') deleteCustomer(@Param('id') id: string) { return this.service.deleteCustomer(id); }
+
+  @Get('invoices') listInvoices(@Query() q: Record<string, unknown>) { return this.service.listInvoices(q); }
+  @Get('invoices/:id') getInvoice(@Param('id') id: string) { return this.service.getInvoice(id); }
+  @Post('invoices') createInvoice(@Body() body: unknown) { return this.service.createInvoice(body); }
+  @Put('invoices/:id') updateInvoice(@Param('id') id: string, @Body() body: unknown) { return this.service.updateInvoice(id, body); }
+  @Delete('invoices/:id') deleteInvoice(@Param('id') id: string) { return this.service.deleteInvoice(id); }
+  @Post('invoices/:id/send') sendInvoice(@Param('id') id: string) { return this.service.sendInvoice(id); }
+
+  @Get('estimates') listEstimates(@Query() q: Record<string, unknown>) { return this.service.listEstimates(q); }
+  @Get('estimates/:id') getEstimate(@Param('id') id: string) { return this.service.getEstimate(id); }
+  @Post('estimates') createEstimate(@Body() body: unknown) { return this.service.createEstimate(body); }
+  @Put('estimates/:id') updateEstimate(@Param('id') id: string, @Body() body: unknown) { return this.service.updateEstimate(id, body); }
+  @Delete('estimates/:id') deleteEstimate(@Param('id') id: string) { return this.service.deleteEstimate(id); }
+
+  @Get('recurring-invoices') listRecurringInvoices(@Query() q: Record<string, unknown>) { return this.service.listRecurringInvoices(q); }
+  @Get('recurring-invoices/:id') getRecurringInvoice(@Param('id') id: string) { return this.service.getRecurringInvoice(id); }
+  @Post('recurring-invoices') createRecurringInvoice(@Body() body: unknown) { return this.service.createRecurringInvoice(body); }
+  @Delete('recurring-invoices/:id') deleteRecurringInvoice(@Param('id') id: string) { return this.service.deleteRecurringInvoice(id); }
+
+  @Get('payments') listPayments(@Query() q: Record<string, unknown>) { return this.service.listPayments(q); }
+  @Post('payments') createPayment(@Body() body: unknown) { return this.service.createPayment(body); }
+  @Delete('payments/:id') deletePayment(@Param('id') id: string) { return this.service.deletePayment(id); }
+}
+
+import {
+  Controller, Get, Post, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoMailService } from './zoho-mail.service';
+
+@Controller('zoho-mail')
+export class ZohoMailController {
+  constructor(private readonly service: ZohoMailService) {}
+
+  @Get('accounts') listAccounts() { return this.service.listAccounts(); }
+  @Get('accounts/:accountId') getAccount(@Param('accountId') id: string) { return this.service.getAccount(id); }
+
+  @Get('accounts/:accountId/folders') listFolders(@Param('accountId') id: string) { return this.service.listFolders(id); }
+
+  @Get('accounts/:accountId/folders/:folderId/messages') listMessages(@Param('accountId') aId: string, @Param('folderId') fId: string, @Query() q: Record<string, unknown>) { return this.service.listMessages(aId, fId, q); }
+  @Get('accounts/:accountId/messages/search') searchMessages(@Param('accountId') aId: string, @Query('searchKey') key: string, @Query() q: Record<string, unknown>) { return this.service.searchMessages(aId, key, q); }
+  @Get('accounts/:accountId/messages/:messageId') getMessage(@Param('accountId') aId: string, @Param('messageId') mId: string) { return this.service.getMessage(aId, mId); }
+  @Post('accounts/:accountId/messages') sendMessage(@Param('accountId') aId: string, @Body() body: unknown) { return this.service.sendMessage(aId, body); }
+  @Delete('accounts/:accountId/messages/:messageId') deleteMessage(@Param('accountId') aId: string, @Param('messageId') mId: string) { return this.service.deleteMessage(aId, mId); }
+  @Post('accounts/:accountId/messages/:messageId/move') moveMessage(@Param('accountId') aId: string, @Param('messageId') mId: string, @Body() body: { targetFolderId: string }) { return this.service.moveMessage(aId, mId, body.targetFolderId); }
+  @Post('accounts/:accountId/messages/:messageId/read') markRead(@Param('accountId') aId: string, @Param('messageId') mId: string, @Body() body: { isRead: boolean }) { return this.service.markRead(aId, mId, body.isRead); }
+
+  @Get('accounts/:accountId/contacts') listContacts(@Param('accountId') aId: string) { return this.service.listContacts(aId); }
+  @Post('accounts/:accountId/contacts') createContact(@Param('accountId') aId: string, @Body() body: unknown) { return this.service.createContact(aId, body); }
+  @Delete('accounts/:accountId/contacts/:contactId') deleteContact(@Param('accountId') aId: string, @Param('contactId') cId: string) { return this.service.deleteContact(aId, cId); }
+}
+
+import {
+  Controller, Get, Post, Put, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoPayrollService } from './zoho-payroll.service';
+
+@Controller('zoho-payroll')
+export class ZohoPayrollController {
+  constructor(private readonly service: ZohoPayrollService) {}
+
+  @Get('employees') listEmployees(@Query() q: Record<string, unknown>) { return this.service.listEmployees(q); }
+  @Get('employees/:id') getEmployee(@Param('id') id: string) { return this.service.getEmployee(id); }
+  @Post('employees') createEmployee(@Body() body: unknown) { return this.service.createEmployee(body); }
+  @Put('employees/:id') updateEmployee(@Param('id') id: string, @Body() body: unknown) { return this.service.updateEmployee(id, body); }
+  @Post('employees/:id/terminate') terminateEmployee(@Param('id') id: string, @Body() body: { terminationDate: string; reason?: string }) { return this.service.terminateEmployee(id, body.terminationDate, body.reason); }
+
+  @Get('pay-components') listPayComponents() { return this.service.listPayComponents(); }
+  @Get('pay-components/:id') getPayComponent(@Param('id') id: string) { return this.service.getPayComponent(id); }
+
+  @Get('payruns') listPayRuns(@Query() q: Record<string, unknown>) { return this.service.listPayRuns(q); }
+  @Get('payruns/:id') getPayRun(@Param('id') id: string) { return this.service.getPayRun(id); }
+  @Post('payruns') createPayRun(@Body() body: unknown) { return this.service.createPayRun(body); }
+  @Post('payruns/:id/approve') approvePayRun(@Param('id') id: string) { return this.service.approvePayRun(id); }
+
+  @Get('payruns/:payRunId/payslips') listPayslips(@Param('payRunId') payRunId: string) { return this.service.listPayslips(payRunId); }
+  @Get('payruns/:payRunId/payslips/:payslipId') getPayslip(@Param('payRunId') payRunId: string, @Param('payslipId') payslipId: string) { return this.service.getPayslip(payRunId, payslipId); }
+
+  @Get('declarations') listDeclarations(@Query() q: Record<string, unknown>) { return this.service.listDeclarations(q); }
+  @Get('declarations/:id') getDeclaration(@Param('id') id: string) { return this.service.getDeclaration(id); }
+}
+
+import {
+  Controller, Get, Post, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoPeopleService } from './zoho-people.service';
+
+@Controller('zoho-people')
+export class ZohoPeopleController {
+  constructor(private readonly service: ZohoPeopleService) {}
+
+  @Get('employees') listEmployees(@Query() q: Record<string, unknown>) { return this.service.listEmployees(q); }
+  @Get('employees/:id') getEmployee(@Param('id') id: string) { return this.service.getEmployee(id); }
+  @Post('employees') addEmployee(@Body() body: unknown) { return this.service.addEmployee(body); }
+  @Post('employees/:id') updateEmployee(@Param('id') id: string, @Body() body: unknown) { return this.service.updateEmployee(id, body); }
+  @Delete('employees/:id') deleteEmployee(@Param('id') id: string) { return this.service.deleteEmployee(id); }
+
+  @Get('departments') listDepartments() { return this.service.listDepartments(); }
+  @Get('leave-types') listLeaveTypes() { return this.service.listLeaveTypes(); }
+
+  @Get('leave-requests') listLeaveRequests(@Query() q: Record<string, unknown>) { return this.service.listLeaveRequests(q); }
+  @Post('leave-requests') addLeaveRequest(@Body() body: unknown) { return this.service.addLeaveRequest(body); }
+  @Post('leave-requests/:id/approve') approveLeave(@Param('id') id: string) { return this.service.approveLeave(id); }
+  @Post('leave-requests/:id/reject') rejectLeave(@Param('id') id: string, @Body() body: { reason?: string }) { return this.service.rejectLeave(id, body.reason); }
+
+  @Get('attendance/:empId') listAttendance(
+    @Param('empId') empId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) { return this.service.listAttendance(empId, from, to); }
+
+  @Get('forms/:formName/records') getFormRecords(@Param('formName') formName: string, @Query() q: Record<string, unknown>) { return this.service.getFormRecords(formName, q); }
+  @Post('forms/:formName/records') addFormRecord(@Param('formName') formName: string, @Body() body: Record<string, unknown>) { return this.service.addFormRecord(formName, body); }
+  @Post('forms/:formName/records/:id') updateFormRecord(@Param('formName') formName: string, @Param('id') id: string, @Body() body: Record<string, unknown>) { return this.service.updateFormRecord(formName, id, body); }
+}
+
+import {
+  Controller, Get, Post, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoProjectsService } from './zoho-projects.service';
+
+@Controller('zoho-projects')
+export class ZohoProjectsController {
+  constructor(private readonly service: ZohoProjectsService) {}
+
+  @Get('projects') listProjects(@Query() q: Record<string, unknown>) { return this.service.listProjects(q); }
+  @Get('projects/:id') getProject(@Param('id') id: string) { return this.service.getProject(id); }
+  @Post('projects') createProject(@Body() body: unknown) { return this.service.createProject(body); }
+  @Post('projects/:id') updateProject(@Param('id') id: string, @Body() body: unknown) { return this.service.updateProject(id, body); }
+  @Delete('projects/:id') deleteProject(@Param('id') id: string) { return this.service.deleteProject(id); }
+
+  @Get('projects/:projectId/tasks') listTasks(@Param('projectId') projectId: string, @Query() q: Record<string, unknown>) { return this.service.listTasks(projectId, q); }
+  @Get('projects/:projectId/tasks/:taskId') getTask(@Param('projectId') projectId: string, @Param('taskId') taskId: string) { return this.service.getTask(projectId, taskId); }
+  @Post('projects/:projectId/tasks') createTask(@Param('projectId') projectId: string, @Body() body: unknown) { return this.service.createTask(projectId, body); }
+  @Post('projects/:projectId/tasks/:taskId') updateTask(@Param('projectId') projectId: string, @Param('taskId') taskId: string, @Body() body: unknown) { return this.service.updateTask(projectId, taskId, body); }
+  @Delete('projects/:projectId/tasks/:taskId') deleteTask(@Param('projectId') projectId: string, @Param('taskId') taskId: string) { return this.service.deleteTask(projectId, taskId); }
+
+  @Get('projects/:projectId/milestones') listMilestones(@Param('projectId') projectId: string) { return this.service.listMilestones(projectId); }
+
+  @Get('projects/:projectId/bugs') listBugs(@Param('projectId') projectId: string) { return this.service.listBugs(projectId); }
+  @Get('projects/:projectId/bugs/:bugId') getBug(@Param('projectId') projectId: string, @Param('bugId') bugId: string) { return this.service.getBug(projectId, bugId); }
+  @Post('projects/:projectId/bugs') createBug(@Param('projectId') projectId: string, @Body() body: unknown) { return this.service.createBug(projectId, body); }
+  @Post('projects/:projectId/bugs/:bugId') updateBug(@Param('projectId') projectId: string, @Param('bugId') bugId: string, @Body() body: unknown) { return this.service.updateBug(projectId, bugId, body); }
+  @Delete('projects/:projectId/bugs/:bugId') deleteBug(@Param('projectId') projectId: string, @Param('bugId') bugId: string) { return this.service.deleteBug(projectId, bugId); }
+
+  @Get('projects/:projectId/timelogs') listTimeLogs(@Param('projectId') projectId: string) { return this.service.listTimeLogs(projectId); }
+  @Post('projects/:projectId/tasks/:taskId/timelogs') addTimeLog(@Param('projectId') projectId: string, @Param('taskId') taskId: string, @Body() body: unknown) { return this.service.addTimeLog(projectId, taskId, body); }
+  @Delete('projects/:projectId/tasks/:taskId/timelogs/:logId') deleteTimeLog(@Param('projectId') projectId: string, @Param('taskId') taskId: string, @Param('logId') logId: string) { return this.service.deleteTimeLog(projectId, taskId, logId); }
+}
+
+import {
+  Controller, Get, Post, Put, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoRecruitService } from './zoho-recruit.service';
+
+@Controller('zoho-recruit')
+export class ZohoRecruitController {
+  constructor(private readonly service: ZohoRecruitService) {}
+
+  @Get('job-openings') listJobOpenings(@Query() q: Record<string, unknown>) { return this.service.listJobOpenings(q); }
+  @Get('job-openings/:id') getJobOpening(@Param('id') id: string) { return this.service.getJobOpening(id); }
+  @Post('job-openings') createJobOpenings(@Body() body: { data: unknown[] }) { return this.service.createJobOpenings(body.data); }
+  @Put('job-openings') updateJobOpenings(@Body() body: { data: unknown[] }) { return this.service.updateJobOpenings(body.data); }
+  @Delete('job-openings/:id') deleteJobOpening(@Param('id') id: string) { return this.service.deleteJobOpening(id); }
+
+  @Get('candidates') listCandidates(@Query() q: Record<string, unknown>) { return this.service.listCandidates(q); }
+  @Get('candidates/search') searchCandidates(@Query() q: Record<string, unknown>) { return this.service.searchCandidates(q); }
+  @Get('candidates/:id') getCandidate(@Param('id') id: string) { return this.service.getCandidate(id); }
+  @Post('candidates') createCandidates(@Body() body: { data: unknown[] }) { return this.service.createCandidates(body.data); }
+  @Put('candidates') updateCandidates(@Body() body: { data: unknown[] }) { return this.service.updateCandidates(body.data); }
+  @Delete('candidates/:id') deleteCandidate(@Param('id') id: string) { return this.service.deleteCandidate(id); }
+
+  @Get('interviews') listInterviews(@Query() q: Record<string, unknown>) { return this.service.listInterviews(q); }
+  @Get('interviews/:id') getInterview(@Param('id') id: string) { return this.service.getInterview(id); }
+  @Post('interviews') createInterviews(@Body() body: { data: unknown[] }) { return this.service.createInterviews(body.data); }
+  @Delete('interviews/:id') deleteInterview(@Param('id') id: string) { return this.service.deleteInterview(id); }
+
+  @Get('offers') listOffers(@Query() q: Record<string, unknown>) { return this.service.listOffers(q); }
+  @Get('offers/:id') getOffer(@Param('id') id: string) { return this.service.getOffer(id); }
+}
+
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { ZohoSalesIQService } from './zoho-salesiq.service';
+
+@Controller('zoho-salesiq')
+export class ZohoSalesIQController {
+  constructor(private readonly service: ZohoSalesIQService) {}
+
+  @Get(':screenName/visitors')
+  listVisitors(@Param('screenName') screenName: string, @Query() params: Record<string, unknown>) {
+    return this.service.listVisitors(screenName, params);
+  }
+
+  @Get(':screenName/visitors/:visitorId')
+  getVisitor(@Param('screenName') screenName: string, @Param('visitorId') visitorId: string) {
+    return this.service.getVisitor(screenName, visitorId);
+  }
+
+  @Get(':screenName/visitors/search')
+  searchVisitors(@Param('screenName') screenName: string, @Query() params: Record<string, unknown>) {
+    return this.service.searchVisitors(screenName, params);
+  }
+
+  @Get(':screenName/chats')
+  listChats(@Param('screenName') screenName: string, @Query() params: Record<string, unknown>) {
+    return this.service.listChats(screenName, params);
+  }
+
+  @Get(':screenName/chats/:chatId')
+  getChat(@Param('screenName') screenName: string, @Param('chatId') chatId: string) {
+    return this.service.getChat(screenName, chatId);
+  }
+
+  @Get(':screenName/chats/:chatId/messages')
+  listChatMessages(@Param('screenName') screenName: string, @Param('chatId') chatId: string) {
+    return this.service.listChatMessages(screenName, chatId);
+  }
+
+  @Post(':screenName/chats/:chatId/messages')
+  sendChatMessage(
+    @Param('screenName') screenName: string,
+    @Param('chatId') chatId: string,
+    @Body('text') text: string,
+  ) { return this.service.sendChatMessage(screenName, chatId, text); }
+
+  @Post(':screenName/chats/:chatId/rating')
+  setRating(
+    @Param('screenName') screenName: string,
+    @Param('chatId') chatId: string,
+    @Body('rating') rating: number,
+  ) { return this.service.setRating(screenName, chatId, rating); }
+
+  @Get(':screenName/operators')
+  listOperators(@Param('screenName') screenName: string) { return this.service.listOperators(screenName); }
+
+  @Get(':screenName/operators/:operatorId')
+  getOperator(@Param('screenName') screenName: string, @Param('operatorId') operatorId: string) {
+    return this.service.getOperator(screenName, operatorId);
+  }
+
+  @Post(':screenName/operators/:operatorId/availability')
+  setOperatorAvailability(
+    @Param('screenName') screenName: string,
+    @Param('operatorId') operatorId: string,
+    @Body('status') status: string,
+  ) { return this.service.setOperatorAvailability(screenName, operatorId, status); }
+
+  @Get(':screenName/departments')
+  listDepartments(@Param('screenName') screenName: string) { return this.service.listDepartments(screenName); }
+
+  @Get(':screenName/departments/:id')
+  getDepartment(@Param('screenName') screenName: string, @Param('id') id: string) {
+    return this.service.getDepartment(screenName, id);
+  }
+
+  @Get(':screenName/bots')
+  listBots(@Param('screenName') screenName: string) { return this.service.listBots(screenName); }
+
+  @Post(':screenName/bots/:botId/messages')
+  sendBotMessage(
+    @Param('screenName') screenName: string,
+    @Param('botId') botId: string,
+    @Body() payload: unknown,
+  ) { return this.service.sendBotMessage(screenName, botId, payload); }
+
+  @Get(':screenName/feedback-forms')
+  listFeedbackForms(@Param('screenName') screenName: string) { return this.service.listFeedbackForms(screenName); }
+}
+
+import {
+  Controller, Get, Post, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoSignService } from './zoho-sign.service';
+
+@Controller('zoho-sign')
+export class ZohoSignController {
+  constructor(private readonly service: ZohoSignService) {}
+
+  @Get('requests') listRequests(@Query() q: Record<string, unknown>) { return this.service.listRequests(q); }
+  @Get('requests/:id') getRequest(@Param('id') id: string) { return this.service.getRequest(id); }
+  @Post('requests') createRequest(@Body() body: unknown) { return this.service.createRequest(body); }
+  @Post('requests/:id/send') sendRequest(@Param('id') id: string) { return this.service.sendRequest(id); }
+  @Delete('requests/:id') deleteRequest(@Param('id') id: string) { return this.service.deleteRequest(id); }
+  @Post('requests/:id/recall') recallRequest(@Param('id') id: string) { return this.service.recallRequest(id); }
+  @Post('requests/:id/remind') remindRequest(@Param('id') id: string) { return this.service.remindRequest(id); }
+
+  @Get('templates') listTemplates(@Query() q: Record<string, unknown>) { return this.service.listTemplates(q); }
+  @Get('templates/:id') getTemplate(@Param('id') id: string) { return this.service.getTemplate(id); }
+  @Post('templates/:id/create-request') createRequestFromTemplate(@Param('id') id: string, @Body() body: unknown) { return this.service.createRequestFromTemplate(id, body); }
+
+  @Get('requests/:requestId/documents/:documentId') getDocument(@Param('requestId') reqId: string, @Param('documentId') docId: string) { return this.service.getDocument(reqId, docId); }
+  @Get('requests/:requestId/documents/:documentId/download') downloadDocument(@Param('requestId') reqId: string, @Param('documentId') docId: string) { return this.service.downloadDocument(reqId, docId); }
+}
+
+import {
+  Controller, Get, Post, Put, Delete, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoSubscriptionsService } from './zoho-subscriptions.service';
+
+@Controller('zoho-subscriptions')
+export class ZohoSubscriptionsController {
+  constructor(private readonly service: ZohoSubscriptionsService) {}
+
+  @Get('plans') listPlans(@Query() q: Record<string, unknown>) { return this.service.listPlans(q); }
+  @Get('plans/:code') getPlan(@Param('code') code: string) { return this.service.getPlan(code); }
+  @Post('plans') createPlan(@Body() body: unknown) { return this.service.createPlan(body); }
+  @Put('plans/:code') updatePlan(@Param('code') code: string, @Body() body: unknown) { return this.service.updatePlan(code, body); }
+  @Delete('plans/:code') deletePlan(@Param('code') code: string) { return this.service.deletePlan(code); }
+
+  @Get('addons') listAddons() { return this.service.listAddons(); }
+  @Get('addons/:code') getAddon(@Param('code') code: string) { return this.service.getAddon(code); }
+
+  @Get('coupons') listCoupons() { return this.service.listCoupons(); }
+  @Get('coupons/:code') getCoupon(@Param('code') code: string) { return this.service.getCoupon(code); }
+
+  @Get('customers') listCustomers(@Query() q: Record<string, unknown>) { return this.service.listCustomers(q); }
+  @Get('customers/:id') getCustomer(@Param('id') id: string) { return this.service.getCustomer(id); }
+  @Post('customers') createCustomer(@Body() body: unknown) { return this.service.createCustomer(body); }
+  @Put('customers/:id') updateCustomer(@Param('id') id: string, @Body() body: unknown) { return this.service.updateCustomer(id, body); }
+  @Delete('customers/:id') deleteCustomer(@Param('id') id: string) { return this.service.deleteCustomer(id); }
+
+  @Get('subscriptions') listSubscriptions(@Query() q: Record<string, unknown>) { return this.service.listSubscriptions(q); }
+  @Get('subscriptions/:id') getSubscription(@Param('id') id: string) { return this.service.getSubscription(id); }
+  @Post('subscriptions') createSubscription(@Body() body: unknown) { return this.service.createSubscription(body); }
+  @Put('subscriptions/:id') updateSubscription(@Param('id') id: string, @Body() body: unknown) { return this.service.updateSubscription(id, body); }
+  @Post('subscriptions/:id/cancel') cancelSubscription(@Param('id') id: string) { return this.service.cancelSubscription(id); }
+  @Post('subscriptions/:id/reactivate') reactivateSubscription(@Param('id') id: string) { return this.service.reactivateSubscription(id); }
+}
+
+import {
+  Controller, Get, Post, Delete, Patch, Param, Body, Query,
+} from '@nestjs/common';
+import { ZohoWorkdriveService } from './zoho-workdrive.service';
+
+@Controller('zoho-workdrive')
+export class ZohoWorkdriveController {
+  constructor(private readonly service: ZohoWorkdriveService) {}
+
+  @Get('teams') listTeams() { return this.service.listTeams(); }
+  @Get('teams/:id') getTeam(@Param('id') id: string) { return this.service.getTeam(id); }
+  @Get('teams/:teamId/files/search') searchFiles(@Param('teamId') teamId: string, @Query('q') query: string) { return this.service.searchFiles(teamId, query); }
+
+  @Get('folders/:id') getFolder(@Param('id') id: string) { return this.service.getFolder(id); }
+  @Post('folders') createFolder(@Body() body: unknown) { return this.service.createFolder(body); }
+  @Patch('folders/:id/rename') renameFolder(@Param('id') id: string, @Body() body: { name: string }) { return this.service.renameFolder(id, body.name); }
+  @Delete('folders/:id') deleteFolder(@Param('id') id: string) { return this.service.deleteFolder(id); }
+  @Get('folders/:folderId/files') listFolderContents(@Param('folderId') fId: string, @Query() q: Record<string, unknown>) { return this.service.listFolderContents(fId, q); }
+
+  @Get('files/:id') getFile(@Param('id') id: string) { return this.service.getFile(id); }
+  @Post('files/:fileId/copy') copyFile(@Param('fileId') fId: string, @Body() body: { targetFolderId: string }) { return this.service.copyFile(fId, body.targetFolderId); }
+  @Patch('files/:fileId/move') moveFile(@Param('fileId') fId: string, @Body() body: { targetFolderId: string }) { return this.service.moveFile(fId, body.targetFolderId); }
+  @Delete('files/:id') deleteFile(@Param('id') id: string) { return this.service.deleteFile(id); }
+
+  @Post('sharelinks') createShareLink(@Body() body: unknown) { return this.service.createShareLink(body); }
+  @Get('files/:fileId/sharelinks') getShareLink(@Param('fileId') fId: string) { return this.service.getShareLink(fId); }
+
+  @Get('workspaces/:workspaceId/members') listWorkspaceMembers(@Param('workspaceId') wsId: string) { return this.service.listWorkspaceMembers(wsId); }
+  @Post('workspaces/:workspaceId/members') addWorkspaceMember(@Param('workspaceId') wsId: string, @Body() body: { email: string; role: string }) { return this.service.addWorkspaceMember(wsId, body.email, body.role); }
+  @Delete('workspaces/:workspaceId/members/:memberId') removeWorkspaceMember(@Param('workspaceId') wsId: string, @Param('memberId') mId: string) { return this.service.removeWorkspaceMember(wsId, mId); }
+}
+

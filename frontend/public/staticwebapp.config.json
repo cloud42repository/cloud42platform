@@ -1,0 +1,12 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/*.{js,css,map,json,ico,png,svg,woff,woff2}"]
+  },
+  "globalHeaders": {
+    "Cache-Control": "no-store"
+  },
+  "mimeTypes": {
+    ".json": "application/json"
+  }
+}
