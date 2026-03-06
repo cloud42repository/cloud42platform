@@ -1,5 +1,5 @@
 ﻿import { ZohoAddress, ZohoTax, ZohoListParams } from "../shared/shared.dto";
-import { BooksLineItem, InvoiceStatus } from "./zoho-books.dto";
+import { BooksLineItem, InvoiceStatus } from "./../zoho-books/zoho-books.dto";
 
 // â”€â”€â”€ Customer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
