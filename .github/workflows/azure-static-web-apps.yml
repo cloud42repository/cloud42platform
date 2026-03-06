@@ -43,9 +43,10 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           skip_deploy_on_missing_secrets: true
-          app_location: "frontend"
+          # With skip_app_build=true, app_location IS the artifact root (output_location is ignored)
+          app_location: "frontend/dist/frontend/browser"
           api_location: ""
-          output_location: "dist/frontend/browser"
+          output_location: ""
           skip_app_build: true
 
   close_pull_request_job:
