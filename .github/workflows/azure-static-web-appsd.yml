@@ -44,7 +44,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           skip_deploy_on_missing_secrets: true
-          app_location: /
+          app_location: "."
           # Angular 17+ (@angular/build:application) outputs to dist/<name>/browser
           output_location: frontend/dist/frontend/browser
           skip_app_build: true  # we build manually above so envs are available
