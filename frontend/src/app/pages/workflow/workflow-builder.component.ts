@@ -104,7 +104,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
                cdkDropList
                id="controlFlowList"
                [cdkDropListData]="controlFlowItems"
-               [cdkDropListConnectedTo]="['workflowCanvas']"
+               [cdkDropListConnectedTo]="allBranchDropIds()"
                (cdkDropListDropped)="onBrowserDrop($event)">
             @for (item of controlFlowItems; track item.kind) {
               <div class="cf-item"
@@ -129,7 +129,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
              cdkDropList
              #browserList="cdkDropList"
              [cdkDropListData]="flatEndpoints()"
-             [cdkDropListConnectedTo]="['workflowCanvas']"
+             [cdkDropListConnectedTo]="allBranchDropIds()"
              [cdkDropListSortingDisabled]="true"
              (cdkDropListDropped)="onBrowserDrop($event)">
 
@@ -174,7 +174,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
       </div>
 
       <!-- CENTER: canvas ──────────────────────────────────────────────────── -->
-      <div class="canvas-panel">
+      <div class="canvas-panel" cdkDropListGroup>
         <div class="canvas-header">
           <mat-icon>account_tree</mat-icon>
           <span>Workflow Steps</span>
@@ -268,14 +268,58 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
                         <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
                       </div>
                     </div>
-                    <div class="block-branches">
-                      <div class="branch branch--try">
-                        <span class="branch-label">TRY</span>
-                        <span class="branch-count">{{ block.trySteps.length }} step{{ block.trySteps.length !== 1 ? 's' : '' }}</span>
+                    <div class="block-branches-expanded" (click)="$event.stopPropagation()">
+                      <!-- TRY zone -->
+                      <div class="branch-col branch-col--try">
+                        <div class="branch-col-header">
+                          <span class="branch-label">TRY</span>
+                          <span class="branch-count">{{ block.trySteps.length }}</span>
+                        </div>
+                        <div class="branch-drop"
+                             cdkDropList
+                             [id]="'block-' + block.id + '-try'"
+                             [cdkDropListData]="block.trySteps"
+                             [cdkDropListConnectedTo]="['browserList', 'controlFlowList']"
+                             (cdkDropListDropped)="onBranchDrop($event, block.id, 'trySteps')">
+                          @for (s of block.trySteps; track s.id) {
+                            <div class="inner-step" cdkDrag [cdkDragData]="s">
+                              <mat-icon class="inner-step-icon">{{ s.kind === 'endpoint' ? 'api' : 'device_hub' }}</mat-icon>
+                              <span class="inner-step-label">{{ getNodeLabel(s) }}</span>
+                              <mat-icon cdkDragHandle class="drag-handle">drag_indicator</mat-icon>
+                              <button mat-icon-button class="inner-remove-btn" (click)="$event.stopPropagation(); removeFromBranch(block.id, 'trySteps', s.id)" matTooltip="Remove"><mat-icon>close</mat-icon></button>
+                              <div *cdkDragPlaceholder class="inner-drag-placeholder"></div>
+                            </div>
+                          }
+                          @if (block.trySteps.length === 0) {
+                            <div class="branch-drop-hint">Drop here</div>
+                          }
+                        </div>
                       </div>
-                      <div class="branch branch--catch">
-                        <span class="branch-label">CATCH</span>
-                        <span class="branch-count">{{ block.catchSteps.length }} step{{ block.catchSteps.length !== 1 ? 's' : '' }}</span>
+                      <!-- CATCH zone -->
+                      <div class="branch-col branch-col--catch">
+                        <div class="branch-col-header">
+                          <span class="branch-label">CATCH</span>
+                          <span class="branch-count">{{ block.catchSteps.length }}</span>
+                        </div>
+                        <div class="branch-drop"
+                             cdkDropList
+                             [id]="'block-' + block.id + '-catch'"
+                             [cdkDropListData]="block.catchSteps"
+                             [cdkDropListConnectedTo]="['browserList', 'controlFlowList']"
+                             (cdkDropListDropped)="onBranchDrop($event, block.id, 'catchSteps')">
+                          @for (s of block.catchSteps; track s.id) {
+                            <div class="inner-step" cdkDrag [cdkDragData]="s">
+                              <mat-icon class="inner-step-icon">{{ s.kind === 'endpoint' ? 'api' : 'device_hub' }}</mat-icon>
+                              <span class="inner-step-label">{{ getNodeLabel(s) }}</span>
+                              <mat-icon cdkDragHandle class="drag-handle">drag_indicator</mat-icon>
+                              <button mat-icon-button class="inner-remove-btn" (click)="$event.stopPropagation(); removeFromBranch(block.id, 'catchSteps', s.id)" matTooltip="Remove"><mat-icon>close</mat-icon></button>
+                              <div *cdkDragPlaceholder class="inner-drag-placeholder"></div>
+                            </div>
+                          }
+                          @if (block.catchSteps.length === 0) {
+                            <div class="branch-drop-hint">Drop here</div>
+                          }
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -299,10 +343,32 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
                         <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
                       </div>
                     </div>
-                    <div class="block-branches">
-                      <div class="branch branch--body">
-                        <span class="branch-label">BODY</span>
-                        <span class="branch-count">{{ block.bodySteps.length }} step{{ block.bodySteps.length !== 1 ? 's' : '' }}</span>
+                    <div class="block-branches-expanded" (click)="$event.stopPropagation()">
+                      <!-- BODY zone -->
+                      <div class="branch-col branch-col--body" style="flex:1">
+                        <div class="branch-col-header">
+                          <span class="branch-label">BODY</span>
+                          <span class="branch-count">{{ block.bodySteps.length }}</span>
+                        </div>
+                        <div class="branch-drop"
+                             cdkDropList
+                             [id]="'block-' + block.id + '-body'"
+                             [cdkDropListData]="block.bodySteps"
+                             [cdkDropListConnectedTo]="['browserList', 'controlFlowList']"
+                             (cdkDropListDropped)="onBranchDrop($event, block.id, 'bodySteps')">
+                          @for (s of block.bodySteps; track s.id) {
+                            <div class="inner-step" cdkDrag [cdkDragData]="s">
+                              <mat-icon class="inner-step-icon">{{ s.kind === 'endpoint' ? 'api' : 'device_hub' }}</mat-icon>
+                              <span class="inner-step-label">{{ getNodeLabel(s) }}</span>
+                              <mat-icon cdkDragHandle class="drag-handle">drag_indicator</mat-icon>
+                              <button mat-icon-button class="inner-remove-btn" (click)="$event.stopPropagation(); removeFromBranch(block.id, 'bodySteps', s.id)" matTooltip="Remove"><mat-icon>close</mat-icon></button>
+                              <div *cdkDragPlaceholder class="inner-drag-placeholder"></div>
+                            </div>
+                          }
+                          @if (block.bodySteps.length === 0) {
+                            <div class="branch-drop-hint">Drop here</div>
+                          }
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -326,14 +392,58 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
                         <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
                       </div>
                     </div>
-                    <div class="block-branches">
-                      <div class="branch branch--then">
-                        <span class="branch-label">THEN</span>
-                        <span class="branch-count">{{ block.thenSteps.length }} step{{ block.thenSteps.length !== 1 ? 's' : '' }}</span>
+                    <div class="block-branches-expanded" (click)="$event.stopPropagation()">
+                      <!-- THEN zone -->
+                      <div class="branch-col branch-col--then">
+                        <div class="branch-col-header">
+                          <span class="branch-label">THEN</span>
+                          <span class="branch-count">{{ block.thenSteps.length }}</span>
+                        </div>
+                        <div class="branch-drop"
+                             cdkDropList
+                             [id]="'block-' + block.id + '-then'"
+                             [cdkDropListData]="block.thenSteps"
+                             [cdkDropListConnectedTo]="['browserList', 'controlFlowList']"
+                             (cdkDropListDropped)="onBranchDrop($event, block.id, 'thenSteps')">
+                          @for (s of block.thenSteps; track s.id) {
+                            <div class="inner-step" cdkDrag [cdkDragData]="s">
+                              <mat-icon class="inner-step-icon">{{ s.kind === 'endpoint' ? 'api' : 'device_hub' }}</mat-icon>
+                              <span class="inner-step-label">{{ getNodeLabel(s) }}</span>
+                              <mat-icon cdkDragHandle class="drag-handle">drag_indicator</mat-icon>
+                              <button mat-icon-button class="inner-remove-btn" (click)="$event.stopPropagation(); removeFromBranch(block.id, 'thenSteps', s.id)" matTooltip="Remove"><mat-icon>close</mat-icon></button>
+                              <div *cdkDragPlaceholder class="inner-drag-placeholder"></div>
+                            </div>
+                          }
+                          @if (block.thenSteps.length === 0) {
+                            <div class="branch-drop-hint">Drop here</div>
+                          }
+                        </div>
                       </div>
-                      <div class="branch branch--else">
-                        <span class="branch-label">ELSE</span>
-                        <span class="branch-count">{{ block.elseSteps.length }} step{{ block.elseSteps.length !== 1 ? 's' : '' }}</span>
+                      <!-- ELSE zone -->
+                      <div class="branch-col branch-col--else">
+                        <div class="branch-col-header">
+                          <span class="branch-label">ELSE</span>
+                          <span class="branch-count">{{ block.elseSteps.length }}</span>
+                        </div>
+                        <div class="branch-drop"
+                             cdkDropList
+                             [id]="'block-' + block.id + '-else'"
+                             [cdkDropListData]="block.elseSteps"
+                             [cdkDropListConnectedTo]="['browserList', 'controlFlowList']"
+                             (cdkDropListDropped)="onBranchDrop($event, block.id, 'elseSteps')">
+                          @for (s of block.elseSteps; track s.id) {
+                            <div class="inner-step" cdkDrag [cdkDragData]="s">
+                              <mat-icon class="inner-step-icon">{{ s.kind === 'endpoint' ? 'api' : 'device_hub' }}</mat-icon>
+                              <span class="inner-step-label">{{ getNodeLabel(s) }}</span>
+                              <mat-icon cdkDragHandle class="drag-handle">drag_indicator</mat-icon>
+                              <button mat-icon-button class="inner-remove-btn" (click)="$event.stopPropagation(); removeFromBranch(block.id, 'elseSteps', s.id)" matTooltip="Remove"><mat-icon>close</mat-icon></button>
+                              <div *cdkDragPlaceholder class="inner-drag-placeholder"></div>
+                            </div>
+                          }
+                          @if (block.elseSteps.length === 0) {
+                            <div class="branch-drop-hint">Drop here</div>
+                          }
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1030,6 +1140,69 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
     /* CDK drag active */
     .cdk-drag-animating { transition: transform 250ms cubic-bezier(0,0,.2,1); }
     .step-list.cdk-drop-list-dragging .step-card:not(.cdk-drag-placeholder) { transition: transform 250ms cubic-bezier(0,0,.2,1); }
+
+    /* ── Inline branch drop zones on canvas cards ── */
+    .block-branches-expanded {
+      display: flex; border-top: 1px solid #e2e8f0;
+    }
+    .branch-col {
+      flex: 1; display: flex; flex-direction: column; min-width: 0;
+    }
+    .branch-col + .branch-col { border-left: 1px solid #e2e8f0; }
+    .branch-col-header {
+      display: flex; align-items: center; gap: 4px;
+      padding: 3px 8px 2px; background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .branch-col-header .branch-label {
+      font-size: 9px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
+    }
+    .branch-col-header .branch-count {
+      font-size: 9px; color: #94a3b8; margin-left: auto;
+    }
+    .branch-col--try   .branch-col-header .branch-label { color: #d97706; }
+    .branch-col--catch .branch-col-header .branch-label { color: #dc2626; }
+    .branch-col--body  .branch-col-header .branch-label { color: #7c3aed; }
+    .branch-col--then  .branch-col-header .branch-label { color: #16a34a; }
+    .branch-col--else  .branch-col-header .branch-label { color: #dc2626; }
+
+    .branch-drop {
+      flex: 1; padding: 4px; min-height: 40px;
+      display: flex; flex-direction: column; gap: 2px;
+      transition: background .15s;
+    }
+    .branch-drop.cdk-drop-list-receiving {
+      background: #eff6ff;
+      outline: 2px dashed #7dd3fc;
+      outline-offset: -2px;
+      border-radius: 4px;
+    }
+    .branch-drop.cdk-drop-list-dragging {
+      background: #f0fdf4;
+    }
+    .branch-drop-hint {
+      font-size: 10px; color: #94a3b8; text-align: center;
+      padding: 6px 4px; border-radius: 4px;
+      border: 1px dashed #d1d5db; margin: 2px;
+    }
+    .inner-step {
+      display: flex; align-items: center; gap: 4px;
+      padding: 3px 4px 3px 6px; border-radius: 4px;
+      background: white; border: 1px solid #e2e8f0;
+      font-size: 10px; color: #374151; cursor: default;
+    }
+    .inner-step:hover { border-color: #93c5fd; background: #eff6ff; }
+    .inner-step-icon { font-size: 12px; width: 12px; height: 12px; color: #0284c7; flex-shrink: 0; }
+    .inner-step-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .inner-remove-btn {
+      width: 20px !important; height: 20px !important; line-height: 20px !important; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .inner-remove-btn mat-icon { font-size: 12px; width: 12px; height: 12px; }
+    .inner-drag-placeholder {
+      height: 22px; border-radius: 4px;
+      background: #dbeafe; border: 1px dashed #93c5fd;
+    }
   `]
 })
 export class WorkflowBuilderComponent implements OnInit {
@@ -1119,15 +1292,23 @@ export class WorkflowBuilderComponent implements OnInit {
 
   onCanvasDrop(event: CdkDragDrop<WorkflowNode[]>) {
     if (event.previousContainer === event.container) {
+      // Reorder within canvas
       const arr = [...this.steps()];
       moveItemInArray(arr, event.previousIndex, event.currentIndex);
       this.steps.set(arr);
+    } else if (this.isWorkflowNode(event.item.data)) {
+      // Moved from a branch zone → canvas (cdkDropListGroup cross-container)
+      const node = event.item.data as WorkflowNode;
+      this.removeNodeFromContainer(event.previousContainer.id, node.id);
+      const arr = [...this.steps()];
+      arr.splice(event.currentIndex, 0, node);
+      this.steps.set(arr);
+      this.selectedStepId.set(node.id);
     } else {
-      // Coming from browser — could be EndpointRef or ControlFlowRef
+      // From browser — EndpointRef or ControlFlowRef
       const data = event.item.data as EndpointRef | ControlFlowRef;
       let newNode: WorkflowNode;
       if ('kind' in data && data.kind !== undefined && !('endpoint' in data)) {
-        // It's a ControlFlowRef
         newNode = this.makeBlock(data as ControlFlowRef);
       } else {
         newNode = this.makeStep(data as EndpointRef);
@@ -1169,6 +1350,77 @@ export class WorkflowBuilderComponent implements OnInit {
     }
   }
 
+  /** Drop handler for inner branch zones (try/catch/body/then/else). */
+  onBranchDrop(event: CdkDragDrop<WorkflowNode[]>, blockId: string, branch: string) {
+    if (event.previousContainer === event.container) {
+      // Reorder within the same branch
+      this.steps.update(ss => ss.map(s => {
+        if (s.id !== blockId) return s;
+        const blk = s as unknown as Record<string, unknown>;
+        const arr = [...(blk[branch] as WorkflowNode[])];
+        moveItemInArray(arr, event.previousIndex, event.currentIndex);
+        return { ...s, [branch]: arr };
+      }));
+    } else if (this.isWorkflowNode(event.item.data)) {
+      // Moved from canvas or another branch (cdkDropListGroup cross-container)
+      const node = event.item.data as WorkflowNode;
+      this.removeNodeFromContainer(event.previousContainer.id, node.id);
+      this.steps.update(ss => ss.map(s => {
+        if (s.id !== blockId) return s;
+        const blk = s as unknown as Record<string, unknown>;
+        const existing = [...((blk[branch] as WorkflowNode[]) ?? [])];
+        existing.splice(event.currentIndex, 0, node);
+        return { ...s, [branch]: existing };
+      }));
+    } else {
+      // From browser — EndpointRef or ControlFlowRef
+      const data = event.item.data as EndpointRef | ControlFlowRef;
+      let newStep: WorkflowNode;
+      if ('kind' in data && !('endpoint' in data)) {
+        newStep = this.makeBlock(data as ControlFlowRef);
+      } else {
+        newStep = this.makeStep(data as EndpointRef);
+      }
+      this.steps.update(ss => ss.map(s => {
+        if (s.id !== blockId) return s;
+        const blk = s as unknown as Record<string, unknown>;
+        const existing = [...((blk[branch] as WorkflowNode[]) ?? [])];
+        existing.splice(event.currentIndex, 0, newStep);
+        return { ...s, [branch]: existing };
+      }));
+    }
+  }
+
+  /** True when data is an already-existing WorkflowNode (not a browser ref). */
+  private isWorkflowNode(data: unknown): data is WorkflowNode {
+    return typeof data === 'object' && data !== null &&
+      'id' in data && 'kind' in data &&
+      !('module' in data) && !('color' in data);
+  }
+
+  /** Remove a node from wherever it currently lives (canvas or a branch). */
+  private removeNodeFromContainer(containerId: string, nodeId: string) {
+    if (containerId === 'workflowCanvas') {
+      this.steps.update(ss => ss.filter(s => s.id !== nodeId));
+    } else {
+      // container IDs are 'block-{blockId}-(try|catch|body|then|else)'
+      const match = containerId.match(/^block-(.+)-(try|catch|body|then|else)$/);
+      if (!match) return;
+      const [, blockId, suffix] = match;
+      const branchMap: Record<string, string> = {
+        try: 'trySteps', catch: 'catchSteps', body: 'bodySteps',
+        then: 'thenSteps', else: 'elseSteps',
+      };
+      const branchKey = branchMap[suffix];
+      if (!branchKey) return;
+      this.steps.update(ss => ss.map(s => {
+        if (s.id !== blockId) return s;
+        const blk = s as unknown as Record<string, unknown>;
+        return { ...s, [branchKey]: (blk[branchKey] as WorkflowNode[]).filter(n => n.id !== nodeId) };
+      }));
+    }
+  }
+
   removeStep(id: string) {
     this.steps.update(ss => ss.filter(s => s.id !== id));
     if (this.selectedStepId() === id) this.selectedStepId.set(null);
@@ -1200,6 +1452,21 @@ export class WorkflowBuilderComponent implements OnInit {
   readonly allEndpointRefs = computed<EndpointRef[]>(() =>
     MODULES.flatMap(mod => mod.endpoints.map(ep => ({ module: mod, endpoint: ep })))
   );
+
+  /** All cdkDropList IDs that the browser panel can drop into (canvas + every branch zone). */
+  readonly allBranchDropIds = computed<string[]>(() => {
+    const ids: string[] = ['workflowCanvas'];
+    for (const node of this.steps()) {
+      if (node.kind === 'try-catch') {
+        ids.push(`block-${node.id}-try`, `block-${node.id}-catch`);
+      } else if (node.kind === 'loop') {
+        ids.push(`block-${node.id}-body`);
+      } else if (node.kind === 'if-else') {
+        ids.push(`block-${node.id}-then`, `block-${node.id}-else`);
+      }
+    }
+    return ids;
+  });
 
   // ── Block mutation helpers ────────────────────────────────────────────────
   mutateBlock(id: string, value: unknown, field: string) {
