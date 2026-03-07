@@ -79,6 +79,14 @@ import { AuthService } from './services/auth.service';
             <span matListItemTitle>Calendar</span>
           </a>
           <a mat-list-item
+             routerLink="/invoice-dashboard"
+             routerLinkActive="active-link"
+             matTooltip="Invoice Dashboard"
+             matTooltipPosition="right">
+            <mat-icon matListItemIcon>bar_chart</mat-icon>
+            <span matListItemTitle>Invoice Dashboard</span>
+          </a>
+          <a mat-list-item
              routerLink="/settings"
              routerLinkActive="active-link"
              matTooltip="Settings"

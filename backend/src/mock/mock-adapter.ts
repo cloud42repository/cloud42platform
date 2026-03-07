@@ -1,4 +1,6 @@
 import type { AxiosInstance } from 'axios';
+import { randomInt } from 'crypto';
+import { InvoiceRecord } from 'src/zoho-invoice/zoho-invoice.dto';
 
 // axios-mock-adapter is a CJS module; use require() for compatibility.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -38,6 +40,19 @@ function resourceFromUrl(url: string): string {
 
 function buildRecord(resourceName: string, id?: string): Record<string, unknown> {
   const recordId = id ?? nextId();
+  if(resourceName.toLowerCase() === 'invoic') {
+    return {
+      invoice_id: recordId,
+      invoice_number: `INV-${recordId}`,
+      date: new Date().toISOString().split('T')[0],
+      due_date: new Date(Date.now() + 30 * 86_400_000).toISOString().split('T')[0],
+      status: 'draft',
+      customer_id: 'mock-cust-001',
+      customer_name: 'Mock Customer',
+      total: randomInt(100, 5000) / 100,
+      balance: randomInt(100, 5000) / 100,
+    };
+  }
   return {
     id: recordId,
     name: `${resourceName} ${recordId}`,
@@ -63,8 +78,8 @@ function buildGetResponse(url: string): unknown {
   }
 
   return {
-    data: [buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name)],
-    info: { count: 5, more_records: false, page: 1, per_page: 20 },
+    data: [buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name)],
+    info: { count: 11, more_records: false, page: 1, per_page: 20 },
   };
 }
 

@@ -1,0 +1,229 @@
+/* Dashboard wrapper */
+.dash-wrapper {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header */
+.dash-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.dash-icon {
+  font-size: 40px;
+  height: 40px;
+  width: 40px;
+  color: #1565c0;
+}
+
+.dash-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #1a237e;
+}
+
+.dash-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: #757575;
+}
+
+/* Loading */
+.loading-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  gap: 16px;
+}
+
+.loading-text {
+  color: #757575;
+  font-size: 0.95rem;
+}
+
+/* ── KPI Row ─────────────────────────────────────────────────────────── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+  transition: transform 0.18s, box-shadow 0.18s;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+  }
+
+  mat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 16px !important;
+  }
+
+  mat-icon {
+    font-size: 32px;
+    height: 32px;
+    width: 32px;
+    border-radius: 50%;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.kpi-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  color: #757575;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.kpi-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* KPI colour theming */
+.kpi-total   { mat-icon { background: #e3f2fd; color: #1565c0; } .kpi-value { color: #1565c0; } }
+.kpi-revenue { mat-icon { background: #e8f5e9; color: #2e7d32; } .kpi-value { color: #2e7d32; } }
+.kpi-paid    { mat-icon { background: #e8f5e9; color: #388e3c; } .kpi-value { color: #388e3c; } }
+.kpi-outstanding { mat-icon { background: #fff8e1; color: #f57f17; } .kpi-value { color: #f57f17; } }
+.kpi-overdue { mat-icon { background: #ffebee; color: #c62828; } .kpi-value { color: #c62828; } }
+.kpi-rate    { mat-icon { background: #f3e5f5; color: #6a1b9a; } .kpi-value { color: #6a1b9a; } }
+
+/* ── Chart Rows ──────────────────────────────────────────────────────── */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  @media (max-width: 800px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chart-card {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+
+  mat-card-content {
+    padding: 20px !important;
+    position: relative;
+  }
+
+  canvas {
+    max-height: 280px;
+  }
+}
+
+/* Gauge centre label overlay */
+.chart-gauge {
+  mat-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.gauge-center-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -30px;
+  pointer-events: none;
+}
+
+.gauge-pct {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1565c0;
+}
+
+.gauge-sub {
+  font-size: 0.8rem;
+  color: #757575;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Table Card ──────────────────────────────────────────────────────── */
+.table-card {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+
+  mat-card-header {
+    padding: 16px 20px 8px;
+    mat-card-title {
+      display: flex;
+      align-items: center;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+  }
+
+  mat-card-content {
+    padding: 0 !important;
+  }
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.invoice-table {
+  width: 100%;
+
+  th.mat-header-cell {
+    font-weight: 700;
+    color: #424242;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  td.mat-cell {
+    font-size: 0.875rem;
+    padding: 10px 16px;
+  }
+
+  tr.mat-row:hover {
+    background: #f5f5f5;
+  }
+}
+
+/* Status chips */
+.status-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.04em;
+}
+
+.chip-draft   { background: #f5f5f5;  color: #616161; }
+.chip-sent    { background: #e3f2fd;  color: #1565c0; }
+.chip-overdue { background: #ffebee;  color: #c62828; }
+.chip-paid    { background: #e8f5e9;  color: #2e7d32; }
