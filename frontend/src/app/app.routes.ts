@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { ModulePageComponent } from './pages/module-page/module-page.component';
 import { LoginComponent } from './pages/login/login.component';
 import { InvoiceDashboardComponent } from './pages/invoice-dashboard/invoice-dashboard.component';
+import { IcDashboardComponent } from './pages/ic-dashboard/ic-dashboard.component';
 import { WorkflowListComponent } from './pages/workflow/workflow-list.component';
 import { WorkflowBuilderComponent } from './pages/workflow/workflow-builder.component';
 import { WorkflowCalendarComponent } from './pages/workflow/workflow-calendar.component';
@@ -23,6 +24,7 @@ export const routes: Routes = [
   },
   { path: 'settings', component: SettingsComponent, canActivate: [authGuard], title: 'Settings' },
   { path: 'invoice-dashboard', component: InvoiceDashboardComponent, canActivate: [authGuard], title: 'Invoice Dashboard' },
+  { path: 'ic-dashboard', component: IcDashboardComponent, canActivate: [authGuard], title: 'IC Dashboard' },
   ...MODULES.map(m => ({
     path: m.id,
     component: ModulePageComponent,

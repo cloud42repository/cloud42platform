@@ -1,0 +1,254 @@
+// ── Layout ────────────────────────────────────────────────────────────────────
+
+.dash-wrapper {
+  padding: 24px;
+  background: var(--mat-sys-surface, #f8f9fa);
+  min-height: 100%;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+
+.dash-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dash-icon {
+  font-size: 2.8rem;
+  width: 2.8rem;
+  height: 2.8rem;
+  color: #0277bd;
+}
+
+.dash-title {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface, #212121);
+}
+
+.dash-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant, #666);
+}
+
+// ── Loading ───────────────────────────────────────────────────────────────────
+
+.loading-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  gap: 16px;
+}
+
+.loading-text {
+  color: var(--mat-sys-on-surface-variant, #666);
+  font-size: 1rem;
+}
+
+// ── KPI Row ───────────────────────────────────────────────────────────────────
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  mat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px !important;
+    color: #fff;
+
+    mat-icon {
+      font-size: 2rem;
+      width: 2rem;
+      height: 2rem;
+      opacity: 0.9;
+    }
+  }
+}
+
+.kpi-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+  text-transform: uppercase;
+}
+
+.kpi-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+// KPI colour variants ──────────────────────────────────────────────────────────
+
+.kpi-regions     { background: linear-gradient(135deg, #0277bd, #01579b); }
+.kpi-contracts   { background: linear-gradient(135deg, #00838f, #006064); }
+.kpi-partners    { background: linear-gradient(135deg, #ab47bc, #7b1fa2); }
+.kpi-storage     { background: linear-gradient(135deg, #26a69a, #00796b); }
+.kpi-capacity    { background: linear-gradient(135deg, #ef5350, #c62828); }
+.kpi-overdraft   { background: linear-gradient(135deg, #ffa726, #e65100); }
+
+// ── Charts Row ────────────────────────────────────────────────────────────────
+
+.charts-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  mat-card-content {
+    padding: 16px !important;
+    canvas {
+      width: 100% !important;
+      max-height: 320px;
+    }
+  }
+}
+
+// ── Regions Strip ─────────────────────────────────────────────────────────────
+
+.regions-card {
+  margin-bottom: 24px;
+
+  mat-card-content {
+    padding: 16px !important;
+  }
+}
+
+.regions-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.region-chip {
+  cursor: default;
+
+  mat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px !important;
+    font-size: 0.875rem;
+  }
+}
+
+.region-icon {
+  font-size: 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: #0277bd;
+}
+
+.region-name {
+  font-weight: 500;
+}
+
+// ── Section Title ─────────────────────────────────────────────────────────────
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--mat-sys-on-surface, #212121);
+
+  mat-icon {
+    color: #0277bd;
+  }
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+
+.table-card {
+  mat-card-content {
+    padding: 16px !important;
+    overflow-x: auto;
+  }
+}
+
+.accounts-table {
+  width: 100%;
+
+  .mat-mdc-header-row {
+    background: #e3f2fd;
+  }
+
+  .mat-mdc-header-cell {
+    font-weight: 600;
+    color: #0277bd;
+  }
+
+  .mat-mdc-row:hover {
+    background: #f0f8ff;
+  }
+}
+
+.id-code {
+  font-family: monospace;
+  font-size: 0.8rem;
+  background: #f5f5f5;
+  padding: 2px 5px;
+  border-radius: 3px;
+  color: #555;
+}
+
+// ── Status Badges ────────────────────────────────────────────────────────────────
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-ok      { color: #2e7d32; background: #e8f5e9; }
+.badge-warning { color: #e65100; background: #fff3e0; }
+.badge-danger  { color: #c62828; background: #ffebee; }
+.badge-active  { color: #1565c0; background: #e3f2fd; }
+
+// ── Responsive ────────────────────────────────────────────────────────────────
+
+@media (max-width: 900px) {
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-wrapper {
+    padding: 12px;
+  }
+}
