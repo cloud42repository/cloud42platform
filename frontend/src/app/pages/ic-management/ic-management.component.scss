@@ -1,0 +1,245 @@
+:host { display: block; height: 100%; background: #f5f7fa; }
+
+// ── Page header ───────────────────────────────────────────────────────────────
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 12px;
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.page-icon {
+  font-size: 36px; width: 36px; height: 36px;
+  color: #0277bd;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.page-subtitle {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #757575;
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+.icm-tabs {
+  flex: 1;
+  background: transparent;
+
+  ::ng-deep .mat-mdc-tab-header {
+    background: white;
+    border-bottom: 1px solid #e5e5e5;
+  }
+}
+
+.tab-icon {
+  font-size: 18px; width: 18px; height: 18px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.tab-content {
+  padding: 20px 24px;
+  min-height: calc(100vh - 180px);
+  background: #f5f7fa;
+}
+
+// ── Toolbar ───────────────────────────────────────────────────────────────────
+.tab-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.toolbar-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+// ── Filter card ───────────────────────────────────────────────────────────────
+.filter-card {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .filter-field { flex: 1; min-width: 280px; }
+}
+
+// ── Form card ─────────────────────────────────────────────────────────────────
+.form-card {
+  margin-bottom: 20px;
+  border-left: 4px solid #1976d2;
+
+  &.form-card--edit {
+    border-left-color: #f57f17;
+  }
+
+  mat-card-actions {
+    padding: 12px 16px;
+    border-top: 1px solid #f0f0f0;
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px 20px;
+  padding: 8px 0;
+
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    padding-top: 8px;
+  }
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+.table-wrapper {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  background: white;
+}
+
+.icm-table {
+  width: 100%;
+
+  th.mat-mdc-header-cell {
+    background: #f8f9fa;
+    font-weight: 600;
+    font-size: 12px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 16px;
+  }
+
+  td.mat-mdc-cell {
+    padding: 10px 16px;
+    font-size: 13.5px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+}
+
+.table-row {
+  transition: background 0.15s;
+  &:hover { background: #fafafa; }
+}
+
+code {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #333;
+}
+
+.id-code {
+  font-size: 11px;
+  max-width: 160px;
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.actions-cell {
+  white-space: nowrap;
+  padding-right: 8px !important;
+  text-align: right;
+}
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
+.icon-yes { color: #2e7d32; font-size: 20px; vertical-align: middle; }
+.icon-no  { color: #bdbdbd; font-size: 20px; vertical-align: middle; }
+
+// ── Badges ────────────────────────────────────────────────────────────────────
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+
+  &--ok   { background: #e8f5e9; color: #2e7d32; }
+  &--warn { background: #fff3e0; color: #e65100; }
+  &--err  { background: #ffebee; color: #c62828; }
+}
+
+// ── Role badge ────────────────────────────────────────────────────────────────
+.role-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 500;
+
+  &--admin  { background: #e3f2fd; color: #1565c0; }
+  &--staff  { background: #f3e5f5; color: #6a1b9a; }
+  &--viewer { background: #f5f5f5; color: #616161; }
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  color: #aaa;
+
+  mat-icon {
+    font-size: 48px; width: 48px; height: 48px;
+    margin-bottom: 12px;
+    color: #ddd;
+  }
+
+  p {
+    font-size: 14px;
+    color: #999;
+    text-align: center;
+    strong { color: #555; }
+  }
+}
+
+// ── Spinner ───────────────────────────────────────────────────────────────────
+.spinner-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 48px 0;
+}
+
+// ── Responsive ────────────────────────────────────────────────────────────────
+@media (max-width: 640px) {
+  .tab-content { padding: 12px; }
+  .page-header { padding: 12px 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+}
