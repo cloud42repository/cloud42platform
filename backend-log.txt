@@ -1,0 +1,469 @@
+﻿
+> api-connector-backend@1.0.0 start:mock
+> ts-node -r dotenv/config -r tsconfig-paths/register src/main.ts dotenv_config_path=.env.mock
+
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ  ≡ƒº¬  MOCK_MODE is ON ΓÇö no real API calls     Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +49ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSchemaModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +6ms[39m
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoCrmModule dependencies initialized[39m[38;5;3m +48ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoBooksModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoInvoiceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoInventoryModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoSubscriptionsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoPeopleModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoDeskModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoProjectsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoAnalyticsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoCampaignsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoRecruitModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoSignModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoMailModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoWorkdriveModule dependencies initialized[39m[38;5;3m +4ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoCliqModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoExpenseModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoPayrollModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoCommerceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoCreatorModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mZohoSalesiqModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSoftvalueModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mImpossibleCloudModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoCrmController {/api/zoho-crm}:[39m[38;5;3m +22ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/leads, GET} route[39m[38;5;3m +15ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/leads/search, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/leads/:id, GET} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/leads, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/leads, PUT} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/leads/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/contacts, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/contacts/search, GET} route[39m[38;5;3m +4ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/contacts/:id, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/contacts, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/contacts, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/contacts/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/accounts, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/accounts/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/accounts, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/accounts, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/accounts/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/deals, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/deals/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/deals, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/deals, PUT} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/deals/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/tasks, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/tasks/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/tasks, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/tasks, PUT} route[39m[38;5;3m +5ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/tasks/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/notes, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/notes/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/notes, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/notes/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/modules/:module, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/modules/:module/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/modules/:module, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/modules/:module, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/modules/:module/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-crm/modules/:module/search, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoBooksController {/api/zoho-books}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/contacts, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/contacts/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/contacts, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/contacts/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/contacts/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/invoices, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/invoices/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/invoices, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/invoices/:id, PUT} route[39m[38;5;3m +8ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/invoices/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/invoices/:id/send, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/invoices/:id/sent, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/invoices/:id/void, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/bills, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/bills/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/bills, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/bills/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/bills/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/expenses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/expenses/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/expenses, POST} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/expenses/:id, PUT} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/expenses/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/payments, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/payments/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/payments, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/payments/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/items, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/items/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/items, POST} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/items/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-books/items/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoInvoiceController {/api/zoho-invoice}:[39m[38;5;3m +10ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/customers, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/customers/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/customers, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/customers/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/customers/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/invoices, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/invoices/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/invoices, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/invoices/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/invoices/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/invoices/:id/send, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/estimates, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/estimates/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/estimates, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/estimates/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/estimates/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/recurring-invoices, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/recurring-invoices/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/recurring-invoices, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/recurring-invoices/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/payments, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/payments, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-invoice/payments/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoInventoryController {/api/zoho-inventory}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/items, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/items/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/items, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/items/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/items/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/warehouses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/warehouses/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/salesorders, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/salesorders/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/salesorders, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/salesorders/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/salesorders/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/purchaseorders, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/purchaseorders/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/purchaseorders, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/purchaseorders/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-inventory/purchaseorders/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoSubscriptionsController {/api/zoho-subscriptions}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/plans, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/plans/:code, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/plans, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/plans/:code, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/plans/:code, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/addons, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/addons/:code, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/coupons, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/coupons/:code, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/customers, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/customers/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/customers, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/customers/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/customers/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/subscriptions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/subscriptions/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/subscriptions, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/subscriptions/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/subscriptions/:id/cancel, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-subscriptions/subscriptions/:id/reactivate, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoPeopleController {/api/zoho-people}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/employees, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/employees/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/employees, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/employees/:id, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/employees/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/departments, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/leave-types, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/leave-requests, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/leave-requests, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/leave-requests/:id/approve, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/leave-requests/:id/reject, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/attendance/:empId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/forms/:formName/records, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/forms/:formName/records, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-people/forms/:formName/records/:id, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoDeskController {/api/zoho-desk}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/tickets, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/tickets/search, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/tickets/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/tickets, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/tickets/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/tickets/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/tickets/:ticketId/comments, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/tickets/:ticketId/comments, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/tickets/:ticketId/comments/:commentId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/contacts, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/contacts/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/contacts, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/contacts/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/contacts/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/agents, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/agents/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/departments, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-desk/departments/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoProjectsController {/api/zoho-projects}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:id, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/tasks, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/tasks/:taskId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/tasks, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/tasks/:taskId, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/tasks/:taskId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/milestones, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/bugs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/bugs/:bugId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/bugs, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/bugs/:bugId, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/bugs/:bugId, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/timelogs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/tasks/:taskId/timelogs, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-projects/projects/:projectId/tasks/:taskId/timelogs/:logId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoAnalyticsController {/api/zoho-analytics}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/workspaces, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/workspaces/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/workspaces, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/workspaces/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/workspaces/:workspaceId/views, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/workspaces/:workspaceId/views/:viewId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/workspaces/:workspaceId/views, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/workspaces/:workspaceId/views/:viewId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/workspaces/:workspaceId/reports, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/workspaces/:workspaceId/dashboards, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/import, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-analytics/workspaces/:workspaceId/views/:viewId/export, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoCampaignsController {/api/zoho-campaigns}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/lists, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/lists/:listKey, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/lists, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/lists/:listKey, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/lists/:listKey/subscribers, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/lists/:listKey/subscribers, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/lists/:listKey/subscribers, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/topics, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/campaigns, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/campaigns/:campaignKey, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/campaigns/:campaignKey/send, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-campaigns/campaigns/:campaignKey/schedule, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoRecruitController {/api/zoho-recruit}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/job-openings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/job-openings/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/job-openings, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/job-openings, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/job-openings/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/candidates, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/candidates/search, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/candidates/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/candidates, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/candidates, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/candidates/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/interviews, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/interviews/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/interviews, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/interviews/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/offers, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-recruit/offers/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoSignController {/api/zoho-sign}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/requests, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/requests/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/requests, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/requests/:id/send, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/requests/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/requests/:id/recall, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/requests/:id/remind, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/templates, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/templates/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/templates/:id/create-request, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/requests/:requestId/documents/:documentId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-sign/requests/:requestId/documents/:documentId/download, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoMailController {/api/zoho-mail}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId/folders, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId/folders/:folderId/messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId/messages/search, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId/messages/:messageId, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId/messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId/messages/:messageId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId/messages/:messageId/move, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId/messages/:messageId/read, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId/contacts, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId/contacts, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-mail/accounts/:accountId/contacts/:contactId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoWorkdriveController {/api/zoho-workdrive}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/teams, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/teams/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/teams/:teamId/files/search, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/folders/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/folders, POST} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/folders/:id/rename, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/folders/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/folders/:folderId/files, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/files/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/files/:fileId/copy, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/files/:fileId/move, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:33 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/files/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/sharelinks, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/files/:fileId/sharelinks, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/workspaces/:workspaceId/members, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/workspaces/:workspaceId/members, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-workdrive/workspaces/:workspaceId/members/:memberId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoCliqController {/api/zoho-cliq}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/channels, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/channels/:name, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/channels, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/channels/:name, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/channels/:name/members, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/channels/:name/members, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/channels/:name/messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/channels/:name/message, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/channels/:name/messages/:messageId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/direct/:email, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/usergroups, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/usergroups/:name, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/usergroups, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/bots, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-cliq/bots/:name/message, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoExpenseController {/api/zoho-expense}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/categories, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/categories/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/expenses, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/expenses/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/expenses, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/expenses/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/expenses/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/reports, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/reports/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/reports, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/reports/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/reports/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/reports/:id/submit, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/reports/:id/approve, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/advances, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-expense/advances/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoPayrollController {/api/zoho-payroll}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/employees, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/employees/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/employees, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/employees/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/employees/:id/terminate, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/pay-components, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/pay-components/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/payruns, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/payruns/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/payruns, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/payruns/:id/approve, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/payruns/:payRunId/payslips, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/payruns/:payRunId/payslips/:payslipId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/declarations, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-payroll/declarations/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoCommerceController {/api/zoho-commerce}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/products, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/products/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/products, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/products/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/products/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/categories, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/categories/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/categories, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/categories/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/customers, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/customers/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/orders, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/orders/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/orders, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/orders/:id/status, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-commerce/orders/:id/cancel, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoCreatorController {/api/zoho-creator}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications/:appLinkName, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications/:appLinkName/forms, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications/:appLinkName/forms/:formLinkName, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications/:appLinkName/reports/:reportLinkName/records, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications/:appLinkName/reports/:reportLinkName/records/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications/:appLinkName/forms/:formLinkName/records, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications/:appLinkName/reports/:reportLinkName/records/:id, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications/:appLinkName/reports/:reportLinkName/records/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications/:appLinkName/reports/:reportLinkName/records/search, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications/:appLinkName/reports, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-creator/applications/:appLinkName/workflows/:workflowName/trigger, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mZohoSalesIQController {/api/zoho-salesiq}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/visitors, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/visitors/:visitorId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/visitors/search, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/chats, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/chats/:chatId, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/chats/:chatId/messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/chats/:chatId/messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/chats/:chatId/rating, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/operators, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/operators/:operatorId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/operators/:operatorId/availability, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/departments, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/departments/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/bots, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/bots/:botId/messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/zoho-salesiq/:screenName/feedback-forms, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSoftvalueController {/api/softvalue}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/softvalue/proxy, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/softvalue/proxy, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/softvalue/proxy, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/softvalue/proxy, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/softvalue/proxy, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/softvalue/token, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/softvalue/token, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mImpossibleCloudController {/api/impossible-cloud}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/regions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/contracts, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/contracts/:contractId/partners, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId/members, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId/members, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId/members/:memberId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId/storage-accounts, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId/storage-accounts, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId/storage-accounts/:accountId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId/storage-accounts/:accountId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId/storage-accounts/:accountId, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId/storage-accounts/:accountId/usage, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/partners/:partnerId/usage, GET} route[39m[38;5;3m +8ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/storage-accounts, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/storage-accounts, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/storage-accounts/usage, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/storage-accounts/:accountId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/storage-accounts/:accountId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/storage-accounts/:accountId, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/impossible-cloud/storage-accounts/:accountId/usage, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSchemaController {/api/schema}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/schema, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 27596  - [39m09/03/2026 21:01:34 [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +5ms[39m
+API Connector backend running on http://localhost:3000/api

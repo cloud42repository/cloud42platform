@@ -63,7 +63,11 @@ export class IcManagementComponent implements OnInit {
   private async loadContracts() {
     try {
       const res = await firstValueFrom(this.api.get(IC, '/contracts'));
-      this.contracts.set(Array.isArray(res) ? res : (res as any)?.contracts ?? []);
+      const list: Contract[] = Array.isArray(res) ? res : (res as any)?.contracts ?? [];
+      this.contracts.set(list);
+      if (!this.selectedContractId && list.length > 0 && list[0].id) {
+        this.selectedContractId = list[0].id;
+      }
     } catch { /* non-blocking */ }
   }
 
@@ -83,7 +87,7 @@ export class IcManagementComponent implements OnInit {
     this.saLoading.set(true);
     try {
       const res = await firstValueFrom(this.api.get(IC, '/storage-accounts'));
-      this.saAccounts.set(Array.isArray(res) ? res : (res as any)?.accounts ?? []);
+      this.saAccounts.set(Array.isArray(res) ? res : (res as any)?.data ?? []);
     } catch (e: any) {
       this.toast('Failed to load storage accounts: ' + (e?.message ?? e), true);
     } finally { this.saLoading.set(false); }
@@ -167,7 +171,7 @@ export class IcManagementComponent implements OnInit {
     this.partLoading.set(true);
     try {
       const res = await firstValueFrom(this.api.get(IC, '/contracts/:contractId/partners', { contractId: this.selectedContractId }));
-      this.partners.set(Array.isArray(res) ? res : (res as any)?.partners ?? []);
+      this.partners.set(Array.isArray(res) ? res : (res as any)?.data ?? []);
     } catch (e: any) {
       this.toast('Failed to load partners: ' + (e?.message ?? e), true);
     } finally { this.partLoading.set(false); }
@@ -251,7 +255,7 @@ export class IcManagementComponent implements OnInit {
     this.membLoading.set(true);
     try {
       const res = await firstValueFrom(this.api.get(IC, '/partners/:partnerId/members', { partnerId: this.membPartnerId }));
-      this.members.set(Array.isArray(res) ? res : (res as any)?.members ?? []);
+      this.members.set(Array.isArray(res) ? res : (res as any)?.data ?? []);
     } catch (e: any) {
       this.toast('Failed to load members: ' + (e?.message ?? e), true);
     } finally { this.membLoading.set(false); }
@@ -316,7 +320,7 @@ export class IcManagementComponent implements OnInit {
     this.psLoading.set(true);
     try {
       const res = await firstValueFrom(this.api.get(IC, '/partners/:partnerId/storage-accounts', { partnerId: this.psPartnerId }));
-      this.psAccounts.set(Array.isArray(res) ? res : (res as any)?.accounts ?? []);
+      this.psAccounts.set(Array.isArray(res) ? res : (res as any)?.data ?? []);
     } catch (e: any) {
       this.toast('Failed to load partner storage: ' + (e?.message ?? e), true);
     } finally { this.psLoading.set(false); }
