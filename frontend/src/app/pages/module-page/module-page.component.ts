@@ -224,8 +224,19 @@ export class ModulePageComponent implements OnInit {
   getListActionEndpoints(ep: EndpointDef | null): EndpointDef[] {
     if (!ep || !this.module()) return [];
     const actionMap: Record<string, string[]> = {
-      'list-storage-accounts': ['patch-storage-account', 'delete-storage-account'],
-      'list-partner-storage-accounts': ['patch-partner-storage-account', 'delete-partner-storage-account'],
+      // Own storage accounts
+      'list-storage-accounts':           ['create-storage-account', 'patch-storage-account', 'delete-storage-account'],
+      'get-storage-account':             ['patch-storage-account', 'delete-storage-account'],
+      // Contracts → partners
+      'list-contracts':                  ['create-partner'],
+      'list-contract-partners':          ['create-partner-storage-account', 'update-partner', 'delete-partner'],
+      // Partners
+      'get-partner':                     ['create-partner-storage-account', 'update-partner', 'delete-partner'],
+      // Partner members
+      'list-members':                    ['delete-member'],
+      // Partner storage accounts
+      'list-partner-storage-accounts':   ['create-partner-storage-account', 'patch-partner-storage-account', 'delete-partner-storage-account'],
+      'get-partner-storage-account':     ['patch-partner-storage-account', 'delete-partner-storage-account'],
     };
     const actionIds = actionMap[ep.id] ?? [];
     return this.module()!.endpoints.filter(e => actionIds.includes(e.id));
@@ -234,8 +245,20 @@ export class ModulePageComponent implements OnInit {
   getIdMapping(ep: EndpointDef | null): Record<string, string> {
     if (!ep) return {};
     const mappings: Record<string, Record<string, string>> = {
-      'list-storage-accounts': { clientAccountId: 'accountId' },
-      'list-partner-storage-accounts': { clientAccountId: 'accountId' },
+      // Own storage accounts — row.clientAccountId → :accountId path param
+      'list-storage-accounts':           { clientAccountId: 'accountId' },
+      'get-storage-account':             { clientAccountId: 'accountId' },
+      // Contracts — row.id pre-fills distributorContractId body field on create-partner form
+      'list-contracts':                  { id: 'body.distributorContractId' },
+      // Contract partners — row.id → :partnerId path param
+      'list-contract-partners':          { id: 'partnerId' },
+      // Partners — row.id → :partnerId path param
+      'get-partner':                     { id: 'partnerId' },
+      // Members — row.id → :memberId path param
+      'list-members':                    { id: 'memberId' },
+      // Partner storage accounts — row.clientAccountId → :accountId path param
+      'list-partner-storage-accounts':   { clientAccountId: 'accountId' },
+      'get-partner-storage-account':     { clientAccountId: 'accountId' },
     };
     return mappings[ep.id] ?? {};
   }
