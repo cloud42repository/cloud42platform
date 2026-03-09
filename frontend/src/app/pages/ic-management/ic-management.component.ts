@@ -63,7 +63,7 @@ export class IcManagementComponent implements OnInit {
   private async loadContracts() {
     try {
       const res = await firstValueFrom(this.api.get(IC, '/contracts'));
-      const list: Contract[] = Array.isArray(res) ? res : (res as any)?.contracts ?? [];
+      const list: Contract[] = Array.isArray(res) ? res : (res as any)?.data ?? [];
       this.contracts.set(list);
       if (!this.selectedContractId && list.length > 0 && list[0].id) {
         this.selectedContractId = list[0].id;
@@ -87,7 +87,8 @@ export class IcManagementComponent implements OnInit {
     this.saLoading.set(true);
     try {
       const res = await firstValueFrom(this.api.get(IC, '/storage-accounts'));
-      this.saAccounts.set(Array.isArray(res) ? res : (res as any)?.data ?? []);
+      const list: StorageAccount[] = Array.isArray(res) ? res : (res as any)?.data ?? [];
+      this.saAccounts.set(list);
     } catch (e: any) {
       this.toast('Failed to load storage accounts: ' + (e?.message ?? e), true);
     } finally { this.saLoading.set(false); }
