@@ -95,6 +95,14 @@ import { AuthService } from './services/auth.service';
             <span matListItemTitle>IC Dashboard</span>
           </a>
           <a mat-list-item
+             routerLink="/agent"
+             routerLinkActive="active-link"
+             matTooltip="Agent"
+             matTooltipPosition="right">
+            <mat-icon matListItemIcon>smart_toy</mat-icon>
+            <span matListItemTitle>Agent</span>
+          </a>
+          <a mat-list-item
              routerLink="/settings"
              routerLinkActive="active-link"
              matTooltip="Settings"

@@ -7,6 +7,7 @@ import { WorkflowListComponent } from './pages/workflow/workflow-list.component'
 import { WorkflowBuilderComponent } from './pages/workflow/workflow-builder.component';
 import { WorkflowCalendarComponent } from './pages/workflow/workflow-calendar.component';
 import { SettingsComponent } from './pages/settings/settings.component';
+import { AgentComponent } from './pages/agent/agent.component';
 import { authGuard } from './guards/auth.guard';
 import { MODULES } from './config/endpoints';
 
@@ -25,6 +26,7 @@ export const routes: Routes = [
   { path: 'settings', component: SettingsComponent, canActivate: [authGuard], title: 'Settings' },
   { path: 'invoice-dashboard', component: InvoiceDashboardComponent, canActivate: [authGuard], title: 'Invoice Dashboard' },
   { path: 'ic-dashboard', component: IcDashboardComponent, canActivate: [authGuard], title: 'IC Dashboard' },
+  { path: 'agent', component: AgentComponent, canActivate: [authGuard], title: 'Agent' },
   ...MODULES.map(m => ({
     path: m.id,
     component: ModulePageComponent,
