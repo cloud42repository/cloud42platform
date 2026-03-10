@@ -55,7 +55,10 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="schedule-field">
           <mat-label>Schedule at</mat-label>
           <mat-icon matPrefix>schedule</mat-icon>
-          <input matInput type="datetime-local" [(ngModel)]="scheduledAt" />
+          <input matInput type="datetime-local"
+                 [value]="scheduledAt"
+                 (input)="scheduledAt = $any($event.target).value"
+                 (change)="scheduledAt = $any($event.target).value" />
           @if (scheduledAt) {
             <button matSuffix mat-icon-button (click)="scheduledAt = ''" matTooltip="Clear schedule">
               <mat-icon>close</mat-icon>
@@ -1263,9 +1266,14 @@ export class WorkflowBuilderComponent implements OnInit {
       const wf = this.svc.getById(id);
       if (wf) {
         this.wfName = wf.name;
-        this.scheduledAt = wf.scheduledAt
-          ? new Date(wf.scheduledAt).toISOString().slice(0, 16)
-          : '';
+        if (wf.scheduledAt) {
+          // Format as local time for datetime-local input (not UTC via toISOString)
+          const d = new Date(wf.scheduledAt);
+          const pad = (n: number) => String(n).padStart(2, '0');
+          this.scheduledAt = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        } else {
+          this.scheduledAt = '';
+        }
         // Migrate legacy steps that lack a kind (old localStorage data)
         this.steps.set(wf.steps.map(s => ({
           ...s,

@@ -25,17 +25,87 @@ export class WorkflowService {
   private loadFromStorage(): Workflow[] {
     try {
       const raw = JSON.parse(localStorage.getItem(this.STORAGE_KEY) ?? '[]') as Workflow[];
-      // Migrate legacy steps that lack a kind field
-      return raw.map(wf => ({
-        ...wf,
-        steps: wf.steps.map(s => ({
-          ...s,
-          kind: (s as WorkflowNode).kind ?? 'endpoint',
-        })) as WorkflowNode[],
-      }));
+      if (raw.length > 0) {
+        // Migrate legacy steps that lack a kind field
+        return raw.map(wf => ({
+          ...wf,
+          steps: wf.steps.map(s => ({
+            ...s,
+            kind: (s as WorkflowNode).kind ?? 'endpoint',
+          })) as WorkflowNode[],
+        }));
+      }
+      // Seed demo workflows when storage is empty
+      return this.seedDemoWorkflows();
     } catch {
       return [];
     }
+  }
+
+  private seedDemoWorkflows(): Workflow[] {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+
+    // Helper: ISO string for a date in local time
+    const localISO = (d: Date) => d.toISOString();
+
+    // Schedule one workflow 2 days from now at 10:00 local
+    const d1 = new Date(y, m, now.getDate() + 2, 10, 0, 0, 0);
+    // Schedule one workflow 5 days from now at 14:30 local
+    const d2 = new Date(y, m, now.getDate() + 5, 14, 30, 0, 0);
+    // Schedule one today at end of day
+    const d3 = new Date(y, m, now.getDate(), 17, 0, 0, 0);
+
+    const makeStep = (id: string, label: string, method: string): WorkflowStep => ({
+      id,
+      kind: 'endpoint',
+      moduleId: 'zoho-crm',
+      moduleLabel: 'Zoho CRM',
+      moduleApiPrefix: '/zoho-crm',
+      endpointId: 'list-contacts',
+      endpointLabel: label,
+      method,
+      pathTemplate: '/contacts',
+      pathParamNames: [],
+      hasBody: false,
+      paramSources: {},
+      bodyKeys: [],
+      bodySources: {},
+    });
+
+    const demos: Workflow[] = [
+      {
+        id: 'demo-wf-1',
+        name: 'Daily CRM Sync',
+        steps: [makeStep('s1', 'List Contacts', 'GET'), makeStep('s2', 'List Accounts', 'GET')],
+        status: 'scheduled',
+        scheduledAt: localISO(d1),
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      },
+      {
+        id: 'demo-wf-2',
+        name: 'Weekly Report Run',
+        steps: [makeStep('s3', 'List Contacts', 'GET')],
+        status: 'scheduled',
+        scheduledAt: localISO(d2),
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      },
+      {
+        id: 'demo-wf-3',
+        name: 'End-of-Day Cleanup',
+        steps: [makeStep('s4', 'List Contacts', 'GET'), makeStep('s5', 'List Accounts', 'GET'), makeStep('s6', 'List Deals', 'GET')],
+        status: 'scheduled',
+        scheduledAt: localISO(d3),
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      },
+    ];
+
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(demos));
+    return demos;
   }
 
   private persist(): void {

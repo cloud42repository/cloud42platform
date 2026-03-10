@@ -255,8 +255,9 @@ export class WorkflowCalendarComponent {
     const month = this._month();
     let count = 0;
     for (const [key, evts] of this.eventsByDay()) {
-      const d = new Date(key);
-      if (d.getFullYear() === year && d.getMonth() === month) count += evts.length;
+      // Parse key parts directly to avoid "YYYY-MM-DD" being treated as UTC midnight
+      const [kyear, kmonth] = key.split('-').map(Number);
+      if (kyear === year && kmonth - 1 === month) count += evts.length;
     }
     return count;
   });
