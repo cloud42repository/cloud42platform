@@ -17,6 +17,9 @@ import {
   type ChartData, type ChartOptions,
 } from 'chart.js';
 import { ImpossibleCloudService } from '../../services/impossible-cloud.service';
+import {
+  ICRegion, ICContract, ICPartner, ICStorageAccount,
+} from '../../services/impossible-cloud.types';
 import { firstValueFrom } from 'rxjs';
 
 Chart.register(
@@ -25,24 +28,6 @@ Chart.register(
   LineController, LineElement, PointElement,
   Tooltip, Legend, Title, Filler,
 );
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Region  { name?: string; s3_url?: string; iam_url?: string; sts_url?: string; }
-interface Contract {
-  id?: string; distributorId?: string;
-  allocatedCapacity?: number; reservedCapacity?: number;
-  costStorageGBCents?: number; currency?: string;
-}
-interface Partner {
-  id?: string; name?: string; distributorContractId?: string;
-  allocatedCapacity?: number; allowOverdraft?: boolean;
-}
-interface StorageAccount {
-  name?: string; clientAccountId?: string; contactEmail?: string;
-  allocatedCapacity?: number; allowOverdraft?: boolean;
-  pendingDeletedAt?: string | null;
-}
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const IC_BLUE   = '#0277bd';
@@ -72,10 +57,10 @@ export class IcDashboardComponent implements OnInit {
   loading = true;
 
   // ── Raw data ───────────────────────────────────────────────────────────────
-  regions:  Region[]         = [];
-  contracts: Contract[]      = [];
-  partners:  Partner[]       = [];
-  storageAccounts: StorageAccount[] = [];
+  regions:  ICRegion[]         = [];
+  contracts: ICContract[]      = [];
+  partners:  ICPartner[]       = [];
+  storageAccounts: ICStorageAccount[] = [];
 
   // ── KPIs ───────────────────────────────────────────────────────────────────
   totalRegions         = 0;
@@ -87,7 +72,7 @@ export class IcDashboardComponent implements OnInit {
 
   // ── Table ──────────────────────────────────────────────────────────────────
   readonly tableColumns = ['name', 'clientAccountId', 'contactEmail', 'allocatedCapacity', 'allowOverdraft', 'status'];
-  recentAccounts: StorageAccount[] = [];
+  recentAccounts: ICStorageAccount[] = [];
 
   // ── Bar chart 1 — Contract Capacity Overview ───────────────────────────────
   contractBarData: ChartData<'bar'> = { labels: [], datasets: [] };
@@ -153,9 +138,9 @@ export class IcDashboardComponent implements OnInit {
         firstValueFrom(this.icSvc.listStorageAccounts()),
       ]);
 
-      this.regions  = this._extract<Region>(regRes,  'regions');
-      this.contracts = this._extract<Contract>(conRes, 'data');
-      this.storageAccounts = this._extract<StorageAccount>(saRes, 'data');
+      this.regions  = this._extract<ICRegion>(regRes,  'regions');
+      this.contracts = this._extract<ICContract>(conRes, 'data');
+      this.storageAccounts = this._extract<ICStorageAccount>(saRes, 'data');
 
       // Simulate partners by fanning out from contracts
       this.partners = this.contracts.flatMap((c, ci) =>
@@ -306,7 +291,7 @@ export class IcDashboardComponent implements OnInit {
     return `${gb} GB`;
   }
 
-  isOverdue(sa: StorageAccount): boolean {
+  isOverdue(sa: ICStorageAccount): boolean {
     return !!sa.pendingDeletedAt;
   }
 }

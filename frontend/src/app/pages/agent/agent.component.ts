@@ -13,6 +13,9 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
+import { firstValueFrom } from 'rxjs';
+
+import { ApiService } from '../../services/api.service';
 import { WorkflowService } from '../../services/workflow.service';
 import { MODULES, extractPathParams } from '../../config/endpoints';
 import { Workflow, WorkflowStep } from '../../config/workflow.types';
@@ -43,6 +46,7 @@ export class AgentComponent implements OnInit {
 
   private readonly router = inject(Router);
   private readonly workflowSvc = inject(WorkflowService);
+  private readonly api = inject(ApiService);
 
   readonly messages = signal<AgentMessage[]>([]);
   readonly thinking = signal(false);
@@ -72,6 +76,7 @@ I can help you <strong>navigate</strong> the platform or <strong>create workflow
 <em>Example commands:</em><br>
 &bull; <code>go to IC dashboard</code><br>
 &bull; <code>open Zoho CRM</code><br>
+&bull; <code>search mock</code> — search across all API data<br>
 &bull; <code>create a workflow that lists Impossible Cloud storage accounts and gets usage</code><br>
 &bull; <code>build a workflow to list Zoho Books invoices then create a Zoho CRM contact</code><br>
 &bull; <code>help</code>`,
@@ -99,9 +104,11 @@ I can help you <strong>navigate</strong> the platform or <strong>create workflow
     this.thinking.set(true);
     setTimeout(() => {
       const response = this.processInput(text);
-      this.thinking.set(false);
-      this.messages.update(msgs => [...msgs, response]);
-      this.scrollToBottom();
+      if (response) {
+        this.thinking.set(false);
+        this.messages.update(msgs => [...msgs, response]);
+        this.scrollToBottom();
+      }
     }, 600);
   }
 
@@ -123,7 +130,7 @@ I can help you <strong>navigate</strong> the platform or <strong>create workflow
   }
 
   // ── Core NLP dispatcher ─────────────────────────────────────────────────────
-  private processInput(input: string): AgentMessage {
+  private processInput(input: string): AgentMessage | null {
     const lower = input.toLowerCase().trim();
 
     // Help
@@ -144,6 +151,12 @@ I can help you <strong>navigate</strong> the platform or <strong>create workflow
     // Explicit navigation verb
     if (/\b(go to|navigate to|open|show me|take me to|switch to|jump to)\b/.test(lower)) {
       return this.doNavigate(lower);
+    }
+
+    // Global data search
+    if (/\b(search(?:\s+for)?|look\s*for|lookup)\b/i.test(lower)) {
+      this.doGlobalSearch(input);
+      return null;
     }
 
     // Implicit navigation (just a page name)
@@ -323,7 +336,11 @@ Available pages: <em>Workflows, Calendar, IC Dashboard, Invoice Dashboard, Setti
 <strong>⚙️ Create Workflows</strong> — Say <em>"create a workflow that [description]"</em>.<br>
 &bull; Mention module names and actions: <em>"list Impossible Cloud regions then get storage account usage"</em><br>
 &bull; Cross-module: <em>"get Zoho CRM contacts and create a Zoho Books invoice"</em><br><br>
-<strong>📋 Other commands</strong><br>
+<strong>� Search Data</strong> — Say <em>"search [term]"</em> to search across all API GET endpoints.<br>
+&bull; <em>"search mock"</em> — find records containing "mock"<br>
+&bull; <em>"search for invoice"</em> — find records mentioning "invoice"<br>
+&bull; <em>"look for John"</em> — search by name<br><br>
+<strong>�📋 Other commands</strong><br>
 &bull; <code>list modules</code> — show all available API modules<br>
 &bull; <code>help</code> — show this message<br><br>
 <strong>📦 Available modules (top ${Math.min(7, MODULES.length)}):</strong><ul>${moduleItems}${moreCount}</ul>`,
@@ -347,6 +364,146 @@ Available pages: <em>Workflows, Calendar, IC Dashboard, Invoice Dashboard, Setti
       actions: MODULES.slice(0, 4).map(m => ({ label: m.label, route: `/${m.id}` })),
       timestamp: new Date(),
     };
+  }
+
+  // ── Global data search ──────────────────────────────────────────────────────
+  private async doGlobalSearch(input: string): Promise<void> {
+    const searchTerm = input
+      .replace(/\b(search(?:\s+for)?|look\s*for|lookup)\b/gi, '')
+      .replace(/\b(in|all|api|endpoints?|data|across|every|the|a|an)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!searchTerm || searchTerm.length < 2) {
+      this.thinking.set(false);
+      this.messages.update(msgs => [...msgs, {
+        role: 'agent',
+        html: `Please provide a search term (at least 2 characters).<br><em>Example:</em> <code>search John</code>`,
+        timestamp: new Date(),
+      }]);
+      this.scrollToBottom();
+      return;
+    }
+
+    // Collect GET endpoints without path params (list endpoints)
+    const listEndpoints: { apiPrefix: string; pathTemplate: string; moduleLabel: string; endpointLabel: string }[] = [];
+    for (const mod of MODULES) {
+      for (const ep of mod.endpoints) {
+        if (ep.method === 'GET' && extractPathParams(ep.pathTemplate).length === 0) {
+          listEndpoints.push({
+            apiPrefix: mod.apiPrefix,
+            pathTemplate: ep.pathTemplate,
+            moduleLabel: mod.label,
+            endpointLabel: ep.label,
+          });
+        }
+      }
+    }
+
+    interface SearchHit {
+      moduleLabel: string;
+      endpointLabel: string;
+      record: Record<string, unknown>;
+      matchedFields: string[];
+    }
+
+    const hits: SearchHit[] = [];
+    const lowerTerm = searchTerm.toLowerCase();
+
+    // Fire all GET calls in parallel
+    await Promise.allSettled(
+      listEndpoints.map(async (ep) => {
+        try {
+          const raw = await firstValueFrom(this.api.get(ep.apiPrefix, ep.pathTemplate));
+          const records = this._extractRecords(raw);
+          for (const record of records) {
+            const matchedFields = this._getMatchedFields(record, lowerTerm);
+            if (matchedFields.length > 0) {
+              hits.push({ moduleLabel: ep.moduleLabel, endpointLabel: ep.endpointLabel, record, matchedFields });
+            }
+          }
+        } catch { /* endpoint failed – skip */ }
+      })
+    );
+
+    this.thinking.set(false);
+
+    if (hits.length === 0) {
+      this.messages.update(msgs => [...msgs, {
+        role: 'agent',
+        html: `🔍 No results found for <strong>"${this.escapeHtml(searchTerm)}"</strong> across <strong>${listEndpoints.length}</strong> endpoints.`,
+        timestamp: new Date(),
+      }]);
+    } else {
+      // Group by module → endpoint
+      const grouped = new Map<string, SearchHit[]>();
+      for (const h of hits) {
+        const key = `${h.moduleLabel} → ${h.endpointLabel}`;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key)!.push(h);
+      }
+
+      const MAX_PER_GROUP = 3;
+      const MAX_TOTAL = 50;
+      let shown = 0;
+
+      let html = `🔍 Found <strong>${hits.length}</strong> result${hits.length !== 1 ? 's' : ''} for <strong>"${this.escapeHtml(searchTerm)}"</strong> across <strong>${grouped.size}</strong> endpoint${grouped.size !== 1 ? 's' : ''}:<br><br>`;
+
+      for (const [group, items] of grouped) {
+        if (shown >= MAX_TOTAL) {
+          html += `<em>…results truncated (${MAX_TOTAL} shown of ${hits.length})</em>`;
+          break;
+        }
+        html += `<strong>${this.escapeHtml(group)}</strong> (${items.length}):<ul>`;
+        const slice = items.slice(0, MAX_PER_GROUP);
+        for (const item of slice) {
+          const preview = item.matchedFields.slice(0, 4)
+            .map(f => {
+              const val = item.record[f];
+              const str = typeof val === 'object' ? JSON.stringify(val) : String(val ?? '');
+              const trunc = str.length > 80 ? str.slice(0, 80) + '…' : str;
+              return `<em>${this.escapeHtml(f)}</em>: ${this.escapeHtml(trunc)}`;
+            })
+            .join(' &middot; ');
+          html += `<li>${preview}</li>`;
+          shown++;
+        }
+        if (items.length > MAX_PER_GROUP) {
+          html += `<li><em>…and ${items.length - MAX_PER_GROUP} more</em></li>`;
+        }
+        html += '</ul>';
+      }
+
+      this.messages.update(msgs => [...msgs, { role: 'agent', html, timestamp: new Date() }]);
+    }
+
+    this.scrollToBottom();
+  }
+
+  /** Extract an array of records from any API response shape */
+  private _extractRecords(data: unknown): Record<string, unknown>[] {
+    if (Array.isArray(data)) return data as Record<string, unknown>[];
+    if (typeof data === 'object' && data !== null) {
+      const obj = data as Record<string, unknown>;
+      for (const key of Object.keys(obj)) {
+        if (Array.isArray(obj[key])) return obj[key] as Record<string, unknown>[];
+      }
+      if (Object.keys(obj).length > 1) return [obj];
+    }
+    return [];
+  }
+
+  /** Return field names whose values contain the search term */
+  private _getMatchedFields(record: Record<string, unknown>, lowerTerm: string): string[] {
+    const matched: string[] = [];
+    for (const [key, value] of Object.entries(record)) {
+      if (value == null) continue;
+      const str = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      if (str.toLowerCase().includes(lowerTerm)) {
+        matched.push(key);
+      }
+    }
+    return matched;
   }
 
   // ── Utils ───────────────────────────────────────────────────────────────────

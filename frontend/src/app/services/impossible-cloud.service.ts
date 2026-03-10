@@ -1,5 +1,20 @@
 import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
+import type {
+  ICListRegionsResponse,
+  ICContract,
+  ICPartner,
+  ICCreatePartnerDTO,
+  ICUpdatePartnerDTO,
+  ICMember,
+  ICCreateMemberDTO,
+  ICStorageAccount,
+  ICCreateStorageAccountDTO,
+  ICPatchStorageAccountDTO,
+  ICClientUsage,
+  ICUsageParams,
+} from './impossible-cloud.types';
 
 const PREFIX = '/impossible-cloud';
 
@@ -7,85 +22,109 @@ const PREFIX = '/impossible-cloud';
 export class ImpossibleCloudService {
   private readonly api = inject(ApiService);
 
-  // Regions & Contracts
-  listRegions() {
-    return this.api.get(PREFIX, '/regions');
-  }
-  listContracts() {
-    return this.api.get(PREFIX, '/contracts');
-  }
-  listContractPartners(contractId: string) {
-    return this.api.get(PREFIX, '/contracts/:contractId/partners', { contractId });
+  // ── Regions & Contracts ─────────────────────────────────────────────────────
+
+  listRegions(): Observable<ICListRegionsResponse> {
+    return this.api.get(PREFIX, '/regions') as Observable<ICListRegionsResponse>;
   }
 
-  // Partners
-  createPartner(body: unknown) {
-    return this.api.post(PREFIX, '/partners', {}, body);
-  }
-  getPartner(partnerId: string) {
-    return this.api.get(PREFIX, '/partners/:partnerId', { partnerId });
-  }
-  updatePartner(partnerId: string, body: unknown) {
-    return this.api.put(PREFIX, '/partners/:partnerId', { partnerId }, body);
-  }
-  deletePartner(partnerId: string) {
-    return this.api.delete(PREFIX, '/partners/:partnerId', { partnerId });
+  listContracts(): Observable<ICContract[]> {
+    return this.api.get(PREFIX, '/contracts') as Observable<ICContract[]>;
   }
 
-  // Members
-  listMembers(partnerId: string) {
-    return this.api.get(PREFIX, '/partners/:partnerId/members', { partnerId });
-  }
-  createMember(partnerId: string, body: unknown) {
-    return this.api.post(PREFIX, '/partners/:partnerId/members', { partnerId }, body);
-  }
-  deleteMember(partnerId: string, memberId: string) {
-    return this.api.delete(PREFIX, '/partners/:partnerId/members/:memberId', { partnerId, memberId });
+  listContractPartners(contractId: string): Observable<ICPartner[]> {
+    return this.api.get(PREFIX, '/contracts/:contractId/partners', { contractId }) as Observable<ICPartner[]>;
   }
 
-  // Partner Storage Accounts
-  listPartnerStorageAccounts(partnerId: string) {
-    return this.api.get(PREFIX, '/partners/:partnerId/storage-accounts', { partnerId });
-  }
-  createPartnerStorageAccount(partnerId: string, body: unknown) {
-    return this.api.post(PREFIX, '/partners/:partnerId/storage-accounts', { partnerId }, body);
-  }
-  getPartnerStorageAccount(partnerId: string, accountId: string) {
-    return this.api.get(PREFIX, '/partners/:partnerId/storage-accounts/:accountId', { partnerId, accountId });
-  }
-  deletePartnerStorageAccount(partnerId: string, accountId: string) {
-    return this.api.delete(PREFIX, '/partners/:partnerId/storage-accounts/:accountId', { partnerId, accountId });
-  }
-  patchPartnerStorageAccount(partnerId: string, accountId: string, body: unknown) {
-    return this.api.patch(PREFIX, '/partners/:partnerId/storage-accounts/:accountId', { partnerId, accountId }, body);
-  }
-  getPartnerStorageAccountUsage(partnerId: string, accountId: string, query: Record<string, string> = {}) {
-    return this.api.get(PREFIX, '/partners/:partnerId/storage-accounts/:accountId/usage', { partnerId, accountId }, query);
-  }
-  getPartnerUsage(partnerId: string, query: Record<string, string> = {}) {
-    return this.api.get(PREFIX, '/partners/:partnerId/usage', { partnerId }, query);
+  // ── Partners ────────────────────────────────────────────────────────────────
+
+  createPartner(body: ICCreatePartnerDTO): Observable<ICPartner> {
+    return this.api.post(PREFIX, '/partners', {}, body) as Observable<ICPartner>;
   }
 
-  // Storage Accounts
-  createStorageAccount(body: unknown) {
-    return this.api.post(PREFIX, '/storage-accounts', {}, body);
+  getPartner(partnerId: string): Observable<ICPartner> {
+    return this.api.get(PREFIX, '/partners/:partnerId', { partnerId }) as Observable<ICPartner>;
   }
-  listStorageAccounts() {
-    return this.api.get(PREFIX, '/storage-accounts');
+
+  updatePartner(partnerId: string, body: ICUpdatePartnerDTO): Observable<ICPartner> {
+    return this.api.put(PREFIX, '/partners/:partnerId', { partnerId }, body) as Observable<ICPartner>;
   }
-  getAllStorageAccountsUsage(query: Record<string, string> = {}) {
-    return this.api.get(PREFIX, '/storage-accounts/usage', {}, query);
+
+  deletePartner(partnerId: string): Observable<void> {
+    return this.api.delete(PREFIX, '/partners/:partnerId', { partnerId }) as Observable<void>;
   }
-  getStorageAccount(accountId: string) {
-    return this.api.get(PREFIX, '/storage-accounts/:accountId', { accountId });
+
+  // ── Members ─────────────────────────────────────────────────────────────────
+
+  listMembers(partnerId: string): Observable<ICMember[]> {
+    return this.api.get(PREFIX, '/partners/:partnerId/members', { partnerId }) as Observable<ICMember[]>;
   }
-  deleteStorageAccount(accountId: string) {
-    return this.api.delete(PREFIX, '/storage-accounts/:accountId', { accountId });
+
+  createMember(partnerId: string, body: ICCreateMemberDTO): Observable<ICMember> {
+    return this.api.post(PREFIX, '/partners/:partnerId/members', { partnerId }, body) as Observable<ICMember>;
   }
-  patchStorageAccount(accountId: string, body: unknown) {
-    return this.api.patch(PREFIX, '/storage-accounts/:accountId', { accountId }, body);
+
+  deleteMember(partnerId: string, memberId: string): Observable<void> {
+    return this.api.delete(PREFIX, '/partners/:partnerId/members/:memberId', { partnerId, memberId }) as Observable<void>;
   }
-  getStorageAccountUsage(accountId: string, query: Record<string, string> = {}) {
-    return this.api.get(PREFIX, '/storage-accounts/:accountId/usage', { accountId }, query);
+
+  // ── Partner Storage Accounts ────────────────────────────────────────────────
+
+  listPartnerStorageAccounts(partnerId: string): Observable<ICStorageAccount[]> {
+    return this.api.get(PREFIX, '/partners/:partnerId/storage-accounts', { partnerId }) as Observable<ICStorageAccount[]>;
+  }
+
+  createPartnerStorageAccount(partnerId: string, body: ICCreateStorageAccountDTO): Observable<ICStorageAccount> {
+    return this.api.post(PREFIX, '/partners/:partnerId/storage-accounts', { partnerId }, body) as Observable<ICStorageAccount>;
+  }
+
+  getPartnerStorageAccount(partnerId: string, accountId: string): Observable<ICStorageAccount> {
+    return this.api.get(PREFIX, '/partners/:partnerId/storage-accounts/:accountId', { partnerId, accountId }) as Observable<ICStorageAccount>;
+  }
+
+  deletePartnerStorageAccount(partnerId: string, accountId: string): Observable<void> {
+    return this.api.delete(PREFIX, '/partners/:partnerId/storage-accounts/:accountId', { partnerId, accountId }) as Observable<void>;
+  }
+
+  patchPartnerStorageAccount(partnerId: string, accountId: string, body: ICPatchStorageAccountDTO): Observable<ICStorageAccount> {
+    return this.api.patch(PREFIX, '/partners/:partnerId/storage-accounts/:accountId', { partnerId, accountId }, body) as Observable<ICStorageAccount>;
+  }
+
+  getPartnerStorageAccountUsage(partnerId: string, accountId: string, query: ICUsageParams): Observable<ICClientUsage> {
+    return this.api.get(PREFIX, '/partners/:partnerId/storage-accounts/:accountId/usage', { partnerId, accountId }, { ...query }) as Observable<ICClientUsage>;
+  }
+
+  getPartnerUsage(partnerId: string, query: ICUsageParams): Observable<ICClientUsage[]> {
+    return this.api.get(PREFIX, '/partners/:partnerId/usage', { partnerId }, { ...query }) as Observable<ICClientUsage[]>;
+  }
+
+  // ── Own Storage Accounts ────────────────────────────────────────────────────
+
+  createStorageAccount(body: ICCreateStorageAccountDTO): Observable<ICStorageAccount> {
+    return this.api.post(PREFIX, '/storage-accounts', {}, body) as Observable<ICStorageAccount>;
+  }
+
+  listStorageAccounts(): Observable<ICStorageAccount[]> {
+    return this.api.get(PREFIX, '/storage-accounts') as Observable<ICStorageAccount[]>;
+  }
+
+  getAllStorageAccountsUsage(query: ICUsageParams): Observable<ICClientUsage[]> {
+    return this.api.get(PREFIX, '/storage-accounts/usage', {}, { ...query }) as Observable<ICClientUsage[]>;
+  }
+
+  getStorageAccount(accountId: string): Observable<ICStorageAccount> {
+    return this.api.get(PREFIX, '/storage-accounts/:accountId', { accountId }) as Observable<ICStorageAccount>;
+  }
+
+  deleteStorageAccount(accountId: string): Observable<void> {
+    return this.api.delete(PREFIX, '/storage-accounts/:accountId', { accountId }) as Observable<void>;
+  }
+
+  patchStorageAccount(accountId: string, body: ICPatchStorageAccountDTO): Observable<ICStorageAccount> {
+    return this.api.patch(PREFIX, '/storage-accounts/:accountId', { accountId }, body) as Observable<ICStorageAccount>;
+  }
+
+  getStorageAccountUsage(accountId: string, query: ICUsageParams): Observable<ICClientUsage> {
+    return this.api.get(PREFIX, '/storage-accounts/:accountId/usage', { accountId }, { ...query }) as Observable<ICClientUsage>;
   }
 }
