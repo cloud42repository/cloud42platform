@@ -12,6 +12,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MODULES } from './config/endpoints';
 import { AuthService } from './services/auth.service';
+import { AgentComponent } from './pages/agent/agent.component';
 
 interface ModuleSubViews {
   dashboard?: { route: string; label: string };
@@ -35,7 +36,7 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
     CommonModule, RouterOutlet, RouterLink, RouterLinkActive,
     MatSidenavModule, MatListModule, MatToolbarModule,
     MatIconModule, MatButtonModule, MatTooltipModule, MatMenuModule, MatDividerModule,
-    MatExpansionModule,
+    MatExpansionModule, AgentComponent,
   ],
   template: `
     <mat-toolbar color="primary" class="app-toolbar">
@@ -46,6 +47,11 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
       }
       <span class="app-title">☁️ Cloud42 Platform Admin</span>
       <span class="toolbar-spacer"></span>
+      @if (auth.isLoggedIn()) {
+        <button mat-icon-button (click)="agentOpen.set(!agentOpen())" matTooltip="Agent" style="color:white" [class.agent-btn-active]="agentOpen()">
+          <mat-icon>smart_toy</mat-icon>
+        </button>
+      }
       @if (auth.isLoggedIn()) {
         <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-btn">
           @if (auth.user()?.photoUrl) {
@@ -94,14 +100,6 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
              matTooltipPosition="right">
             <mat-icon matListItemIcon>calendar_month</mat-icon>
             <span matListItemTitle>Calendar</span>
-          </a>
-          <a mat-list-item
-             routerLink="/agent"
-             routerLinkActive="active-link"
-             matTooltip="Agent"
-             matTooltipPosition="right">
-            <mat-icon matListItemIcon>smart_toy</mat-icon>
-            <span matListItemTitle>Agent</span>
           </a>
           <a mat-list-item
              routerLink="/settings"
@@ -155,6 +153,10 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
         </mat-accordion>
       </mat-sidenav>
 
+      <mat-sidenav position="end" [opened]="agentOpen() && auth.isLoggedIn()" mode="side" class="agent-sidenav">
+        <app-agent />
+      </mat-sidenav>
+
       <mat-sidenav-content class="main-content">
         <router-outlet />
       </mat-sidenav-content>
@@ -166,5 +168,6 @@ export class App {
   readonly modules = MODULES;
   readonly moduleViews = MODULE_VIEWS;
   readonly sidenavOpen = signal(true);
+  readonly agentOpen = signal(false);
   readonly auth = inject(AuthService);
 }

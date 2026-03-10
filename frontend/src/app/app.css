@@ -181,3 +181,25 @@
   color: #0369a1 !important;
 }
 
+/* ── Agent right-side panel ─────────────────────────────── */
+.agent-sidenav {
+  width: 420px;
+  background: #fafafa;
+  border-left: 1px solid #e0e0e0;
+  box-shadow: -2px 0 16px rgba(2,132,199,.10);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.agent-sidenav app-agent {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.agent-btn-active {
+  background: rgba(255,255,255,.18) !important;
+  border-radius: 8px;
+}
