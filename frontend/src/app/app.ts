@@ -9,8 +9,24 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { CommonModule } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MODULES } from './config/endpoints';
 import { AuthService } from './services/auth.service';
+
+interface ModuleSubViews {
+  dashboard?: { route: string; label: string };
+  management?: { route: string; label: string };
+}
+
+const MODULE_VIEWS: Record<string, ModuleSubViews> = {
+  'impossible-cloud': {
+    dashboard: { route: 'ic-dashboard', label: 'IC Dashboard' },
+    management: { route: 'ic-management', label: 'IC Management' },
+  },
+  'zoho-invoice': {
+    dashboard: { route: 'invoice-dashboard', label: 'Invoice Dashboard' },
+  },
+};
 
 @Component({
   selector: 'app-root',
@@ -19,6 +35,7 @@ import { AuthService } from './services/auth.service';
     CommonModule, RouterOutlet, RouterLink, RouterLinkActive,
     MatSidenavModule, MatListModule, MatToolbarModule,
     MatIconModule, MatButtonModule, MatTooltipModule, MatMenuModule, MatDividerModule,
+    MatExpansionModule,
   ],
   template: `
     <mat-toolbar color="primary" class="app-toolbar">
@@ -60,7 +77,7 @@ import { AuthService } from './services/auth.service';
 
     <mat-sidenav-container class="sidenav-container">
       <mat-sidenav [opened]="sidenavOpen() && auth.isLoggedIn()" mode="side" class="sidenav">
-        <mat-nav-list>
+        <mat-nav-list class="nav-top-list">
           <a mat-list-item
              routerLink="/workflows"
              [routerLinkActiveOptions]="{exact: true}"
@@ -79,30 +96,6 @@ import { AuthService } from './services/auth.service';
             <span matListItemTitle>Calendar</span>
           </a>
           <a mat-list-item
-             routerLink="/invoice-dashboard"
-             routerLinkActive="active-link"
-             matTooltip="Invoice Dashboard"
-             matTooltipPosition="right">
-            <mat-icon matListItemIcon>bar_chart</mat-icon>
-            <span matListItemTitle>Invoice Dashboard</span>
-          </a>
-          <a mat-list-item
-             routerLink="/ic-dashboard"
-             routerLinkActive="active-link"
-             matTooltip="IC Dashboard"
-             matTooltipPosition="right">
-            <mat-icon matListItemIcon>cloud</mat-icon>
-            <span matListItemTitle>IC Dashboard</span>
-          </a>
-          <a mat-list-item
-             routerLink="/ic-management"
-             routerLinkActive="active-link"
-             matTooltip="IC Management"
-             matTooltipPosition="right">
-            <mat-icon matListItemIcon>manage_accounts</mat-icon>
-            <span matListItemTitle>IC Management</span>
-          </a>
-          <a mat-list-item
              routerLink="/agent"
              routerLinkActive="active-link"
              matTooltip="Agent"
@@ -114,23 +107,52 @@ import { AuthService } from './services/auth.service';
              routerLink="/settings"
              routerLinkActive="active-link"
              matTooltip="Settings"
-             matTooltipPosition="right"
-             class="settings-link">
+             matTooltipPosition="right">
             <mat-icon matListItemIcon>settings</mat-icon>
             <span matListItemTitle>Settings</span>
           </a>
-          <mat-divider />
-          @for (mod of modules; track mod.id) {
-            <a mat-list-item
-               [routerLink]="['/', mod.id]"
-               routerLinkActive="active-link"
-               [matTooltip]="mod.label"
-               matTooltipPosition="right">
-              <mat-icon matListItemIcon>{{ mod.icon }}</mat-icon>
-              <span matListItemTitle>{{ mod.label }}</span>
-            </a>
-          }
         </mat-nav-list>
+        <mat-divider />
+        <div class="nav-modules-label">API Modules</div>
+        <mat-accordion class="nav-accordion" displayMode="flat">
+          @for (mod of modules; track mod.id) {
+            <mat-expansion-panel class="nav-expansion-panel">
+              <mat-expansion-panel-header collapsedHeight="44px" expandedHeight="44px">
+                <mat-panel-title class="nav-panel-title">
+                  <mat-icon class="nav-module-icon">{{ mod.icon }}</mat-icon>
+                  <span>{{ mod.label }}</span>
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+              <mat-nav-list class="nav-sub-list">
+                @if (moduleViews[mod.id]?.dashboard; as dash) {
+                  <a mat-list-item
+                     [routerLink]="['/', dash.route]"
+                     routerLinkActive="active-link"
+                     class="nav-sub-item">
+                    <mat-icon matListItemIcon>dashboard</mat-icon>
+                    <span matListItemTitle>{{ dash.label }}</span>
+                  </a>
+                }
+                @if (moduleViews[mod.id]?.management; as mgmt) {
+                  <a mat-list-item
+                     [routerLink]="['/', mgmt.route]"
+                     routerLinkActive="active-link"
+                     class="nav-sub-item">
+                    <mat-icon matListItemIcon>manage_accounts</mat-icon>
+                    <span matListItemTitle>{{ mgmt.label }}</span>
+                  </a>
+                }
+                <a mat-list-item
+                   [routerLink]="['/', mod.id]"
+                   routerLinkActive="active-link"
+                   class="nav-sub-item">
+                  <mat-icon matListItemIcon>api</mat-icon>
+                  <span matListItemTitle>API Explorer</span>
+                </a>
+              </mat-nav-list>
+            </mat-expansion-panel>
+          }
+        </mat-accordion>
       </mat-sidenav>
 
       <mat-sidenav-content class="main-content">
@@ -142,6 +164,7 @@ import { AuthService } from './services/auth.service';
 })
 export class App {
   readonly modules = MODULES;
+  readonly moduleViews = MODULE_VIEWS;
   readonly sidenavOpen = signal(true);
   readonly auth = inject(AuthService);
 }
