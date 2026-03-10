@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe, PercentPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -62,6 +62,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 })
 export class InvoiceDashboardComponent implements OnInit {
   private readonly invoiceSvc = inject(ZohoInvoiceService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   // ── State ──────────────────────────────────────────────────────────────────
   loading = true;
@@ -160,6 +161,7 @@ export class InvoiceDashboardComponent implements OnInit {
       console.error('Invoice dashboard load error', e);
     } finally {
       this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 

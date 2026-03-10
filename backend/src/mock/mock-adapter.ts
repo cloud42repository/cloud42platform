@@ -10,6 +10,145 @@ const MockAdapter = require('axios-mock-adapter');
 let _seq = 1;
 const nextId = () => `mock-${String(_seq++).padStart(4, '0')}`;
 
+// ─── In-memory store ─────────────────────────────────────────────────────────
+
+type StoreRecord = Record<string, unknown>;
+
+/** Central store: resourceKey → (mockId → record) */
+const store = new Map<string, Map<string, StoreRecord>>();
+
+function getCollection(resourceName: string): Map<string, StoreRecord> {
+  const key = resourceName.toLowerCase();
+  if (!store.has(key)) store.set(key, new Map());
+  return store.get(key)!;
+}
+
+/** Extract the canonical mock ID from the URL's last path segment. */
+function idFromUrl(url: string): string | null {
+  const segments = url.split('?')[0].split('/').filter(Boolean);
+  const last = segments[segments.length - 1] ?? '';
+  return /^\d+$/.test(last) || last.startsWith('mock-') ? last : null;
+}
+
+/**
+ * Pre-populate the store with realistic seed records for every resource type.
+ * Called once when the adapter is first attached.
+ */
+function seedStore(): void {
+  // Names are derived by running the collection URL segment through resourceFromUrl.
+  // e.g. /api/zoho-crm/leads  → seg "leads" → "Leads" → strip 's' → "Lead"
+  // e.g. /api/zoho-crm/notes  → seg "notes" → "Notes" → strip 'es' → "Not"
+  const SEED_RESOURCES: string[] = [
+    // ── Zoho CRM (/api/zoho-crm/) ──────────────────────────────────────────
+    'Lead',           // leads
+    'Contact',        // contacts
+    'Account',        // accounts
+    'Deal',           // deals
+    'Task',           // tasks
+    'Not',            // notes  (Notes → strip 'es' → Not)
+    // ── Zoho Books (/api/zoho-books/) ──────────────────────────────────────
+    'Invoic',         // invoices  (Invoices → strip 'es' → Invoic)
+    'Bill',           // bills
+    'Expens',         // expenses  (Expenses → strip 'es' → Expens)
+    'Payment',        // payments
+    'Item',           // items
+    // ── Zoho Invoice (/api/zoho-invoice/) ──────────────────────────────────
+    'Customer',       // customers
+    'Estimat',        // estimates (Estimates → strip 'es' → Estimat)
+    // ── Zoho Inventory (/api/zoho-inventory/) ──────────────────────────────
+    'Warehouse',      // warehouses (Warehouses → strip 's' → Warehouse)
+    'Salesorder',     // salesorders → strip 's' → Salesorder
+    'Purchaseorder',  // purchaseorders → strip 's' → Purchaseorder
+    // ── Zoho Campaigns (/api/zoho-campaigns/) ──────────────────────────────
+    'List',           // lists
+    'Subscriber',     // subscribers
+    'Topic',          // topics
+    'Campaign',       // campaigns
+    // ── Zoho Desk (/api/zoho-desk/) ────────────────────────────────────────
+    'Ticket',         // tickets
+    'Comment',        // comments
+    'Agent',          // agents
+    'Department',     // departments
+    // ── Zoho Expense (/api/zoho-expense/) ──────────────────────────────────
+    'Category',       // categories (Categories → strip 'ies'+'y' → Category)
+    'Report',         // reports
+    'Advance',        // advances
+    // ── Zoho Mail (/api/zoho-mail/) ────────────────────────────────────────
+    'Account',        // accounts (shared key with CRM accounts — fine for mock)
+    'Folder',         // folders
+    'Messag',         // messages (Messages → strip 'es' → Messag)
+    // ── Zoho People (/api/zoho-people/) ────────────────────────────────────
+    'Employ',         // employees (Employees → strip 'es' → Employ)
+    'Leave-type',     // leave-types  → strip 's' → Leave-type
+    'Leave-request',  // leave-requests → strip 's' → Leave-request
+    'Attendance',     // attendance (no plural → stays Attendance)
+    'Form',           // forms
+    // ── Zoho Payroll (/api/zoho-payroll/) ──────────────────────────────────
+    'Payrun',         // payruns → strip 's' → Payrun
+    'Payslip',        // payslips → strip 's' → Payslip
+    'Pay-component',  // pay-components → strip 's' → Pay-component
+    'Declaration',    // declarations → strip 's' → Declaration
+    // ── Zoho Analytics (/api/zoho-analytics/) ──────────────────────────────
+    'Workspac',       // workspaces (Workspaces → strip 'es' → Workspac)
+    'View',           // views
+    'Dashboard',      // dashboards → strip 's' → Dashboard
+    // ── Zoho Cliq (/api/zoho-cliq/) ────────────────────────────────────────
+    'Channel',        // channels
+    'Bot',            // bots → strip 's' → Bot
+    'Usergroup',      // usergroups → strip 's' → Usergroup
+    // ── Zoho Commerce (/api/zoho-commerce/) ────────────────────────────────
+    'Product',        // products
+    'Order',          // orders
+    'Variant',        // variants
+    // ── Zoho Creator (/api/zoho-creator/) ──────────────────────────────────
+    'Application',    // applications
+    'Workflow',       // workflows
+    // ── Zoho Recruit (/api/zoho-recruit/) ──────────────────────────────────
+    'Job-opening',    // job-openings → strip 's' → Job-opening
+    'Candidat',       // candidates (Candidates → strip 'es' → Candidat)
+    'Interview',      // interviews
+    'Offer',          // offers
+    // ── Zoho SalesIQ (/api/zoho-salesiq/) ──────────────────────────────────
+    'Visitor',        // visitors
+    'Chat',           // chats → strip 's' → Chat
+    'Operator',       // operators
+    // ── Zoho Sign (/api/zoho-sign/) ────────────────────────────────────────
+    'Request',        // requests
+    'Document',       // documents
+    'Recipient',      // recipients
+    'Template',       // templates
+    // ── Zoho Subscriptions (/api/zoho-subscriptions/) ──────────────────────
+    'Plan',           // plans
+    'Addon',          // addons → strip 's' → Addon
+    'Coupon',         // coupons
+    'Subscription',   // subscriptions
+    // ── Zoho WorkDrive (/api/zoho-workdrive/) ──────────────────────────────
+    'Team',           // teams
+    'Fil',            // files (Files → strip 'es' → Fil)
+    'Member',         // members
+    // ── Impossible Cloud (/api/impossible-cloud/) ──────────────────────────
+    'Region',         // regions
+    'Contract',       // contracts
+    'Partner',        // partners
+    'Storage-account', // storage-accounts → strip 's' → Storage-account
+    // ── Zoho Projects (/api/zoho-projects/) ────────────────────────────────
+    'Project',        // projects
+    'Mileston',       // milestones (Milestones → strip 'es' → Mileston)
+    'Bug',            // bugs → strip 's' → Bug
+    'Timelog',        // timelogs — timelogs is in ACTION_SEGMENTS so parent wins; fine as fallback
+    // ── Softvalue (/api/softvalue/) ────────────────────────────────────────
+    'Softvalue',
+  ];
+  for (const res of SEED_RESOURCES) {
+    const col = getCollection(res);
+    for (let i = 0; i < 5; i++) {
+      const id = nextId();
+      col.set(id, buildRecord(res, id));
+    }
+  }
+  console.log(`[MOCK_MODE] Store seeded with ${SEED_RESOURCES.length} resource types (5 records each).`);
+}
+
 // ─── Resource name extraction ─────────────────────────────────────────────────
 
 /** Path segments that are actions/modifiers, not resource names */
@@ -250,53 +389,95 @@ function buildRecord(resourceName: string, id?: string): Record<string, unknown>
   }
 }
 
-/** GET /resource or /resource/:id */
-function buildGetResponse(url: string): unknown {
-  const segments = url.split('?')[0].split('/').filter(Boolean);
-  const lastSeg = segments[segments.length - 1] ?? '';
+/** GET /resource or /resource/:id — reads from the in-memory store */
+function handleGet(url: string): unknown {
   const name = resourceFromUrl(url);
+  const col  = getCollection(name);
+  const id   = idFromUrl(url);
 
-  // If the last segment looks like an ID, return single-item wrapper
-  const isSingle = /^\d+$/.test(lastSeg) || lastSeg.startsWith('mock-');
-
-  if (isSingle) {
-    return { data: [buildRecord(name, lastSeg)] };
+  if (id) {
+    // Single-record lookup
+    let record = col.get(id);
+    if (!record) {
+      // Build on the fly and cache so subsequent GETs are consistent
+      record = buildRecord(name, id);
+      col.set(id, record);
+    }
+    return { data: [record] };
   }
 
+  // Collection listing
+  const records = [...col.values()];
   return {
-    data: [buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name), buildRecord(name)],
-    info: { count: 11, more_records: false, page: 1, per_page: 20 },
+    data: records,
+    info: { count: records.length, more_records: false, page: 1, per_page: 200 },
   };
 }
 
-/** POST / PUT / PATCH → Zoho-style success envelope */
-function buildMutationResponse(action: 'added' | 'updated'): unknown {
-  return {
-    data: [
-      {
+/** POST → create a new record, persist it, return Zoho-style envelope */
+function handlePost(url: string, rawBody: unknown): [number, unknown] {
+  const name = resourceFromUrl(url);
+  const col  = getCollection(name);
+  const id   = nextId();
+  const record = buildRecord(name, id);
+  // Merge caller-supplied fields on top of the generated template
+  if (rawBody && typeof rawBody === 'object') {
+    Object.assign(record, rawBody as object);
+  }
+  col.set(id, record);
+  return [
+    201,
+    {
+      data: [{
         code: 'SUCCESS',
         status: 'success',
-        message: `record ${action}`,
-        details: { id: nextId(), created_time: new Date().toISOString() },
-      },
-    ],
-  };
+        message: 'record added',
+        details: { id, created_time: new Date().toISOString(), ...record },
+      }],
+    },
+  ];
 }
 
-/** DELETE → Zoho-style success envelope */
-function buildDeleteResponse(url: string): unknown {
-  const segments = url.split('?')[0].split('/').filter(Boolean);
-  const id = segments[segments.length - 1] ?? nextId();
-  return {
-    data: [
-      {
+/** PUT / PATCH → update an existing record in the store */
+function handlePutPatch(url: string, rawBody: unknown): [number, unknown] {
+  const name = resourceFromUrl(url);
+  const col  = getCollection(name);
+  const id   = idFromUrl(url) ?? nextId();
+  const existing = col.get(id) ?? buildRecord(name, id);
+  if (rawBody && typeof rawBody === 'object') {
+    Object.assign(existing, rawBody as object);
+  }
+  col.set(id, existing);
+  return [
+    200,
+    {
+      data: [{
+        code: 'SUCCESS',
+        status: 'success',
+        message: 'record updated',
+        details: { id, modified_time: new Date().toISOString(), ...existing },
+      }],
+    },
+  ];
+}
+
+/** DELETE → remove from store */
+function handleDelete(url: string): [number, unknown] {
+  const name = resourceFromUrl(url);
+  const col  = getCollection(name);
+  const id   = idFromUrl(url) ?? '';
+  col.delete(id);
+  return [
+    200,
+    {
+      data: [{
         code: 'SUCCESS',
         status: 'success',
         message: 'record deleted',
         details: { id },
-      },
-    ],
-  };
+      }],
+    },
+  ];
 }
 
 // ─── Adapter factory ──────────────────────────────────────────────────────────
@@ -308,30 +489,32 @@ function buildDeleteResponse(url: string): unknown {
  * Activated when `MOCK_MODE=true` in the environment.
  */
 export function attachMockAdapter(instance: AxiosInstance): void {
+  // Seed the store once (guard against multiple calls)
+  if (store.size === 0) seedStore();
+
   const mock = new MockAdapter(instance, {
     delayResponse: 80, // simulate slight latency
     onNoMatch: 'throwException',
   }) as {
-    onAny(url?: RegExp): { reply: (fn: (cfg: { url?: string; method?: string }) => [number, unknown]) => void };
+    onAny(url?: RegExp): { reply: (fn: (cfg: { url?: string; method?: string; data?: unknown }) => [number, unknown]) => void };
   };
 
-  mock.onAny().reply((config: { url?: string; method?: string }) => {
+  mock.onAny().reply((config: { url?: string; method?: string; data?: unknown }) => {
     const method = (config.method ?? 'get').toLowerCase();
-    const url = config.url ?? '/';
+    const url    = config.url ?? '/';
+    // Axios serialises the body as a JSON string; parse it back
+    let body: unknown = config.data;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch { /* leave as string */ }
+    }
 
     switch (method) {
-      case 'get':
-        return [200, buildGetResponse(url)];
-      case 'post':
-        return [201, buildMutationResponse('added')];
-      case 'put':
-        return [200, buildMutationResponse('updated')];
-      case 'patch':
-        return [200, buildMutationResponse('updated')];
-      case 'delete':
-        return [200, buildDeleteResponse(url)];
-      default:
-        return [200, { message: 'ok' }];
+      case 'get':    return [200, handleGet(url)];
+      case 'post':   return handlePost(url, body);
+      case 'put':    return handlePutPatch(url, body);
+      case 'patch':  return handlePutPatch(url, body);
+      case 'delete': return handleDelete(url);
+      default:       return [200, { message: 'ok' }];
     }
   });
 
