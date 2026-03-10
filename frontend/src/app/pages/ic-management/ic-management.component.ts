@@ -16,9 +16,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
 import { firstValueFrom } from 'rxjs';
-import { ApiService } from '../../services/api.service';
-
-const IC = '/impossible-cloud';
+import { ImpossibleCloudService } from '../../services/impossible-cloud.service';
 
 // ─── Local interfaces ─────────────────────────────────────────────────────────
 
@@ -48,7 +46,7 @@ type PanelMode = 'hidden' | 'create' | 'edit';
   styleUrl:    './ic-management.component.scss',
 })
 export class IcManagementComponent implements OnInit {
-  private readonly api   = inject(ApiService);
+  private readonly icSvc = inject(ImpossibleCloudService);
   private readonly snack = inject(MatSnackBar);
   private readonly cdr   = inject(ChangeDetectorRef);
 
@@ -62,7 +60,7 @@ export class IcManagementComponent implements OnInit {
 
   private async loadContracts() {
     try {
-      const res = await firstValueFrom(this.api.get(IC, '/contracts'));
+      const res = await firstValueFrom(this.icSvc.listContracts());
       const list: Contract[] = Array.isArray(res) ? res : (res as any)?.data ?? [];
       this.contracts.set(list);
       if (!this.selectedContractId && list.length > 0 && list[0].id) {
@@ -86,7 +84,7 @@ export class IcManagementComponent implements OnInit {
   async loadStorageAccounts() {
     this.saLoading.set(true);
     try {
-      const res = await firstValueFrom(this.api.get(IC, '/storage-accounts'));
+      const res = await firstValueFrom(this.icSvc.listStorageAccounts());
       const list: StorageAccount[] = Array.isArray(res) ? res : (res as any)?.data ?? [];
       this.saAccounts.set(list);
     } catch (e: any) {
@@ -114,7 +112,7 @@ export class IcManagementComponent implements OnInit {
     }
     this.saLoading.set(true);
     try {
-      await firstValueFrom(this.api.post(IC, '/storage-accounts', {}, {
+      await firstValueFrom(this.icSvc.createStorageAccount({
         name: this.saForm.name,
         allocatedCapacity: Number(this.saForm.allocatedCapacity),
         allowOverdraft: this.saForm.allowOverdraft,
@@ -131,7 +129,7 @@ export class IcManagementComponent implements OnInit {
   async saveSaEdit(acc: StorageAccount) {
     this.saLoading.set(true);
     try {
-      await firstValueFrom(this.api.patch(IC, '/storage-accounts/:accountId', { accountId: acc.clientAccountId! }, {
+      await firstValueFrom(this.icSvc.patchStorageAccount(acc.clientAccountId!, {
         pendingDeletedAt: this.saPatch.pendingDeletedAt || null,
       }));
       this.toast('Storage account updated.');
@@ -146,7 +144,7 @@ export class IcManagementComponent implements OnInit {
     if (!confirm(`Delete storage account "${acc.name}"?`)) return;
     this.saLoading.set(true);
     try {
-      await firstValueFrom(this.api.delete(IC, '/storage-accounts/:accountId', { accountId: acc.clientAccountId! }));
+      await firstValueFrom(this.icSvc.deleteStorageAccount(acc.clientAccountId!));
       this.toast('Storage account deleted.');
       await this.loadStorageAccounts();
     } catch (e: any) {
@@ -171,7 +169,7 @@ export class IcManagementComponent implements OnInit {
     if (!this.selectedContractId) { this.toast('Select a contract first.', true); return; }
     this.partLoading.set(true);
     try {
-      const res = await firstValueFrom(this.api.get(IC, '/contracts/:contractId/partners', { contractId: this.selectedContractId }));
+      const res = await firstValueFrom(this.icSvc.listContractPartners(this.selectedContractId));
       this.partners.set(Array.isArray(res) ? res : (res as any)?.data ?? []);
     } catch (e: any) {
       this.toast('Failed to load partners: ' + (e?.message ?? e), true);
@@ -198,7 +196,7 @@ export class IcManagementComponent implements OnInit {
     }
     this.partLoading.set(true);
     try {
-      await firstValueFrom(this.api.post(IC, '/partners', {}, {
+      await firstValueFrom(this.icSvc.createPartner({
         distributorContractId: this.selectedContractId,
         name: this.partForm.name,
         allocatedCapacity: Number(this.partForm.allocatedCapacity),
@@ -215,7 +213,7 @@ export class IcManagementComponent implements OnInit {
   async savePartEdit(p: Partner) {
     this.partLoading.set(true);
     try {
-      await firstValueFrom(this.api.put(IC, '/partners/:partnerId', { partnerId: p.id! }, {
+      await firstValueFrom(this.icSvc.updatePartner(p.id!, {
         name: this.partPatch.name || undefined,
         allocatedCapacity: this.partPatch.allocatedCapacity ? Number(this.partPatch.allocatedCapacity) : undefined,
       }));
@@ -231,7 +229,7 @@ export class IcManagementComponent implements OnInit {
     if (!confirm(`Delete partner "${p.name}"?`)) return;
     this.partLoading.set(true);
     try {
-      await firstValueFrom(this.api.delete(IC, '/partners/:partnerId', { partnerId: p.id! }));
+      await firstValueFrom(this.icSvc.deletePartner(p.id!));
       this.toast('Partner deleted.');
       await this.loadPartners();
     } catch (e: any) {
@@ -255,7 +253,7 @@ export class IcManagementComponent implements OnInit {
     if (!this.membPartnerId) { this.toast('Enter a Partner ID.', true); return; }
     this.membLoading.set(true);
     try {
-      const res = await firstValueFrom(this.api.get(IC, '/partners/:partnerId/members', { partnerId: this.membPartnerId }));
+      const res = await firstValueFrom(this.icSvc.listMembers(this.membPartnerId));
       this.members.set(Array.isArray(res) ? res : (res as any)?.data ?? []);
     } catch (e: any) {
       this.toast('Failed to load members: ' + (e?.message ?? e), true);
@@ -275,7 +273,7 @@ export class IcManagementComponent implements OnInit {
     }
     this.membLoading.set(true);
     try {
-      await firstValueFrom(this.api.post(IC, '/partners/:partnerId/members', { partnerId: this.membPartnerId }, {
+      await firstValueFrom(this.icSvc.createMember(this.membPartnerId, {
         email: this.membForm.email,
         password: this.membForm.password,
         name: this.membForm.name || undefined,
@@ -293,9 +291,7 @@ export class IcManagementComponent implements OnInit {
     if (!confirm(`Delete member "${m.email}"?`)) return;
     this.membLoading.set(true);
     try {
-      await firstValueFrom(this.api.delete(IC, '/partners/:partnerId/members/:memberId', {
-        partnerId: this.membPartnerId, memberId: m.id!,
-      }));
+      await firstValueFrom(this.icSvc.deleteMember(this.membPartnerId, m.id!));
       this.toast('Member deleted.');
       await this.loadMembers();
     } catch (e: any) {
@@ -320,7 +316,7 @@ export class IcManagementComponent implements OnInit {
     if (!this.psPartnerId) { this.toast('Enter a Partner ID.', true); return; }
     this.psLoading.set(true);
     try {
-      const res = await firstValueFrom(this.api.get(IC, '/partners/:partnerId/storage-accounts', { partnerId: this.psPartnerId }));
+      const res = await firstValueFrom(this.icSvc.listPartnerStorageAccounts(this.psPartnerId));
       this.psAccounts.set(Array.isArray(res) ? res : (res as any)?.data ?? []);
     } catch (e: any) {
       this.toast('Failed to load partner storage: ' + (e?.message ?? e), true);
@@ -347,7 +343,7 @@ export class IcManagementComponent implements OnInit {
     }
     this.psLoading.set(true);
     try {
-      await firstValueFrom(this.api.post(IC, '/partners/:partnerId/storage-accounts', { partnerId: this.psPartnerId }, {
+      await firstValueFrom(this.icSvc.createPartnerStorageAccount(this.psPartnerId, {
         name: this.psForm.name,
         allocatedCapacity: Number(this.psForm.allocatedCapacity),
         allowOverdraft: this.psForm.allowOverdraft,
@@ -364,9 +360,8 @@ export class IcManagementComponent implements OnInit {
   async savePsEdit(acc: StorageAccount) {
     this.psLoading.set(true);
     try {
-      await firstValueFrom(this.api.patch(
-        IC, '/partners/:partnerId/storage-accounts/:accountId',
-        { partnerId: this.psPartnerId, accountId: acc.clientAccountId! },
+      await firstValueFrom(this.icSvc.patchPartnerStorageAccount(
+        this.psPartnerId, acc.clientAccountId!,
         { pendingDeletedAt: this.psPatch.pendingDeletedAt || null },
       ));
       this.toast('Partner storage account updated.');
@@ -381,10 +376,7 @@ export class IcManagementComponent implements OnInit {
     if (!confirm(`Delete partner storage account "${acc.name}"?`)) return;
     this.psLoading.set(true);
     try {
-      await firstValueFrom(this.api.delete(
-        IC, '/partners/:partnerId/storage-accounts/:accountId',
-        { partnerId: this.psPartnerId, accountId: acc.clientAccountId! },
-      ));
+      await firstValueFrom(this.icSvc.deletePartnerStorageAccount(this.psPartnerId, acc.clientAccountId!));
       this.toast('Partner storage account deleted.');
       await this.loadPartnerStorage();
     } catch (e: any) {

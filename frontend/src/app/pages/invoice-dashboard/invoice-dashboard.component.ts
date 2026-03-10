@@ -16,7 +16,7 @@ import {
   Tooltip, Legend, Title, Filler,
   type ChartData, type ChartOptions,
 } from 'chart.js';
-import { ApiService } from '../../services/api.service';
+import { ZohoInvoiceService } from '../../services/zoho-invoice.service';
 import { firstValueFrom } from 'rxjs';
 
 Chart.register(
@@ -61,7 +61,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
   styleUrl:    './invoice-dashboard.component.scss',
 })
 export class InvoiceDashboardComponent implements OnInit {
-  private readonly api = inject(ApiService);
+  private readonly invoiceSvc = inject(ZohoInvoiceService);
 
   // ── State ──────────────────────────────────────────────────────────────────
   loading = true;
@@ -139,7 +139,7 @@ export class InvoiceDashboardComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     try {
       const res = await firstValueFrom(
-        this.api.get('/zoho-invoice', '/invoices'),
+        this.invoiceSvc.listInvoices(),
       ) as { data: Record<string, unknown>[] };
 
       // Normalise + enrich with deterministic status variety for demo

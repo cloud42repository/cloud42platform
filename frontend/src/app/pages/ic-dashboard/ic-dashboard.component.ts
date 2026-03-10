@@ -16,7 +16,7 @@ import {
   Tooltip, Legend, Title, Filler,
   type ChartData, type ChartOptions,
 } from 'chart.js';
-import { ApiService } from '../../services/api.service';
+import { ImpossibleCloudService } from '../../services/impossible-cloud.service';
 import { firstValueFrom } from 'rxjs';
 
 Chart.register(
@@ -65,7 +65,7 @@ const IC_PURPLE = '#6a1b9a';
   styleUrl:    './ic-dashboard.component.scss',
 })
 export class IcDashboardComponent implements OnInit {
-  private readonly api = inject(ApiService);
+  private readonly icSvc = inject(ImpossibleCloudService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -148,9 +148,9 @@ export class IcDashboardComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     try {
       const [regRes, conRes, saRes] = await Promise.all([
-        firstValueFrom(this.api.get('/impossible-cloud', '/regions')),
-        firstValueFrom(this.api.get('/impossible-cloud', '/contracts')),
-        firstValueFrom(this.api.get('/impossible-cloud', '/storage-accounts')),
+        firstValueFrom(this.icSvc.listRegions()),
+        firstValueFrom(this.icSvc.listContracts()),
+        firstValueFrom(this.icSvc.listStorageAccounts()),
       ]);
 
       this.regions  = this._extract<Region>(regRes,  'regions');
