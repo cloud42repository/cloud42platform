@@ -177,9 +177,9 @@ function extractArray(data: unknown): Record<string, unknown>[] {
     mat-card-header { padding-bottom: 4px; }
     mat-card-title {
       display: flex; align-items: center; gap: 8px;
-      font-size: 16px !important; font-weight: 700 !important; color: #1e293b;
+      font-size: 14px !important; font-weight: 700 !important; color: #1e293b;
     }
-    mat-card-title mat-icon { color: #059669; font-size: 20px; width: 20px; height: 20px; }
+    mat-card-title mat-icon { color: #059669; font-size: 17px; width: 17px; height: 17px; }
     mat-card-subtitle { margin-top: 4px !important; }
     mat-card-subtitle code { font-size: 11px; color: #64748b; font-family: monospace; }
     .param-form {
@@ -214,7 +214,7 @@ function extractArray(data: unknown): Record<string, unknown>[] {
     .td-cell {
       max-width: 200px; overflow: hidden;
       text-overflow: ellipsis; white-space: nowrap;
-      font-size: 12.5px; padding: 0 14px; color: #334155;
+      font-size: 11.5px; padding: 0 14px; color: #334155;
     }
     .no-data { padding: 24px; text-align: center; color: #94a3b8; font-size: 13px; }
     .json-result { white-space: pre-wrap; word-break: break-all; font-size: 12px; max-height: 400px; overflow: auto; }

@@ -120,7 +120,7 @@ import { FormViewComponent } from '../../shared/form-view/form-view.component';
       flex-shrink: 0;
     }
     .module-icon { font-size: 24px; width: 24px; height: 24px; color: #fff !important; }
-    h1 { margin: 0; font-size: 20px; font-weight: 700; color: #1e293b; letter-spacing: -.02em; }
+    h1 { margin: 0; font-size: 17px; font-weight: 700; color: #1e293b; letter-spacing: -.02em; }
     .module-subtitle { margin: 2px 0 0; font-size: 12px; color: #64748b; font-family: monospace; }
 
     /* ── Two-panel layout ── */
@@ -160,7 +160,7 @@ import { FormViewComponent } from '../../shared/form-view/form-view.component';
       background: none; border: none; cursor: pointer;
       padding: 7px 10px; border-radius: 8px;
       transition: background .14s, color .14s;
-      font-size: 12.5px; line-height: 1.3; color: #374151;
+      font-size: 11.5px; line-height: 1.3; color: #374151;
       font-family: inherit;
     }
     .ep-btn:hover { background: rgba(2,132,199,.07); color: #0284c7; }

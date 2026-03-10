@@ -133,9 +133,9 @@ import { SchemaService, FieldSchema } from '../../services/schema.service';
     mat-card-header { padding-bottom: 4px; }
     mat-card-title {
       display: flex; align-items: center; gap: 8px;
-      font-size: 16px !important; font-weight: 700 !important; color: #1e293b;
+      font-size: 14px !important; font-weight: 700 !important; color: #1e293b;
     }
-    mat-card-title mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    mat-card-title mat-icon { font-size: 17px; width: 17px; height: 17px; }
     mat-card-subtitle { margin-top: 4px !important; }
     mat-card-subtitle code { font-size: 11px; color: #64748b; font-family: monospace; }
     .param-form {
