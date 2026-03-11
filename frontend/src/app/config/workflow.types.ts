@@ -9,6 +9,9 @@ export type PayloadSource =
 /** Discriminator for workflow canvas nodes */
 export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else';
 
+/** How the request body is configured for a POST / PUT / PATCH step */
+export type BodyMode = 'fields' | 'text' | 'form';
+
 /** A single API-endpoint step in the workflow */
 export interface WorkflowStep {
   id: string;             // uuid
@@ -25,6 +28,12 @@ export interface WorkflowStep {
 
   /** Source config for each path parameter */
   paramSources: Record<string, PayloadSource>;
+
+  /** How body is configured: per-field, raw text/JSON, or via FormView (default: 'fields') */
+  bodyMode?: BodyMode;
+
+  /** Raw JSON body string (used when bodyMode === 'text' or 'form') */
+  rawBody?: string;
 
   /** Ordered body field keys to send */
   bodyKeys: string[];

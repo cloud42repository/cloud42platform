@@ -1,6 +1,7 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, inject, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, SimpleChanges, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -97,21 +98,23 @@ import { SchemaService, FieldSchema } from '../../services/schema.service';
           }
 
           <div class="submit-row">
-            <button mat-raised-button [color]="submitColor" type="submit" [disabled]="loading()">
-              <mat-icon>send</mat-icon> {{ endpoint.method }}
-            </button>
+            @if (showSubmit) {
+              <button mat-raised-button [color]="submitColor" type="submit" [disabled]="loading()">
+                <mat-icon>send</mat-icon> {{ endpoint.method }}
+              </button>
+            }
           </div>
         </form>
 
-        @if (loading()) {
+        @if (showSubmit && loading()) {
           <mat-spinner diameter="40" class="spinner"></mat-spinner>
         }
-        @if (error()) {
+        @if (showSubmit && error()) {
           <div class="error-msg">
             <mat-icon color="warn">error</mat-icon> {{ error() }}
           </div>
         }
-        @if (!loading() && result()) {
+        @if (showSubmit && !loading() && result()) {
           <mat-expansion-panel [expanded]="true" class="result-panel">
             <mat-expansion-panel-header>
               <mat-panel-title>Response</mat-panel-title>
@@ -177,15 +180,20 @@ import { SchemaService, FieldSchema } from '../../services/schema.service';
     .method-delete { background-color: #dc2626 !important; color: white !important; }
   `]
 })
-export class FormViewComponent implements OnInit, OnChanges {
+export class FormViewComponent implements OnInit, OnChanges, OnDestroy {
   @Input({ required: true }) endpoint!: EndpointDef;
   @Input({ required: true }) apiPrefix!: string;
   @Input() initialValues: Record<string, string> = {};
+  /** Set to false to hide submit button and response display (for embedding) */
+  @Input() showSubmit = true;
+  /** Emits body values (as JSON string) whenever the form changes (useful when showSubmit=false) */
+  @Output() valuesChange = new EventEmitter<string>();
 
   private readonly api = inject(ApiService);
   private readonly fb = inject(FormBuilder);
   private readonly snack = inject(MatSnackBar);
   private readonly schemaService = inject(SchemaService);
+  private valuesSub?: Subscription;
 
   pathParams: string[] = [];
   queryParamFields: string[] = [];
@@ -223,6 +231,37 @@ export class FormViewComponent implements OnInit, OnChanges {
     if (Object.keys(this.initialValues).length > 0) {
       this.paramForm.patchValue(this.initialValues);
     }
+
+    // Emit body values whenever the form changes (for workflow builder embedding)
+    if (!this.showSubmit) {
+      this.valuesSub = this.paramForm.valueChanges.subscribe(val => {
+        this.valuesChange.emit(this.extractBodyJson(val));
+      });
+    }
+  }
+
+  ngOnDestroy() {
+    this.valuesSub?.unsubscribe();
+  }
+
+  /** Extract only body-related fields and return as a JSON string */
+  private extractBodyJson(val: Record<string, string>): string {
+    if (this.formFields.length > 0) {
+      const body: Record<string, unknown> = {};
+      this.formFields.forEach(f => {
+        const raw = val['body.' + f.key];
+        if (raw !== '' && raw !== null && raw !== undefined) {
+          if (f.type === 'number') body[f.key] = Number(raw);
+          else {
+            try { body[f.key] = JSON.parse(raw); } catch { body[f.key] = raw; }
+          }
+        }
+      });
+      return JSON.stringify(body, null, 2);
+    } else if (this.endpoint.hasBody) {
+      return val['__body__'] ?? '{}';
+    }
+    return '{}';
   }
 
   ngOnChanges(changes: SimpleChanges) {

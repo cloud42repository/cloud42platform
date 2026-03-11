@@ -1,5 +1,6 @@
 import {
   Component, OnInit, signal, computed, inject, ViewChild, ElementRef,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +16,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatRadioModule } from '@angular/material/radio';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { KeyValuePipe } from '@angular/common';
 import {
   CdkDragDrop, DragDropModule, moveItemInArray,
 } from '@angular/cdk/drag-drop';
@@ -22,8 +25,9 @@ import {
 import { MODULES, ModuleDef, EndpointDef, extractPathParams } from '../../config/endpoints';
 import { WorkflowService } from '../../services/workflow.service';
 import {
-  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock, PayloadSource, StepKind,
+  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock, PayloadSource, StepKind, BodyMode,
 } from '../../config/workflow.types';
+import { FormViewComponent } from '../../shared/form-view/form-view.component';
 
 interface EndpointRef { module: ModuleDef; endpoint: EndpointDef; }
 interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string; icon: string; color: string; }
@@ -36,7 +40,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
     MatButtonModule, MatIconModule, MatInputModule, MatFormFieldModule,
     MatSelectModule, MatTooltipModule, MatChipsModule,
     MatProgressSpinnerModule, MatSnackBarModule, MatDividerModule, MatRadioModule,
-    DragDropModule,
+    DragDropModule, FormViewComponent, MatButtonToggleModule, KeyValuePipe,
   ],
   template: `
     <!-- ── Top bar ──────────────────────────────────────────────────────── -->
@@ -75,6 +79,12 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
           @else { <mat-icon>play_arrow</mat-icon> }
           Run now
         </button>
+        @if (runLog()) {
+          <button mat-stroked-button class="results-btn" (click)="resultPanelOpen.update(v => !v)">
+            <mat-icon>{{ resultPanelOpen() ? 'expand_more' : 'expand_less' }}</mat-icon>
+            Results
+          </button>
+        }
       </div>
     </div>
 
@@ -226,17 +236,23 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
                         <span class="step-module">{{ step.moduleLabel }}</span>
                         <code class="step-path">{{ step.pathTemplate }}</code>
                       </div>
-                      @if (step.pathParamNames.length > 0 || step.bodyKeys.length > 0) {
+                      @if (step.pathParamNames.length > 0 || step.bodyKeys.length > 0 || step.bodyMode === 'text' || step.bodyMode === 'form') {
                         <div class="step-config-summary">
                           @for (p of step.pathParamNames; track p) {
                             <span class="cfg-chip" [class.cfg-chip--set]="step.paramSources[p]?.type === 'hardcoded' ? $any(step.paramSources[p])?.value : true">
                               :{{ p }}={{ getSourceSummary(step, p, 'param') }}
                             </span>
                           }
-                          @for (k of step.bodyKeys; track k) {
-                            <span class="cfg-chip cfg-chip--body">
-                              {{ k }}={{ getSourceSummary(step, k, 'body') }}
-                            </span>
+                          @if (step.bodyMode === 'text') {
+                            <span class="cfg-chip cfg-chip--body">body: raw JSON</span>
+                          } @else if (step.bodyMode === 'form') {
+                            <span class="cfg-chip cfg-chip--body">body: form</span>
+                          } @else {
+                            @for (k of step.bodyKeys; track k) {
+                              <span class="cfg-chip cfg-chip--body">
+                                {{ k }}={{ getSourceSummary(step, k, 'body') }}
+                              </span>
+                            }
                           }
                         </div>
                       }
@@ -544,54 +560,105 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
               @if (ep.hasBody) {
                 <mat-divider class="section-divider" />
                 <div class="config-section-label">Request Body</div>
-                @for (key of ep.bodyKeys; track key) {
-                  <div class="field-block">
-                    <div class="field-name">
-                      <mat-icon>data_object</mat-icon><code>{{ key }}</code>
-                      <button mat-icon-button class="remove-key-btn" (click)="removeBodyKey(key)" matTooltip="Remove field"><mat-icon>remove_circle_outline</mat-icon></button>
-                    </div>
-                    <div class="source-toggle">
-                      <button mat-stroked-button [class.active-source]="getBodySourceType(key) === 'hardcoded'" (click)="setBodySourceType(key, 'hardcoded')">
-                        <mat-icon>text_fields</mat-icon> Hardcoded
-                      </button>
-                      <button mat-stroked-button [class.active-source]="getBodySourceType(key) === 'from-step'" [disabled]="previousSteps().length === 0" (click)="setBodySourceType(key, 'from-step')" matTooltip="{{ previousSteps().length === 0 ? 'No previous steps' : 'Use a previous step response' }}">
-                        <mat-icon>link</mat-icon> From step
-                      </button>
-                    </div>
-                    @if (getBodySourceType(key) === 'hardcoded') {
-                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
-                        <mat-label>Value for {{ key }}</mat-label>
-                        <input matInput [value]="getBodyValue(key)" (input)="setBodyHardcoded(key, $any($event.target).value)" placeholder="Value…" />
-                      </mat-form-field>
-                    }
-                    @if (getBodySourceType(key) === 'from-step') {
-                      <div class="from-step-row">
-                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="step-select">
-                          <mat-label>From step</mat-label>
-                          <mat-select [value]="getBodyFromStepId(key)" (selectionChange)="setBodyFromStepId(key, $event.value)">
-                            @for (ps of previousSteps(); track ps.id) {
-                              <mat-option [value]="ps.id">{{ getStepIndex(ps.id) + 1 }}. {{ getNodeLabel(ps) }}</mat-option>
-                            }
-                          </mat-select>
-                        </mat-form-field>
-                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field-input">
-                          <mat-label>Field path</mat-label>
-                          <input matInput [value]="getBodyFromStepField(key)" (input)="setBodyFromStepField(key, $any($event.target).value)" placeholder="e.g. id" />
-                          <mat-hint>Dot-notation path into response</mat-hint>
-                        </mat-form-field>
-                      </div>
-                    }
-                  </div>
-                }
-                <div class="add-field-row">
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="add-key-input">
-                    <mat-label>Field name</mat-label>
-                    <input matInput #newKeyInput [(ngModel)]="newBodyKey" placeholder="e.g. name" (keydown.enter)="addBodyKey()" />
-                  </mat-form-field>
-                  <button mat-stroked-button (click)="addBodyKey()" [disabled]="!newBodyKey.trim()">
-                    <mat-icon>add</mat-icon> Add
+
+                <!-- Body mode toggle (Fields / Text / Form) -->
+                <div class="body-mode-toggle">
+                  <button mat-stroked-button [class.active-source]="getBodyMode(ep) === 'fields'" (click)="setBodyMode('fields')"
+                    matTooltip="Add fields one by one with hardcoded or step values">
+                    <mat-icon>list</mat-icon> Fields
+                  </button>
+                  <button mat-stroked-button [class.active-source]="getBodyMode(ep) === 'text'" (click)="setBodyMode('text')"
+                    matTooltip="Write raw JSON body">
+                    <mat-icon>code</mat-icon> Text
+                  </button>
+                  <button mat-stroked-button [class.active-source]="getBodyMode(ep) === 'form'" (click)="setBodyMode('form')"
+                    matTooltip="Use auto-generated form for this endpoint">
+                    <mat-icon>dynamic_form</mat-icon> Form
                   </button>
                 </div>
+
+                <!-- ── FIELDS MODE (original) ── -->
+                @if (getBodyMode(ep) === 'fields') {
+                  @for (key of ep.bodyKeys; track key) {
+                    <div class="field-block">
+                      <div class="field-name">
+                        <mat-icon>data_object</mat-icon><code>{{ key }}</code>
+                        <button mat-icon-button class="remove-key-btn" (click)="removeBodyKey(key)" matTooltip="Remove field"><mat-icon>remove_circle_outline</mat-icon></button>
+                      </div>
+                      <div class="source-toggle">
+                        <button mat-stroked-button [class.active-source]="getBodySourceType(key) === 'hardcoded'" (click)="setBodySourceType(key, 'hardcoded')">
+                          <mat-icon>text_fields</mat-icon> Hardcoded
+                        </button>
+                        <button mat-stroked-button [class.active-source]="getBodySourceType(key) === 'from-step'" [disabled]="previousSteps().length === 0" (click)="setBodySourceType(key, 'from-step')" matTooltip="{{ previousSteps().length === 0 ? 'No previous steps' : 'Use a previous step response' }}">
+                          <mat-icon>link</mat-icon> From step
+                        </button>
+                      </div>
+                      @if (getBodySourceType(key) === 'hardcoded') {
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                          <mat-label>Value for {{ key }}</mat-label>
+                          <input matInput [value]="getBodyValue(key)" (input)="setBodyHardcoded(key, $any($event.target).value)" placeholder="Value…" />
+                        </mat-form-field>
+                      }
+                      @if (getBodySourceType(key) === 'from-step') {
+                        <div class="from-step-row">
+                          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="step-select">
+                            <mat-label>From step</mat-label>
+                            <mat-select [value]="getBodyFromStepId(key)" (selectionChange)="setBodyFromStepId(key, $event.value)">
+                              @for (ps of previousSteps(); track ps.id) {
+                                <mat-option [value]="ps.id">{{ getStepIndex(ps.id) + 1 }}. {{ getNodeLabel(ps) }}</mat-option>
+                              }
+                            </mat-select>
+                          </mat-form-field>
+                          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field-input">
+                            <mat-label>Field path</mat-label>
+                            <input matInput [value]="getBodyFromStepField(key)" (input)="setBodyFromStepField(key, $any($event.target).value)" placeholder="e.g. id" />
+                            <mat-hint>Dot-notation path into response</mat-hint>
+                          </mat-form-field>
+                        </div>
+                      }
+                    </div>
+                  }
+                  <div class="add-field-row">
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="add-key-input">
+                      <mat-label>Field name</mat-label>
+                      <input matInput #newKeyInput [(ngModel)]="newBodyKey" placeholder="e.g. name" (keydown.enter)="addBodyKey()" />
+                    </mat-form-field>
+                    <button mat-stroked-button (click)="addBodyKey()" [disabled]="!newBodyKey.trim()">
+                      <mat-icon>add</mat-icon> Add
+                    </button>
+                  </div>
+                }
+
+                <!-- ── TEXT MODE (raw JSON) ── -->
+                @if (getBodyMode(ep) === 'text') {
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                    <mat-label>Request Body (JSON)</mat-label>
+                    <textarea matInput rows="10" [value]="ep.rawBody ?? '{}'"
+                      (input)="setRawBody($any($event.target).value)"
+                      placeholder='{ "key": "value" }' class="raw-body-textarea"></textarea>
+                    <mat-hint>Enter a valid JSON object</mat-hint>
+                  </mat-form-field>
+                }
+
+                <!-- ── FORM MODE (FormViewComponent) ── -->
+                @if (getBodyMode(ep) === 'form') {
+                  @if (getEndpointDef(ep); as epDef) {
+                    <div class="form-view-embed">
+                      <app-form-view
+                        [endpoint]="epDef"
+                        [apiPrefix]="ep.moduleApiPrefix"
+                        [showSubmit]="false"
+                        [initialValues]="getFormInitialValues(ep)"
+                        (valuesChange)="setRawBody($event)"
+                      />
+                    </div>
+                  } @else {
+                    <div class="no-config">
+                      <mat-icon>warning</mat-icon>
+                      <p>Endpoint definition not found for form view.</p>
+                    </div>
+                  }
+                }
               }
 
               @if (!ep.hasBody && ep.pathParamNames.length === 0) {
@@ -792,22 +859,94 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
       }
     </div>
 
-    <!-- ── Run result ─────────────────────────────────────────────────────── -->
-    @if (runLog()) {
-      <div class="run-result" [class.run-result--fail]="!runLog()!.success">
-        <div class="run-result-header">
-          <mat-icon>{{ runLog()!.success ? 'check_circle' : 'error' }}</mat-icon>
-          <span>{{ runLog()!.success ? 'Workflow completed successfully' : 'Workflow failed' }}</span>
-          <button mat-icon-button (click)="runLog.set(null)"><mat-icon>close</mat-icon></button>
+    <!-- ── Bottom result panel ─────────────────────────────────────────────── -->
+    @if (runLog() && resultPanelOpen()) {
+      <div class="result-resize-handle" (mousedown)="onResizeStart($event)">
+        <div class="resize-grip"></div>
+      </div>
+      <div class="result-bottom" [style.height.px]="resultPanelHeight()"
+           [class.result-bottom--fail]="!runLog()!.success">
+        <div class="result-bottom-header">
+          <mat-icon class="result-status-icon">{{ runLog()!.success ? 'check_circle' : 'error' }}</mat-icon>
+          <span class="result-bottom-title">{{ runLog()!.success ? 'Workflow completed' : 'Workflow failed' }}</span>
+          <span class="result-step-counter">{{ runLog()!.steps.length }} step{{ runLog()!.steps.length === 1 ? '' : 's' }}</span>
+          <button mat-icon-button (click)="resultPanelOpen.set(false)" matTooltip="Collapse results">
+            <mat-icon>expand_more</mat-icon>
+          </button>
         </div>
-        <div class="run-steps">
+        <div class="result-bottom-body">
           @for (sl of runLog()!.steps; track sl.stepId) {
-            <div class="run-step" [class.run-step--fail]="!sl.success">
-              <mat-icon>{{ sl.success ? 'check' : 'close' }}</mat-icon>
-              <strong>{{ sl.label }}</strong>
-              @if (sl.error) { <span class="run-error">{{ sl.error }}</span> }
+            <div class="result-step" [class.result-step--fail]="!sl.success">
+              <div class="result-step-header">
+                <mat-icon>{{ sl.success ? 'check_circle' : 'cancel' }}</mat-icon>
+                <strong>{{ sl.label }}</strong>
+              </div>
+              @if (sl.error) {
+                <div class="result-step-error">
+                  <mat-icon>warning</mat-icon>
+                  <span>{{ sl.error }}</span>
+                </div>
+              }
               @if (sl.response) {
-                <pre class="run-resp">{{ sl.response | json }}</pre>
+                <div class="result-view-toggle">
+                  <mat-button-toggle-group [value]="getViewMode(sl.stepId)" (change)="setViewMode(sl.stepId, $event.value)" hideSingleSelectionIndicator>
+                    <mat-button-toggle value="json"><mat-icon>code</mat-icon> JSON</mat-button-toggle>
+                    @if (isArray(sl.response)) {
+                      <mat-button-toggle value="list"><mat-icon>table_rows</mat-icon> List</mat-button-toggle>
+                    }
+                    @if (isObject(sl.response) && !isArray(sl.response)) {
+                      <mat-button-toggle value="form"><mat-icon>list_alt</mat-icon> Form</mat-button-toggle>
+                    }
+                  </mat-button-toggle-group>
+                </div>
+
+                @switch (getViewMode(sl.stepId)) {
+                  @case ('json') {
+                    <pre class="result-step-resp">{{ sl.response | json }}</pre>
+                  }
+                  @case ('list') {
+                    <div class="result-list-view">
+                      @if (asArray(sl.response); as rows) {
+                        @if (rows.length > 0 && isObject(rows[0])) {
+                          <table class="result-table">
+                            <thead>
+                              <tr>
+                                @for (col of objectKeys(rows[0]); track col) {
+                                  <th>{{ col }}</th>
+                                }
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (row of rows; track $index) {
+                                <tr>
+                                  @for (col of objectKeys(rows[0]); track col) {
+                                    <td>{{ asRecord(row)[col] }}</td>
+                                  }
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        } @else {
+                          <ul class="result-simple-list">
+                            @for (item of rows; track $index) {
+                              <li>{{ item }}</li>
+                            }
+                          </ul>
+                        }
+                      }
+                    </div>
+                  }
+                  @case ('form') {
+                    <div class="result-form-view">
+                      @for (entry of sl.response | keyvalue; track entry.key) {
+                        <div class="form-row">
+                          <span class="form-label">{{ entry.key }}</span>
+                          <span class="form-value">{{ isObject(entry.value) ? (entry.value | json) : entry.value }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                }
               }
             </div>
           }
@@ -832,7 +971,8 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
 
     /* ── Layout ── */
     .builder-layout {
-      display: flex; flex: 1; overflow: hidden; gap: 0;
+      display: flex; flex: 1 1 0; overflow: hidden; gap: 0;
+      min-height: 0;
     }
 
     /* ── Browser ── */
@@ -1023,6 +1163,19 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
     .add-field-row { display: flex; gap: 8px; align-items: flex-start; margin-top: 4px; }
     .add-key-input { flex: 1; }
 
+    /* ── Body mode toggle ── */
+    .body-mode-toggle {
+      display: flex; gap: 6px; margin-bottom: 8px;
+    }
+    .body-mode-toggle button { font-size: 11px; padding: 0 10px !important; height: 30px; }
+    .raw-body-textarea { font-family: 'Fira Code', 'Consolas', monospace; font-size: 12px; line-height: 1.5; }
+    .form-view-embed {
+      border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;
+      background: #fafafa; margin-top: 4px;
+    }
+    .form-view-embed ::ng-deep .form-card { padding: 8px !important; }
+    .form-view-embed ::ng-deep mat-card-header { display: none !important; }
+
     .no-config {
       display: flex; flex-direction: column; align-items: center; gap: 8px;
       padding: 32px 16px; color: #94a3b8; font-size: 12px; text-align: center;
@@ -1040,32 +1193,146 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
     .method-patch  { background: #ede9fe; color: #7c3aed; }
     .method-delete { background: #fee2e2; color: #dc2626; }
 
-    /* ── Run result ── */
-    .run-result {
-      flex-shrink: 0; border-top: 1px solid #e2e8f0;
-      max-height: 260px; overflow-y: auto;
+    /* ── Results button ── */
+    .results-btn { color: #0284c7 !important; border-color: #0284c7 !important; }
+    .results-btn mat-icon { font-size: 18px; }
+
+    /* ── Bottom result panel ── */
+    .result-resize-handle {
+      height: 6px; flex-shrink: 0; cursor: ns-resize;
+      background: #e2e8f0; position: relative;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .result-resize-handle:hover,
+    .result-resize-handle:active { background: #bae6fd; }
+    .resize-grip {
+      width: 40px; height: 3px; border-radius: 2px;
+      background: #94a3b8;
+    }
+    .result-resize-handle:hover .resize-grip { background: #0284c7; }
+
+    .result-bottom {
+      flex-shrink: 0; display: flex; flex-direction: column;
+      border-top: 1px solid #e2e8f0;
+      background: white; overflow: hidden;
+      min-height: 0;
+    }
+
+    .result-bottom-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px; flex-shrink: 0;
+      border-bottom: 1px solid #e2e8f0;
       background: #f0fdf4;
     }
-    .run-result--fail { background: #fff1f2; }
-    .run-result-header {
+    .result-bottom--fail .result-bottom-header { background: #fff1f2; }
+    .result-status-icon { font-size: 20px; width: 20px; height: 20px; color: #16a34a !important; }
+    .result-bottom--fail .result-status-icon { color: #dc2626 !important; }
+    .result-bottom-title { flex: 1; font-size: 14px; font-weight: 700; color: #1e293b; }
+    .result-step-counter {
+      font-size: 11px; color: #64748b;
+      background: #f1f5f9; padding: 2px 8px; border-radius: 99px;
+    }
+
+    .result-bottom-body {
+      flex: 1; overflow-y: scroll; padding: 12px 16px;
+      display: flex; flex-direction: column; gap: 10px;
+      min-height: 0;
+      scrollbar-width: thin;
+      scrollbar-color: #94a3b8 #f1f5f9;
+    }
+    .result-bottom-body::-webkit-scrollbar { width: 10px; }
+    .result-bottom-body::-webkit-scrollbar-thumb {
+      background: #94a3b8; border-radius: 5px;
+      border: 2px solid #f1f5f9;
+    }
+    .result-bottom-body::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    .result-bottom-body::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 5px; }
+
+    .result-step {
+      border: 1px solid #e2e8f0; border-radius: 10px;
+      overflow: hidden; background: white;
+      transition: border-color .15s;
+      flex-shrink: 0;
+    }
+    .result-step:hover { border-color: #bae6fd; }
+    .result-step--fail { border-color: #fecaca; }
+    .result-step--fail:hover { border-color: #f87171; }
+
+    .result-step-header {
       display: flex; align-items: center; gap: 8px;
-      padding: 8px 12px; font-size: 13px; font-weight: 600;
-      position: sticky; top: 0; background: inherit; border-bottom: 1px solid #e2e8f0;
+      padding: 10px 14px; background: #f8fafc;
+      border-bottom: 1px solid #f1f5f9;
     }
-    .run-result-header mat-icon { color: #16a34a !important; }
-    .run-result--fail .run-result-header mat-icon { color: #dc2626 !important; }
-    .run-steps { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
-    .run-step {
-      display: flex; align-items: flex-start; gap: 6px; font-size: 12px;
-      padding: 4px 0;
+    .result-step-header mat-icon { font-size: 18px; width: 18px; height: 18px; color: #16a34a; flex-shrink: 0; }
+    .result-step--fail .result-step-header mat-icon { color: #dc2626; }
+    .result-step-header strong { font-size: 13px; color: #1e293b; }
+
+    .result-step-error {
+      display: flex; align-items: flex-start; gap: 6px;
+      padding: 8px 14px; background: #fff1f2;
+      font-size: 12px; color: #dc2626;
     }
-    .run-step mat-icon { font-size: 16px; flex-shrink: 0; color: #16a34a; }
-    .run-step--fail mat-icon { color: #dc2626; }
-    .run-error { color: #dc2626; flex: 1; }
-    .run-resp {
-      margin: 4px 0 0; width: 100%; font-size: 10px; background: rgba(0,0,0,.04);
-      padding: 4px 6px; border-radius: 4px; max-height: 80px; overflow: auto;
+    .result-step-error mat-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    .result-step-resp {
+      margin: 0; padding: 10px 14px; font-size: 11px;
+      background: #fafafa; overflow: auto;
       white-space: pre-wrap; word-break: break-all;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      line-height: 1.5; color: #374151;
+    }
+
+    /* ── View toggle ── */
+    .result-view-toggle {
+      padding: 6px 14px; display: flex; align-items: center;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .result-view-toggle mat-button-toggle-group {
+      height: 28px; font-size: 11px;
+    }
+    .result-view-toggle mat-button-toggle { font-size: 11px; }
+    .result-view-toggle mat-icon { font-size: 14px; width: 14px; height: 14px; margin-right: 4px; }
+
+    /* ── List / Table view ── */
+    .result-list-view { padding: 0; overflow: auto; }
+    .result-table {
+      width: 100%; border-collapse: collapse; font-size: 11px;
+    }
+    .result-table th {
+      position: sticky; top: 0; z-index: 1;
+      background: #f1f5f9; padding: 6px 10px; text-align: left;
+      font-weight: 600; color: #475569; border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    .result-table td {
+      padding: 5px 10px; border-bottom: 1px solid #f1f5f9;
+      color: #334155; max-width: 200px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .result-table tbody tr:hover td { background: #f8fafc; }
+    .result-simple-list {
+      margin: 0; padding: 8px 14px 8px 28px; font-size: 12px;
+      color: #334155; list-style: disc;
+    }
+    .result-simple-list li { padding: 2px 0; }
+
+    /* ── Form view ── */
+    .result-form-view {
+      padding: 8px 14px; display: flex; flex-direction: column; gap: 4px;
+      overflow: auto;
+    }
+    .form-row {
+      display: flex; gap: 12px; padding: 4px 0;
+      border-bottom: 1px solid #f8fafc; font-size: 12px;
+    }
+    .form-row:last-child { border-bottom: none; }
+    .form-label {
+      min-width: 140px; max-width: 180px; font-weight: 600;
+      color: #475569; flex-shrink: 0;
+    }
+    .form-value {
+      color: #1e293b; word-break: break-all; flex: 1;
     }
 
     /* ── Control Flow browser section ── */
@@ -1213,6 +1480,7 @@ export class WorkflowBuilderComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly svc = inject(WorkflowService);
   private readonly snack = inject(MatSnackBar);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   // ── Workflow state ────────────────────────────────────────────────────────
   private workflowId: string | null = null;
@@ -1221,6 +1489,12 @@ export class WorkflowBuilderComponent implements OnInit {
   newBodyKey = '';
   running = signal(false);
   runLog = signal<{ success: boolean; steps: { stepId: string; label: string; response?: unknown; error?: string; success: boolean }[] } | null>(null);
+  resultPanelOpen = signal(false);
+  resultPanelHeight = signal(220);
+  private resizing = false;
+  private resizeStartY = 0;
+  private resizeStartH = 0;
+  stepViewModes: Record<string, 'json' | 'list' | 'form'> = {};
 
   readonly steps = signal<WorkflowNode[]>([]);
   readonly selectedStepId = signal<string | null>(null);
@@ -1628,6 +1902,42 @@ export class WorkflowBuilderComponent implements OnInit {
     });
   }
 
+  // ── Body mode helpers (for POST / PUT / PATCH) ────────────────────────────
+  getBodyMode(ep: WorkflowStep): BodyMode {
+    return ep.bodyMode ?? 'fields';
+  }
+
+  setBodyMode(mode: BodyMode) {
+    const id = this.selectedStepId()!;
+    this.mutateStep(id, s => ({ ...s, bodyMode: mode }));
+  }
+
+  setRawBody(value: string) {
+    const id = this.selectedStepId()!;
+    this.mutateStep(id, s => ({ ...s, rawBody: value }));
+  }
+
+  /** Resolve the EndpointDef from MODULES for a step so FormViewComponent can use it */
+  getEndpointDef(ep: WorkflowStep): EndpointDef | null {
+    const mod = MODULES.find(m => m.id === ep.moduleId);
+    return mod?.endpoints.find(e => e.id === ep.endpointId) ?? null;
+  }
+
+  /** Convert the step's rawBody JSON into initialValues for FormViewComponent */
+  getFormInitialValues(ep: WorkflowStep): Record<string, string> {
+    if (!ep.rawBody) return {};
+    try {
+      const parsed = JSON.parse(ep.rawBody);
+      const vals: Record<string, string> = {};
+      for (const [k, v] of Object.entries(parsed)) {
+        vals['body.' + k] = typeof v === 'string' ? v : JSON.stringify(v);
+      }
+      return vals;
+    } catch {
+      return {};
+    }
+  }
+
   // ── Summary chip helper ───────────────────────────────────────────────────
   getSourceSummary(step: WorkflowStep, key: string, area: 'param' | 'body'): string {
     const src = area === 'param' ? step.paramSources[key] : step.bodySources[key];
@@ -1672,10 +1982,59 @@ export class WorkflowBuilderComponent implements OnInit {
     try {
       const log = await this.svc.execute(id);
       this.runLog.set(log);
+      this.resultPanelOpen.set(true);
     } catch (e) {
       this.snack.open(`Execution error: ${e}`, '', { duration: 4000 });
     } finally {
       this.running.set(false);
     }
+  }
+
+  /* ── Result view helpers ──────────────────────────────────────────────── */
+  isArray(v: unknown): boolean { return Array.isArray(v); }
+  isObject(v: unknown): boolean { return v !== null && typeof v === 'object'; }
+  objectKeys(v: unknown): string[] { return v && typeof v === 'object' ? Object.keys(v) : []; }
+  asArray(v: unknown): unknown[] { return Array.isArray(v) ? v : []; }
+  asRecord(v: unknown): Record<string, unknown> { return (v && typeof v === 'object' ? v : {}) as Record<string, unknown>; }
+
+  getViewMode(stepId: string): string {
+    if (this.stepViewModes[stepId]) return this.stepViewModes[stepId];
+    const step = this.runLog()?.steps.find(s => s.stepId === stepId);
+    if (step?.response) {
+      if (Array.isArray(step.response)) return 'list';
+      if (typeof step.response === 'object' && step.response !== null) return 'form';
+    }
+    return 'json';
+  }
+
+  setViewMode(stepId: string, mode: string) {
+    this.stepViewModes[stepId] = mode as 'json' | 'list' | 'form';
+  }
+
+  /* ── Resize bottom panel ─────────────────────────────────────────────── */
+  onResizeStart(e: MouseEvent) {
+    e.preventDefault();
+    this.resizing = true;
+    this.resizeStartY = e.clientY;
+    this.resizeStartH = this.resultPanelHeight();
+
+    const onMove = (ev: MouseEvent) => {
+      if (!this.resizing) return;
+      const delta = this.resizeStartY - ev.clientY;
+      const next = Math.max(100, Math.min(this.resizeStartH + delta, window.innerHeight - 200));
+      this.resultPanelHeight.set(next);
+      this.cdr.markForCheck();
+    };
+    const onUp = () => {
+      this.resizing = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   }
 }

@@ -239,7 +239,15 @@ export class WorkflowService {
 
       // Resolve body
       let body: Record<string, unknown> | undefined;
-      if (step.hasBody && step.bodyKeys.length > 0) {
+      const bodyMode = step.bodyMode ?? 'fields';
+      if (step.hasBody && (bodyMode === 'text' || bodyMode === 'form') && step.rawBody) {
+        // Raw JSON body (from Text mode or Form mode)
+        try {
+          body = JSON.parse(step.rawBody);
+        } catch {
+          body = {};
+        }
+      } else if (step.hasBody && step.bodyKeys.length > 0) {
         body = {};
         for (const key of step.bodyKeys) {
           const src = step.bodySources[key] ?? { type: 'hardcoded', value: '' };
