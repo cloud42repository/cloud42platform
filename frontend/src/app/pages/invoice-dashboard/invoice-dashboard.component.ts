@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe, PercentPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,6 +7,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatButtonModule } from '@angular/material/button';
 import { NgChartsModule } from 'ng2-charts';
 import {
   Chart,
@@ -54,7 +55,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
   imports: [
     CommonModule, CurrencyPipe, DatePipe, PercentPipe,
     MatCardModule, MatIconModule, MatProgressSpinnerModule,
-    MatTableModule, MatChipsModule, MatDividerModule, MatTooltipModule,
+    MatTableModule, MatChipsModule, MatDividerModule, MatTooltipModule, MatButtonModule,
     NgChartsModule,
   ],
   templateUrl: './invoice-dashboard.component.html',
@@ -63,6 +64,9 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 export class InvoiceDashboardComponent implements OnInit {
   private readonly invoiceSvc = inject(ZohoInvoiceService);
   private readonly cdr = inject(ChangeDetectorRef);
+
+  @ViewChild('dashContent', { static: false }) dashContentRef!: ElementRef<HTMLElement>;
+  exporting = false;
 
   // ── State ──────────────────────────────────────────────────────────────────
   loading = true;
@@ -247,5 +251,27 @@ export class InvoiceDashboardComponent implements OnInit {
 
   statusClass(status: Invoice['status']): string {
     return `chip-${status}`;
+  }
+
+  async exportPdf(): Promise<void> {
+    const el = this.dashContentRef?.nativeElement;
+    if (!el) return;
+    this.exporting = true;
+    this.cdr.detectChanges();
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, logging: false });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      const date = new Date().toISOString().slice(0, 10);
+      pdf.save(`Invoice-Dashboard-${date}.pdf`);
+    } catch (e) {
+      console.error('PDF export failed', e);
+    } finally {
+      this.exporting = false;
+      this.cdr.detectChanges();
+    }
   }
 }

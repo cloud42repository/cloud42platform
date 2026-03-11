@@ -5,6 +5,13 @@
       <h1 class="dash-title">Invoice Dashboard</h1>
       <p class="dash-subtitle">Zoho Invoice · real-time overview</p>
     </div>
+    <span class="header-spacer"></span>
+    @if (!loading) {
+      <button mat-flat-button class="export-btn" (click)="exportPdf()" [disabled]="exporting">
+        <mat-icon>picture_as_pdf</mat-icon>
+        {{ exporting ? 'Exporting…' : 'Export PDF' }}
+      </button>
+    }
   </div>
 
   @if (loading) {
@@ -14,6 +21,7 @@
     </div>
   } @else {
 
+    <div #dashContent>
     <!-- ── KPI Cards ───────────────────────────────────────────────────── -->
     <div class="kpi-row">
       <mat-card class="kpi-card kpi-total">
@@ -192,5 +200,6 @@
       </mat-card-content>
     </mat-card>
 
+    </div><!-- /dashContent -->
   }
 </div>

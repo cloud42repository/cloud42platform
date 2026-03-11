@@ -13,6 +13,33 @@
   margin-bottom: 28px;
 }
 
+.header-spacer {
+  flex: 1;
+}
+
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1565c0 !important;
+  color: #fff !important;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: none;
+  white-space: nowrap;
+
+  mat-icon {
+    font-size: 1.15rem;
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
+
 .dash-icon {
   font-size: 40px;
   height: 40px;

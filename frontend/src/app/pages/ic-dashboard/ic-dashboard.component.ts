@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule, DecimalPipe, PercentPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,6 +7,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatButtonModule } from '@angular/material/button';
 import { NgChartsModule } from 'ng2-charts';
 import {
   Chart,
@@ -43,7 +44,7 @@ const IC_PURPLE = '#6a1b9a';
   imports: [
     CommonModule, DecimalPipe, PercentPipe,
     MatCardModule, MatIconModule, MatProgressSpinnerModule,
-    MatTableModule, MatDividerModule, MatTooltipModule, MatBadgeModule,
+    MatTableModule, MatDividerModule, MatTooltipModule, MatBadgeModule, MatButtonModule,
     NgChartsModule,
   ],
   templateUrl: './ic-dashboard.component.html',
@@ -52,6 +53,9 @@ const IC_PURPLE = '#6a1b9a';
 export class IcDashboardComponent implements OnInit {
   private readonly icSvc = inject(ImpossibleCloudService);
   private readonly cdr = inject(ChangeDetectorRef);
+
+  @ViewChild('dashContent', { static: false }) dashContentRef!: ElementRef<HTMLElement>;
+  exporting = false;
 
   // ── Loading ────────────────────────────────────────────────────────────────
   loading = true;
@@ -293,5 +297,27 @@ export class IcDashboardComponent implements OnInit {
 
   isOverdue(sa: ICStorageAccount): boolean {
     return !!sa.pendingDeletedAt;
+  }
+
+  async exportPdf(): Promise<void> {
+    const el = this.dashContentRef?.nativeElement;
+    if (!el) return;
+    this.exporting = true;
+    this.cdr.detectChanges();
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, logging: false });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      const date = new Date().toISOString().slice(0, 10);
+      pdf.save(`IC-Dashboard-${date}.pdf`);
+    } catch (e) {
+      console.error('PDF export failed', e);
+    } finally {
+      this.exporting = false;
+      this.cdr.detectChanges();
+    }
   }
 }
