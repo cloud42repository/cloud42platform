@@ -3,17 +3,25 @@
   <!-- Header -->
   <div class="agent-header">
     <div class="header-left">
-      <div class="agent-avatar">
-        <mat-icon>smart_toy</mat-icon>
+      <div class="agent-avatar" [class.chatgpt-avatar]="chatMode()">
+        <mat-icon>{{ chatMode() ? 'psychology' : 'smart_toy' }}</mat-icon>
       </div>
       <div>
-        <div class="header-title">Cloud42 Agent</div>
-        <div class="header-subtitle">Natural language assistant</div>
+        <div class="header-title">{{ chatMode() ? 'ChatGPT Mode' : 'Cloud42 Agent' }}</div>
+        <div class="header-subtitle">{{ chatMode() ? 'Multi-turn AI conversation' : 'Natural language assistant' }}</div>
       </div>
     </div>
-    <button mat-icon-button (click)="clearChat()" matTooltip="Clear conversation">
-      <mat-icon>restart_alt</mat-icon>
-    </button>
+    <div class="header-actions">
+      <mat-slide-toggle
+        [checked]="chatMode()"
+        (change)="toggleChatMode()"
+        matTooltip="Toggle ChatGPT mode"
+        color="primary"
+      ></mat-slide-toggle>
+      <button mat-icon-button (click)="clearChat()" matTooltip="Clear conversation">
+        <mat-icon>restart_alt</mat-icon>
+      </button>
+    </div>
   </div>
 
   <mat-divider />
@@ -25,8 +33,8 @@
       <div class="message-row" [class.user-row]="msg.role === 'user'" [class.agent-row]="msg.role === 'agent'">
 
         @if (msg.role === 'agent') {
-          <div class="avatar agent-avatar-small">
-            <mat-icon>smart_toy</mat-icon>
+          <div class="avatar" [class.agent-avatar-small]="msg.source !== 'chatgpt'" [class.chatgpt-avatar-small]="msg.source === 'chatgpt'">
+            <mat-icon>{{ msg.source === 'chatgpt' ? 'psychology' : 'smart_toy' }}</mat-icon>
           </div>
         }
 
@@ -60,8 +68,8 @@
     <!-- Thinking indicator -->
     @if (thinking()) {
       <div class="message-row agent-row">
-        <div class="avatar agent-avatar-small">
-          <mat-icon>smart_toy</mat-icon>
+        <div class="avatar" [class.agent-avatar-small]="!chatMode()" [class.chatgpt-avatar-small]="chatMode()">
+          <mat-icon>{{ chatMode() ? 'psychology' : 'smart_toy' }}</mat-icon>
         </div>
         <div class="bubble agent-bubble thinking-bubble">
           <span class="dot"></span>
@@ -76,12 +84,12 @@
   <!-- Input area -->
   <div class="input-area">
     <mat-form-field appearance="outline" class="prompt-field" subscriptSizing="dynamic">
-      <mat-icon matPrefix>chat</mat-icon>
+      <mat-icon matPrefix>{{ chatMode() ? 'psychology' : 'chat' }}</mat-icon>
       <input
         matInput
         [(ngModel)]="promptText"
         (keydown.enter)="send()"
-        placeholder="Ask me to navigate or create a workflow…"
+        [placeholder]="chatMode() ? 'Ask ChatGPT anything…' : 'Ask me to navigate or create a workflow…'"
         autocomplete="off"
       />
     </mat-form-field>
@@ -104,6 +112,7 @@
     <button mat-stroked-button class="suggestion-chip" (click)="promptText = 'go to Workflows'; send()">Workflows</button>
     <button mat-stroked-button class="suggestion-chip" (click)="promptText = 'create a workflow that lists Impossible Cloud storage accounts and gets usage'; send()">Create IC Workflow</button>
     <button mat-stroked-button class="suggestion-chip" (click)="promptText = 'search mock'; send()">Search Data</button>
+    <button mat-stroked-button class="suggestion-chip chatgpt-chip" (click)="promptText = 'ask chatgpt what is cloud computing?'; send()">Ask ChatGPT</button>
     <button mat-stroked-button class="suggestion-chip" (click)="promptText = 'list modules'; send()">List Modules</button>
     <button mat-stroked-button class="suggestion-chip" (click)="promptText = 'help'; send()">Help</button>
   </div>

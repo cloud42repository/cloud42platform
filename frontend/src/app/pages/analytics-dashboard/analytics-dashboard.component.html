@@ -1,0 +1,142 @@
+<div class="dash-wrapper">
+  <div class="dash-header">
+    <mat-icon class="dash-icon">analytics</mat-icon>
+    <div>
+      <h1 class="dash-title">Analytics Dashboard</h1>
+      <p class="dash-subtitle">Zoho Analytics · workspace &amp; reporting overview</p>
+    </div>
+    <span class="header-spacer"></span>
+    @if (!loading) {
+      <button mat-flat-button class="export-btn" (click)="exportPdf()" [disabled]="exporting">
+        <mat-icon>picture_as_pdf</mat-icon>
+        {{ exporting ? 'Exporting…' : 'Export PDF' }}
+      </button>
+    }
+  </div>
+
+  @if (loading) {
+    <div class="loading-center">
+      <mat-spinner diameter="56" />
+      <p class="loading-text">Loading analytics data…</p>
+    </div>
+  } @else {
+
+    <div #dashContent>
+    <!-- ── KPI Cards ───────────────────────────────────────────────────── -->
+    <div class="kpi-row">
+      <mat-card class="kpi-card kpi-total">
+        <mat-card-content>
+          <mat-icon>workspaces</mat-icon>
+          <div class="kpi-body">
+            <span class="kpi-label">Workspaces</span>
+            <span class="kpi-value">{{ totalWorkspaces }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-revenue">
+        <mat-card-content>
+          <mat-icon>view_list</mat-icon>
+          <div class="kpi-body">
+            <span class="kpi-label">Views</span>
+            <span class="kpi-value">{{ totalViews }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-paid">
+        <mat-card-content>
+          <mat-icon>assessment</mat-icon>
+          <div class="kpi-body">
+            <span class="kpi-label">Reports</span>
+            <span class="kpi-value">{{ totalReports }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-rate">
+        <mat-card-content>
+          <mat-icon>dashboard</mat-icon>
+          <div class="kpi-body">
+            <span class="kpi-label">Dashboards</span>
+            <span class="kpi-value">{{ totalDashboards }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- ── Charts Row 1 ───────────────────────────────────────────────── -->
+    <div class="charts-row">
+      <mat-card class="chart-card chart-bar">
+        <mat-card-content>
+          <canvas baseChart [data]="viewsBarData" [options]="viewsBarOptions" type="bar"></canvas>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card chart-gauge">
+        <mat-card-content>
+          <canvas baseChart [data]="gaugeData" [options]="gaugeOptions" type="doughnut"></canvas>
+          <div class="gauge-center-label">
+            <span class="gauge-pct">{{ totalReports + totalDashboards }}</span>
+            <span class="gauge-sub">total</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- ── Charts Row 2 ───────────────────────────────────────────────── -->
+    <div class="charts-row">
+      <mat-card class="chart-card chart-line">
+        <mat-card-content>
+          <canvas baseChart [data]="lineData" [options]="lineOptions" type="line"></canvas>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card chart-pie">
+        <mat-card-content>
+          <canvas baseChart [data]="pieData" [options]="pieOptions" type="doughnut"></canvas>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- ── Workspaces Table ──────────────────────────────────────────── -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon style="vertical-align:middle;margin-right:8px">table_rows</mat-icon>
+          Workspaces Overview
+        </mat-card-title>
+      </mat-card-header>
+      <mat-divider />
+      <mat-card-content class="table-wrap">
+        <table mat-table [dataSource]="workspaces" class="analytics-table">
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Workspace</th>
+            <td mat-cell *matCellDef="let r">{{ r.name }}</td>
+          </ng-container>
+          <ng-container matColumnDef="workspaceId">
+            <th mat-header-cell *matHeaderCellDef>ID</th>
+            <td mat-cell *matCellDef="let r"><code>{{ r.workspaceId }}</code></td>
+          </ng-container>
+          <ng-container matColumnDef="views">
+            <th mat-header-cell *matHeaderCellDef>Views</th>
+            <td mat-cell *matCellDef="let r">{{ r.views }}</td>
+          </ng-container>
+          <ng-container matColumnDef="reports">
+            <th mat-header-cell *matHeaderCellDef>Reports</th>
+            <td mat-cell *matCellDef="let r">{{ r.reports }}</td>
+          </ng-container>
+          <ng-container matColumnDef="dashboards">
+            <th mat-header-cell *matHeaderCellDef>Dashboards</th>
+            <td mat-cell *matCellDef="let r">{{ r.dashboards }}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="tableColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: tableColumns;"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
+    </div>
+
+  }
+</div>

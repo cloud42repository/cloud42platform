@@ -1,4 +1,4 @@
-import {
+﻿import {
   Component, ElementRef, ViewChild, OnInit, inject, signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { firstValueFrom } from 'rxjs';
 
@@ -25,6 +26,14 @@ export interface AgentMessage {
   html: string;
   actions?: { label: string; route: string }[];
   timestamp: Date;
+  /** Distinguish ChatGPT responses from normal agent messages */
+  source?: 'agent' | 'chatgpt';
+}
+
+/** Lightweight ChatGPT message for conversation history */
+interface ChatGPTMsg {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
 }
 
 interface NavTarget { route: string; label: string; }
@@ -37,6 +46,7 @@ interface NavTarget { route: string; label: string; }
     MatCardModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatDividerModule,
     MatTooltipModule, MatProgressSpinnerModule,
+    MatSlideToggleModule,
   ],
   templateUrl: './agent.component.html',
   styleUrls: ['./agent.component.scss'],
@@ -50,7 +60,11 @@ export class AgentComponent implements OnInit {
 
   readonly messages = signal<AgentMessage[]>([]);
   readonly thinking = signal(false);
+  readonly chatMode = signal(false);
   promptText = '';
+
+  /** Multi-turn conversation history sent to ChatGPT */
+  private chatHistory: ChatGPTMsg[] = [];
 
   // ── Navigation map ──────────────────────────────────────────────────────────
   private readonly NAV_MAP: { keywords: string[]; route: string; label: string }[] = [
@@ -69,16 +83,19 @@ export class AgentComponent implements OnInit {
 
   // ── Lifecycle ───────────────────────────────────────────────────────────────
   ngOnInit(): void {
+    this.chatMode.set(false);
+    this.chatHistory = [];
     this.messages.set([{
       role: 'agent',
       html: `<strong>👋 Hello! I'm the Cloud42 Agent.</strong><br>
-I can help you <strong>navigate</strong> the platform or <strong>create workflows</strong> from a natural language prompt.<br><br>
+I can help you <strong>navigate</strong> the platform, <strong>create workflows</strong>, or <strong>chat with ChatGPT</strong>.<br><br>
 <em>Example commands:</em><br>
 &bull; <code>go to IC dashboard</code><br>
 &bull; <code>open Zoho CRM</code><br>
 &bull; <code>search mock</code> — search across all API data<br>
 &bull; <code>create a workflow that lists Impossible Cloud storage accounts and gets usage</code><br>
-&bull; <code>build a workflow to list Zoho Books invoices then create a Zoho CRM contact</code><br>
+&bull; <code>ask chatgpt what is cloud computing?</code><br>
+&bull; Toggle <strong>ChatGPT mode</strong> for multi-turn AI conversation<br>
 &bull; <code>help</code>`,
       actions: [
         { label: 'View Workflows', route: '/workflows' },
@@ -102,6 +119,26 @@ I can help you <strong>navigate</strong> the platform or <strong>create workflow
     this.scrollToBottom();
 
     this.thinking.set(true);
+
+    // In ChatGPT mode, always route to ChatGPT (unless exiting)
+    if (this.chatMode()) {
+      const lower = text.toLowerCase().trim();
+      if (/^(exit\s*chat|back\s*to\s*agent|agent\s*mode|quit\s*chat|stop\s*chat)/.test(lower)) {
+        this.chatMode.set(false);
+        this.chatHistory = [];
+        this.thinking.set(false);
+        this.messages.update(msgs => [...msgs, {
+          role: 'agent',
+          html: `Switched back to <strong>Agent mode</strong>. Your ChatGPT conversation history has been cleared.`,
+          timestamp: new Date(),
+        }]);
+        this.scrollToBottom();
+        return;
+      }
+      this.doChatGPT(text);
+      return;
+    }
+
     setTimeout(() => {
       const response = this.processInput(text);
       if (response) {
@@ -110,6 +147,32 @@ I can help you <strong>navigate</strong> the platform or <strong>create workflow
         this.scrollToBottom();
       }
     }, 600);
+  }
+
+  /** Toggle ChatGPT mode on/off */
+  toggleChatMode(): void {
+    const entering = !this.chatMode();
+    this.chatMode.set(entering);
+
+    if (entering) {
+      this.chatHistory = [];
+      this.messages.update(msgs => [...msgs, {
+        role: 'agent',
+        html: `<strong>🤖 ChatGPT mode activated.</strong><br>
+All your messages will now be sent to ChatGPT. The conversation is multi-turn — I'll remember context.<br><br>
+Type <code>exit chat</code> or toggle off to return to Agent mode.`,
+        source: 'chatgpt',
+        timestamp: new Date(),
+      }]);
+    } else {
+      this.chatHistory = [];
+      this.messages.update(msgs => [...msgs, {
+        role: 'agent',
+        html: `Switched back to <strong>Agent mode</strong>. ChatGPT conversation history cleared.`,
+        timestamp: new Date(),
+      }]);
+    }
+    this.scrollToBottom();
   }
 
   doAction(action: { label: string; route: string }): void {
@@ -169,6 +232,23 @@ I can help you <strong>navigate</strong> the platform or <strong>create workflow
         actions: [{ label: `Open ${nav.label}`, route: nav.route }],
         timestamp: new Date(),
       };
+    }
+
+    // One-shot ChatGPT query ("ask chatgpt ...", "chat gpt ...", "ask ai ...")
+    if (/\b(ask\s*(chatgpt|gpt|ai|openai)|chat\s*gpt|chatgpt)\b/i.test(lower)) {
+      const prompt = input
+        .replace(/\b(ask\s*(chatgpt|gpt|ai|openai)|chat\s*gpt|chatgpt)\b/gi, '')
+        .trim();
+      if (!prompt) {
+        return {
+          role: 'agent',
+          html: `Please provide a prompt after <code>ask chatgpt</code>.<br>
+Example: <em>"ask chatgpt what is cloud computing?"</em>`,
+          timestamp: new Date(),
+        };
+      }
+      this.doChatGPT(prompt);
+      return null; // async response
     }
 
     // Fallback
@@ -321,6 +401,78 @@ Try mentioning module names and actions, e.g.:<br>
     };
   }
 
+  // ── ChatGPT integration ────────────────────────────────────────────────────
+  private async doChatGPT(prompt: string): Promise<void> {
+    // Add user message to conversation history
+    this.chatHistory.push({ role: 'user', content: prompt });
+
+    try {
+      const body = {
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant integrated into the Cloud42 platform. Keep answers concise and practical.' },
+          ...this.chatHistory,
+        ],
+        temperature: 0.7,
+        max_tokens: 1024,
+      };
+
+      const raw: any = await firstValueFrom(
+        this.api.post('/chatgpt', '/chat/completions', {}, body)
+      );
+
+      const reply =
+        raw?.choices?.[0]?.message?.content ??
+        raw?.choices?.[0]?.text ??
+        'No response from ChatGPT.';
+
+      // Add assistant reply to conversation history for multi-turn
+      this.chatHistory.push({ role: 'assistant', content: reply });
+
+      this.thinking.set(false);
+      this.messages.update(msgs => [...msgs, {
+        role: 'agent',
+        html: this.formatChatGPTResponse(reply),
+        source: 'chatgpt',
+        timestamp: new Date(),
+      }]);
+    } catch (err: any) {
+      this.thinking.set(false);
+      const errMsg = err?.error?.message ?? err?.message ?? 'Unknown error';
+      this.messages.update(msgs => [...msgs, {
+        role: 'agent',
+        html: `⚠️ ChatGPT request failed: <em>${this.escapeHtml(errMsg)}</em><br>
+Make sure the backend is running and the ChatGPT module is configured.`,
+        source: 'chatgpt',
+        timestamp: new Date(),
+      }]);
+    }
+
+    this.scrollToBottom();
+  }
+
+  /** Format ChatGPT plain-text response into displayable HTML */
+  private formatChatGPTResponse(text: string): string {
+    // Escape HTML first
+    let html = this.escapeHtml(text);
+
+    // Convert markdown-like code blocks  ```...```
+    html = html.replace(/```(\w*)\n?([\s\S]*?)```/g,
+      (_m, _lang, code) => `<pre style="background:#f5f5f5;padding:8px 12px;border-radius:6px;overflow-x:auto;font-size:12.5px;margin:8px 0"><code>${code.trim()}</code></pre>`);
+
+    // Convert inline code `...`
+    html = html.replace(/`([^`]+)`/g,
+      '<code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:4px;font-size:12.5px">$1</code>');
+
+    // Convert bold **...**
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+    // Convert newlines to <br>
+    html = html.replace(/\n/g, '<br>');
+
+    return html;
+  }
+
   // ── Help ────────────────────────────────────────────────────────────────────
   private helpMessage(): AgentMessage {
     const moduleItems = MODULES.slice(0, 7)
@@ -336,11 +488,14 @@ Available pages: <em>Workflows, Calendar, IC Dashboard, Invoice Dashboard, Setti
 <strong>⚙️ Create Workflows</strong> — Say <em>"create a workflow that [description]"</em>.<br>
 &bull; Mention module names and actions: <em>"list Impossible Cloud regions then get storage account usage"</em><br>
 &bull; Cross-module: <em>"get Zoho CRM contacts and create a Zoho Books invoice"</em><br><br>
-<strong>� Search Data</strong> — Say <em>"search [term]"</em> to search across all API GET endpoints.<br>
+<strong>🤖 ChatGPT</strong> — Talk to AI directly!<br>
+&bull; <em>"ask chatgpt what is cloud computing?"</em> — one-shot query<br>
+&bull; Toggle <strong>ChatGPT mode</strong> (header switch) for multi-turn conversation<br>
+&bull; <code>exit chat</code> to return to Agent mode<br><br>
+<strong>🔍 Search Data</strong> — Say <em>"search [term]"</em> to search across all API GET endpoints.<br>
 &bull; <em>"search mock"</em> — find records containing "mock"<br>
-&bull; <em>"search for invoice"</em> — find records mentioning "invoice"<br>
-&bull; <em>"look for John"</em> — search by name<br><br>
-<strong>�📋 Other commands</strong><br>
+&bull; <em>"search for invoice"</em> — find records mentioning "invoice"<br><br>
+<strong>📋 Other commands</strong><br>
 &bull; <code>list modules</code> — show all available API modules<br>
 &bull; <code>help</code> — show this message<br><br>
 <strong>📦 Available modules (top ${Math.min(7, MODULES.length)}):</strong><ul>${moduleItems}${moreCount}</ul>`,

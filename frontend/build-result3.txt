@@ -1,0 +1,23 @@
+OK
+[33m❯[39m Building...
+[32m✔[39m Building...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mmain-ROF2LBJZ.js[39m   [2m | [22m[2mmain[22m         [2m | [22m  [36m1.54 MB[39m[2m | [22m              [36m283.65 kB[39m
+[32mchunk-MFS5VYHO.js[39m  [2m | [22m[2m-[22m            [2m | [22m[36m172.81 kB[39m[2m | [22m               [36m50.48 kB[39m
+[32mstyles-36UGQF2O.css[39m[2m | [22m[2mstyles[22m       [2m | [22m [36m18.99 kB[39m[2m | [22m                [36m2.57 kB[39m
+[32mchunk-C6Q5SG76.js[39m  [2m | [22m[2m-[22m            [2m | [22m  [36m1.07 kB[39m[2m | [22m              [36m468 bytes[39m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m[2m | [22m  [1m1.73 MB[22m[2m | [22m              [1m337.17 kB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-OJ7265M6.js[39m  [2m | [22m[2mjspdf-es-min[22m [2m | [22m[36m410.99 kB[39m[2m | [22m              [36m112.50 kB[39m
+[32mchunk-Z27M7K2C.js[39m  [2m | [22m[2mhtml2canvas[22m  [2m | [22m[36m202.84 kB[39m[2m | [22m               [36m38.53 kB[39m
+[32mchunk-4O5FIFOP.js[39m  [2m | [22m[2mindex-es[22m     [2m | [22m[36m158.70 kB[39m[2m | [22m               [36m46.83 kB[39m
+[32mchunk-L2ZPXDDN.js[39m  [2m | [22m[2mbrowser[22m      [2m | [22m [36m67.78 kB[39m[2m | [22m               [36m17.80 kB[39m
+[32mchunk-NBUREYNZ.js[39m  [2m | [22m[2mpurify-es[22m    [2m | [22m [36m22.50 kB[39m[2m | [22m                [36m7.78 kB[39m
+[32mchunk-FK6H3RFT.js[39m  [2m | [22m[2m-[22m            [2m | [22m[36m272 bytes[39m[2m | [22m              [36m272 bytes[39m
+
+Application bundle generation complete. [55.538 seconds] - 2026-03-11T15:17:46.389Z
+
+Output location: c:\SAPDevelop\cloud42Platform\frontend\dist\frontend
+

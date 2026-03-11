@@ -579,6 +579,20 @@ export const MODULES: ModuleDef[] = [
       { id: 'remove-workspace-member', label: 'Remove Workspace Member', method: 'DELETE', pathTemplate: '/workspaces/:workspaceId/members/:memberId' },
     ]
   },
+  {
+    id: 'chatgpt',
+    label: 'ChatGPT',
+    apiPrefix: '/chatgpt',
+    icon: 'psychology',
+    endpoints: [
+      { id: 'list-models', label: 'List Models', method: 'GET', pathTemplate: '/models' },
+      { id: 'get-model', label: 'Get Model', method: 'GET', pathTemplate: '/models/:modelId' },
+      { id: 'create-chat-completion', label: 'Chat Completion', method: 'POST', pathTemplate: '/chat/completions', hasBody: true },
+      { id: 'create-embedding', label: 'Create Embedding', method: 'POST', pathTemplate: '/embeddings', hasBody: true },
+      { id: 'generate-image', label: 'Generate Image', method: 'POST', pathTemplate: '/images/generations', hasBody: true },
+      { id: 'create-moderation', label: 'Create Moderation', method: 'POST', pathTemplate: '/moderations', hasBody: true },
+    ]
+  },
 ];
 
 export const MODULE_MAP = new Map<string, ModuleDef>(MODULES.map(m => [m.id, m]));

@@ -138,6 +138,12 @@ function seedStore(): void {
     'Timelog',        // timelogs — timelogs is in ACTION_SEGMENTS so parent wins; fine as fallback
     // ── Softvalue (/api/softvalue/) ────────────────────────────────────────
     'Softvalue',
+    // ── ChatGPT / OpenAI (/api/chatgpt/) ───────────────────────────────────
+    'Model',          // models
+    'Completion',     // chat/completions (resource extraction fallback)
+    'Embedding',      // embeddings
+    'Generation',     // images/generations
+    'Moderation',     // moderations
   ];
   for (const res of SEED_RESOURCES) {
     const col = getCollection(res);
@@ -382,6 +388,18 @@ function buildRecord(resourceName: string, id?: string): Record<string, unknown>
     case 'softvalue':
     case 'item':
       return { id: recordId, name: `Item ${recordId}`, value: randomInt(1, 100), created_at: now };
+
+    // ── ChatGPT / OpenAI ────────────────────────────────────────────────────
+    case 'model':
+      return { id: `gpt-4o-${recordId}`, object: 'model', created: Math.floor(Date.now() / 1000), owned_by: 'openai' };
+    case 'completion':
+      return { id: `chatcmpl-${recordId}`, object: 'chat.completion', created: Math.floor(Date.now() / 1000), model: 'gpt-4o', choices: [{ index: 0, message: { role: 'assistant', content: `Mock response ${recordId}` }, finish_reason: 'stop' }], usage: { prompt_tokens: randomInt(10, 200), completion_tokens: randomInt(20, 500), total_tokens: randomInt(30, 700) } };
+    case 'embedding':
+      return { object: 'list', data: [{ object: 'embedding', index: 0, embedding: Array.from({ length: 8 }, () => Math.random()) }], model: 'text-embedding-ada-002', usage: { prompt_tokens: randomInt(5, 50), total_tokens: randomInt(5, 50) } };
+    case 'generation':
+      return { created: Math.floor(Date.now() / 1000), data: [{ url: `https://oaidalleapiprodscus.blob.core.windows.net/mock/${recordId}.png`, revised_prompt: `Mock image prompt ${recordId}` }] };
+    case 'moderation':
+      return { id: `modr-${recordId}`, model: 'text-moderation-007', results: [{ flagged: false, categories: { sexual: false, hate: false, harassment: false, 'self-harm': false, violence: false }, category_scores: { sexual: 0.001, hate: 0.0001, harassment: 0.0002, 'self-harm': 0.0001, violence: 0.0003 } }] };
 
     // ── Fallback ─────────────────────────────────────────────────────────────
     default:

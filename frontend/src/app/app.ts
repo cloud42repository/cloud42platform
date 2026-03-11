@@ -29,6 +29,19 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
   },
   'zoho-invoice': {
     dashboard: { route: 'invoice-dashboard', label: 'Invoice Dashboard' },
+    management: { route: 'invoice-management', label: 'Invoice Management' },
+  },
+  'zoho-books': {
+    dashboard: { route: 'books-dashboard', label: 'Books Dashboard' },
+    management: { route: 'books-management', label: 'Books Management' },
+  },
+  'zoho-analytics': {
+    dashboard: { route: 'analytics-dashboard', label: 'Analytics Dashboard' },
+    management: { route: 'analytics-management', label: 'Analytics Management' },
+  },
+  'zoho-campaigns': {
+    dashboard: { route: 'campaigns-dashboard', label: 'Campaigns Dashboard' },
+    management: { route: 'campaigns-management', label: 'Campaigns Management' },
   },
 };
 

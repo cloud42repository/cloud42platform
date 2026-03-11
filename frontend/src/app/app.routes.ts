@@ -9,6 +9,13 @@ import { WorkflowCalendarComponent } from './pages/workflow/workflow-calendar.co
 import { SettingsComponent } from './pages/settings/settings.component';
 import { AgentComponent } from './pages/agent/agent.component';
 import { IcManagementComponent } from './pages/ic-management/ic-management.component';
+import { BooksDashboardComponent } from './pages/books-dashboard/books-dashboard.component';
+import { BooksManagementComponent } from './pages/books-management/books-management.component';
+import { AnalyticsDashboardComponent } from './pages/analytics-dashboard/analytics-dashboard.component';
+import { AnalyticsManagementComponent } from './pages/analytics-management/analytics-management.component';
+import { CampaignsDashboardComponent } from './pages/campaigns-dashboard/campaigns-dashboard.component';
+import { CampaignsManagementComponent } from './pages/campaigns-management/campaigns-management.component';
+import { InvoiceManagementComponent } from './pages/invoice-management/invoice-management.component';
 import { authGuard } from './guards/auth.guard';
 import { MODULES } from './config/endpoints';
 
@@ -28,6 +35,13 @@ export const routes: Routes = [
   { path: 'invoice-dashboard', component: InvoiceDashboardComponent, canActivate: [authGuard], title: 'Invoice Dashboard' },
   { path: 'ic-dashboard', component: IcDashboardComponent, canActivate: [authGuard], title: 'IC Dashboard' },
   { path: 'ic-management', component: IcManagementComponent, canActivate: [authGuard], title: 'IC Management' },
+  { path: 'books-dashboard', component: BooksDashboardComponent, canActivate: [authGuard], title: 'Books Dashboard' },
+  { path: 'books-management', component: BooksManagementComponent, canActivate: [authGuard], title: 'Books Management' },
+  { path: 'analytics-dashboard', component: AnalyticsDashboardComponent, canActivate: [authGuard], title: 'Analytics Dashboard' },
+  { path: 'analytics-management', component: AnalyticsManagementComponent, canActivate: [authGuard], title: 'Analytics Management' },
+  { path: 'campaigns-dashboard', component: CampaignsDashboardComponent, canActivate: [authGuard], title: 'Campaigns Dashboard' },
+  { path: 'campaigns-management', component: CampaignsManagementComponent, canActivate: [authGuard], title: 'Campaigns Management' },
+  { path: 'invoice-management', component: InvoiceManagementComponent, canActivate: [authGuard], title: 'Invoice Management' },
   { path: 'agent', component: AgentComponent, canActivate: [authGuard], title: 'Agent' },
   ...MODULES.map(m => ({
     path: m.id,

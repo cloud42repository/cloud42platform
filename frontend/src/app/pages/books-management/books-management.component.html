@@ -1,0 +1,524 @@
+<div class="mgmt-page">
+
+  <!-- ── Page Header ─────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <mat-icon class="page-icon">menu_book</mat-icon>
+      <div>
+        <h1 class="page-title">Zoho Books Management</h1>
+        <p class="page-subtitle">Manage contacts, invoices, bills and expenses</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tabs ────────────────────────────────────────────────────────────── -->
+  <mat-tab-group animationDuration="200ms" class="mgmt-tabs">
+
+    <!-- ══ TAB 1 ─ Contacts ══════════════════════════════════════════════ -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">contacts</mat-icon>Contacts
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <span class="toolbar-title">Contacts</span>
+          <div class="toolbar-actions">
+            <button mat-stroked-button (click)="loadContacts()" [disabled]="ctLoading()">
+              <mat-icon>refresh</mat-icon> Refresh
+            </button>
+            <button mat-flat-button color="primary" (click)="openCtCreate()" [disabled]="ctPanelMode !== 'hidden'">
+              <mat-icon>add</mat-icon> New Contact
+            </button>
+          </div>
+        </div>
+
+        @if (ctPanelMode === 'create') {
+          <mat-card class="form-card">
+            <mat-card-header><mat-card-title>Create Contact</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Contact Name *</mat-label>
+                  <input matInput [(ngModel)]="ctForm.contact_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Company Name</mat-label>
+                  <input matInput [(ngModel)]="ctForm.company_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Email</mat-label>
+                  <input matInput type="email" [(ngModel)]="ctForm.email" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Phone</mat-label>
+                  <input matInput [(ngModel)]="ctForm.phone" />
+                </mat-form-field>
+              </div>
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <button mat-button (click)="cancelCtPanel()">Cancel</button>
+              <button mat-flat-button color="primary" (click)="saveCtCreate()" [disabled]="ctLoading()">
+                <mat-icon>save</mat-icon> Create
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+
+        @if (ctPanelMode === 'edit' && ctEditing) {
+          <mat-card class="form-card form-card--edit">
+            <mat-card-header><mat-card-title>Edit Contact — {{ ctEditing.contact_name }}</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Contact Name *</mat-label>
+                  <input matInput [(ngModel)]="ctForm.contact_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Company Name</mat-label>
+                  <input matInput [(ngModel)]="ctForm.company_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Email</mat-label>
+                  <input matInput type="email" [(ngModel)]="ctForm.email" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Phone</mat-label>
+                  <input matInput [(ngModel)]="ctForm.phone" />
+                </mat-form-field>
+              </div>
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <button mat-button (click)="cancelCtPanel()">Cancel</button>
+              <button mat-flat-button color="primary" (click)="saveCtEdit()" [disabled]="ctLoading()">
+                <mat-icon>save</mat-icon> Update
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+
+        @if (ctLoading()) {
+          <div class="spinner-center"><mat-spinner diameter="40" /></div>
+        } @else {
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="contacts()" class="mgmt-table">
+              <ng-container matColumnDef="contact_name">
+                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <td mat-cell *matCellDef="let row">{{ row.contact_name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="company_name">
+                <th mat-header-cell *matHeaderCellDef>Company</th>
+                <td mat-cell *matCellDef="let row">{{ row.company_name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="email">
+                <th mat-header-cell *matHeaderCellDef>Email</th>
+                <td mat-cell *matCellDef="let row">{{ row.email || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="phone">
+                <th mat-header-cell *matHeaderCellDef>Phone</th>
+                <td mat-cell *matCellDef="let row">{{ row.phone || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row" class="actions-cell">
+                  <button mat-icon-button matTooltip="Edit" (click)="openCtEdit(row)"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button matTooltip="Delete" color="warn" (click)="deleteCt(row)"><mat-icon>delete</mat-icon></button>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="ctColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: ctColumns;"></tr>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- ══ TAB 2 ─ Invoices ══════════════════════════════════════════════ -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">receipt</mat-icon>Invoices
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <span class="toolbar-title">Invoices</span>
+          <div class="toolbar-actions">
+            <button mat-stroked-button (click)="loadInvoices()" [disabled]="invLoading()">
+              <mat-icon>refresh</mat-icon> Refresh
+            </button>
+            <button mat-flat-button color="primary" (click)="openInvCreate()" [disabled]="invPanelMode !== 'hidden'">
+              <mat-icon>add</mat-icon> New Invoice
+            </button>
+          </div>
+        </div>
+
+        @if (invPanelMode === 'create') {
+          <mat-card class="form-card">
+            <mat-card-header><mat-card-title>Create Invoice</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Customer Name *</mat-label>
+                  <input matInput [(ngModel)]="invForm.customer_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Invoice Number</mat-label>
+                  <input matInput [(ngModel)]="invForm.invoice_number" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Date</mat-label>
+                  <input matInput type="date" [(ngModel)]="invForm.date" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Due Date</mat-label>
+                  <input matInput type="date" [(ngModel)]="invForm.due_date" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Total</mat-label>
+                  <input matInput type="number" [(ngModel)]="invForm.total" />
+                </mat-form-field>
+              </div>
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <button mat-button (click)="cancelInvPanel()">Cancel</button>
+              <button mat-flat-button color="primary" (click)="saveInvCreate()" [disabled]="invLoading()">
+                <mat-icon>save</mat-icon> Create
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+
+        @if (invPanelMode === 'edit' && invEditing) {
+          <mat-card class="form-card form-card--edit">
+            <mat-card-header><mat-card-title>Edit Invoice — {{ invEditing.invoice_number }}</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Customer Name *</mat-label>
+                  <input matInput [(ngModel)]="invForm.customer_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Date</mat-label>
+                  <input matInput type="date" [(ngModel)]="invForm.date" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Due Date</mat-label>
+                  <input matInput type="date" [(ngModel)]="invForm.due_date" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Total</mat-label>
+                  <input matInput type="number" [(ngModel)]="invForm.total" />
+                </mat-form-field>
+              </div>
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <button mat-button (click)="cancelInvPanel()">Cancel</button>
+              <button mat-flat-button color="primary" (click)="saveInvEdit()" [disabled]="invLoading()">
+                <mat-icon>save</mat-icon> Update
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+
+        @if (invLoading()) {
+          <div class="spinner-center"><mat-spinner diameter="40" /></div>
+        } @else {
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="invoices()" class="mgmt-table">
+              <ng-container matColumnDef="invoice_number">
+                <th mat-header-cell *matHeaderCellDef>Invoice #</th>
+                <td mat-cell *matCellDef="let row">{{ row.invoice_number || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="customer_name">
+                <th mat-header-cell *matHeaderCellDef>Customer</th>
+                <td mat-cell *matCellDef="let row">{{ row.customer_name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="date">
+                <th mat-header-cell *matHeaderCellDef>Date</th>
+                <td mat-cell *matCellDef="let row">{{ row.date || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="due_date">
+                <th mat-header-cell *matHeaderCellDef>Due Date</th>
+                <td mat-cell *matCellDef="let row">{{ row.due_date || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="total">
+                <th mat-header-cell *matHeaderCellDef>Total</th>
+                <td mat-cell *matCellDef="let row">{{ row.total || 0 }}</td>
+              </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="badge" [class]="'badge--' + (row.status || 'draft')">{{ row.status || 'draft' }}</span>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row" class="actions-cell">
+                  <button mat-icon-button matTooltip="Send" (click)="sendInv(row)"><mat-icon>send</mat-icon></button>
+                  <button mat-icon-button matTooltip="Void" (click)="voidInv(row)"><mat-icon>block</mat-icon></button>
+                  <button mat-icon-button matTooltip="Edit" (click)="openInvEdit(row)"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button matTooltip="Delete" color="warn" (click)="deleteInv(row)"><mat-icon>delete</mat-icon></button>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="invColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: invColumns;"></tr>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- ══ TAB 3 ─ Bills ═════════════════════════════════════════════════ -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">receipt_long</mat-icon>Bills
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <span class="toolbar-title">Bills</span>
+          <div class="toolbar-actions">
+            <button mat-stroked-button (click)="loadBills()" [disabled]="billLoading()">
+              <mat-icon>refresh</mat-icon> Refresh
+            </button>
+            <button mat-flat-button color="primary" (click)="openBillCreate()" [disabled]="billPanelMode !== 'hidden'">
+              <mat-icon>add</mat-icon> New Bill
+            </button>
+          </div>
+        </div>
+
+        @if (billPanelMode === 'create') {
+          <mat-card class="form-card">
+            <mat-card-header><mat-card-title>Create Bill</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Vendor Name *</mat-label>
+                  <input matInput [(ngModel)]="billForm.vendor_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Bill Number</mat-label>
+                  <input matInput [(ngModel)]="billForm.bill_number" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Date</mat-label>
+                  <input matInput type="date" [(ngModel)]="billForm.date" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Due Date</mat-label>
+                  <input matInput type="date" [(ngModel)]="billForm.due_date" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Total</mat-label>
+                  <input matInput type="number" [(ngModel)]="billForm.total" />
+                </mat-form-field>
+              </div>
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <button mat-button (click)="cancelBillPanel()">Cancel</button>
+              <button mat-flat-button color="primary" (click)="saveBillCreate()" [disabled]="billLoading()">
+                <mat-icon>save</mat-icon> Create
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+
+        @if (billPanelMode === 'edit' && billEditing) {
+          <mat-card class="form-card form-card--edit">
+            <mat-card-header><mat-card-title>Edit Bill — {{ billEditing.bill_number }}</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Vendor Name *</mat-label>
+                  <input matInput [(ngModel)]="billForm.vendor_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Date</mat-label>
+                  <input matInput type="date" [(ngModel)]="billForm.date" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Due Date</mat-label>
+                  <input matInput type="date" [(ngModel)]="billForm.due_date" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Total</mat-label>
+                  <input matInput type="number" [(ngModel)]="billForm.total" />
+                </mat-form-field>
+              </div>
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <button mat-button (click)="cancelBillPanel()">Cancel</button>
+              <button mat-flat-button color="primary" (click)="saveBillEdit()" [disabled]="billLoading()">
+                <mat-icon>save</mat-icon> Update
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+
+        @if (billLoading()) {
+          <div class="spinner-center"><mat-spinner diameter="40" /></div>
+        } @else {
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="bills()" class="mgmt-table">
+              <ng-container matColumnDef="bill_number">
+                <th mat-header-cell *matHeaderCellDef>Bill #</th>
+                <td mat-cell *matCellDef="let row">{{ row.bill_number || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="vendor_name">
+                <th mat-header-cell *matHeaderCellDef>Vendor</th>
+                <td mat-cell *matCellDef="let row">{{ row.vendor_name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="date">
+                <th mat-header-cell *matHeaderCellDef>Date</th>
+                <td mat-cell *matCellDef="let row">{{ row.date || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="due_date">
+                <th mat-header-cell *matHeaderCellDef>Due Date</th>
+                <td mat-cell *matCellDef="let row">{{ row.due_date || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="total">
+                <th mat-header-cell *matHeaderCellDef>Total</th>
+                <td mat-cell *matCellDef="let row">{{ row.total || 0 }}</td>
+              </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="badge" [class]="'badge--' + (row.status || 'open')">{{ row.status || 'open' }}</span>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row" class="actions-cell">
+                  <button mat-icon-button matTooltip="Edit" (click)="openBillEdit(row)"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button matTooltip="Delete" color="warn" (click)="deleteBill(row)"><mat-icon>delete</mat-icon></button>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="billColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: billColumns;"></tr>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- ══ TAB 4 ─ Expenses ══════════════════════════════════════════════ -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">money_off</mat-icon>Expenses
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <span class="toolbar-title">Expenses</span>
+          <div class="toolbar-actions">
+            <button mat-stroked-button (click)="loadExpenses()" [disabled]="expLoading()">
+              <mat-icon>refresh</mat-icon> Refresh
+            </button>
+            <button mat-flat-button color="primary" (click)="openExpCreate()" [disabled]="expPanelMode !== 'hidden'">
+              <mat-icon>add</mat-icon> New Expense
+            </button>
+          </div>
+        </div>
+
+        @if (expPanelMode === 'create') {
+          <mat-card class="form-card">
+            <mat-card-header><mat-card-title>Create Expense</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Account Name *</mat-label>
+                  <input matInput [(ngModel)]="expForm.account_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Description</mat-label>
+                  <input matInput [(ngModel)]="expForm.description" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Amount</mat-label>
+                  <input matInput type="number" [(ngModel)]="expForm.amount" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Date</mat-label>
+                  <input matInput type="date" [(ngModel)]="expForm.date" />
+                </mat-form-field>
+              </div>
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <button mat-button (click)="cancelExpPanel()">Cancel</button>
+              <button mat-flat-button color="primary" (click)="saveExpCreate()" [disabled]="expLoading()">
+                <mat-icon>save</mat-icon> Create
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+
+        @if (expPanelMode === 'edit' && expEditing) {
+          <mat-card class="form-card form-card--edit">
+            <mat-card-header><mat-card-title>Edit Expense</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Account Name *</mat-label>
+                  <input matInput [(ngModel)]="expForm.account_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Description</mat-label>
+                  <input matInput [(ngModel)]="expForm.description" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Amount</mat-label>
+                  <input matInput type="number" [(ngModel)]="expForm.amount" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Date</mat-label>
+                  <input matInput type="date" [(ngModel)]="expForm.date" />
+                </mat-form-field>
+              </div>
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <button mat-button (click)="cancelExpPanel()">Cancel</button>
+              <button mat-flat-button color="primary" (click)="saveExpEdit()" [disabled]="expLoading()">
+                <mat-icon>save</mat-icon> Update
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+
+        @if (expLoading()) {
+          <div class="spinner-center"><mat-spinner diameter="40" /></div>
+        } @else {
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="expenses()" class="mgmt-table">
+              <ng-container matColumnDef="account_name">
+                <th mat-header-cell *matHeaderCellDef>Account</th>
+                <td mat-cell *matCellDef="let row">{{ row.account_name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="description">
+                <th mat-header-cell *matHeaderCellDef>Description</th>
+                <td mat-cell *matCellDef="let row">{{ row.description || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="date">
+                <th mat-header-cell *matHeaderCellDef>Date</th>
+                <td mat-cell *matCellDef="let row">{{ row.date || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="amount">
+                <th mat-header-cell *matHeaderCellDef>Amount</th>
+                <td mat-cell *matCellDef="let row">{{ row.amount || row.total || 0 }}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row" class="actions-cell">
+                  <button mat-icon-button matTooltip="Edit" (click)="openExpEdit(row)"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button matTooltip="Delete" color="warn" (click)="deleteExp(row)"><mat-icon>delete</mat-icon></button>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="expColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: expColumns;"></tr>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>

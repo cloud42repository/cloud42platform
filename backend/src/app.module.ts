@@ -23,6 +23,7 @@ import { ZohoCreatorModule } from './zoho-creator/zoho-creator.module';
 import { ZohoSalesiqModule } from './zoho-salesiq/zoho-salesiq.module';
 import { SoftvalueModule } from './softvalue/softvalue.module';
 import { ImpossibleCloudModule } from './impossible-cloud/impossible-cloud.module';
+import { ChatGPTModule } from './chatgpt/chatgpt.module';
 import { SchemaModule } from './schema/schema.module';
 
 @Module({
@@ -50,6 +51,7 @@ import { SchemaModule } from './schema/schema.module';
     ZohoSalesiqModule,
     SoftvalueModule,
     ImpossibleCloudModule,
+    ChatGPTModule,
     SchemaModule,
   ],
 })

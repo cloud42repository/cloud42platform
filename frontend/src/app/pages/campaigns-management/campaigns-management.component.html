@@ -1,0 +1,267 @@
+<div class="mgmt-page">
+
+  <!-- ── Page Header ─────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <mat-icon class="page-icon">campaign</mat-icon>
+      <div>
+        <h1 class="page-title">Zoho Campaigns Management</h1>
+        <p class="page-subtitle">Manage mailing lists, subscribers, campaigns and topics</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tabs ────────────────────────────────────────────────────────────── -->
+  <mat-tab-group animationDuration="200ms" class="mgmt-tabs">
+
+    <!-- ══ TAB 1 ─ Mailing Lists ═════════════════════════════════════════ -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">list</mat-icon>Mailing Lists
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <span class="toolbar-title">Mailing Lists</span>
+          <div class="toolbar-actions">
+            <button mat-stroked-button (click)="loadLists()" [disabled]="listLoading()">
+              <mat-icon>refresh</mat-icon> Refresh
+            </button>
+            <button mat-flat-button color="primary" (click)="openListCreate()" [disabled]="listPanelMode !== 'hidden'">
+              <mat-icon>add</mat-icon> New List
+            </button>
+          </div>
+        </div>
+
+        @if (listPanelMode === 'create') {
+          <mat-card class="form-card">
+            <mat-card-header><mat-card-title>Create Mailing List</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>List Name *</mat-label>
+                  <input matInput [(ngModel)]="listForm.listname" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Signup Form URL</mat-label>
+                  <input matInput [(ngModel)]="listForm.signup_form_url" placeholder="https://..." />
+                </mat-form-field>
+              </div>
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <button mat-button (click)="cancelListPanel()">Cancel</button>
+              <button mat-flat-button color="primary" (click)="saveListCreate()" [disabled]="listLoading()">
+                <mat-icon>save</mat-icon> Create
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+
+        @if (listLoading()) {
+          <div class="spinner-center"><mat-spinner diameter="40" /></div>
+        } @else {
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="mailingLists()" class="mgmt-table">
+              <ng-container matColumnDef="listname">
+                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <td mat-cell *matCellDef="let row">{{ row.listname || row.name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="listkey">
+                <th mat-header-cell *matHeaderCellDef>List Key</th>
+                <td mat-cell *matCellDef="let row"><code>{{ row.listkey || row.list_key || '—' }}</code></td>
+              </ng-container>
+              <ng-container matColumnDef="subscriber_count">
+                <th mat-header-cell *matHeaderCellDef>Subscribers</th>
+                <td mat-cell *matCellDef="let row">{{ row.subscriber_count || row.count || 0 }}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row" class="actions-cell">
+                  <button mat-icon-button matTooltip="Delete" color="warn" (click)="deleteList(row)"><mat-icon>delete</mat-icon></button>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="listColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: listColumns;"></tr>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- ══ TAB 2 ─ Subscribers ═══════════════════════════════════════════ -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">people</mat-icon>Subscribers
+      </ng-template>
+
+      <div class="tab-content">
+        <mat-card class="filter-card">
+          <div class="filter-row">
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Mailing List</mat-label>
+              <mat-select [(value)]="selectedListKey" (selectionChange)="loadSubscribers()">
+                @for (l of mailingLists(); track l.listkey ?? l.list_key ?? l.id) {
+                  <mat-option [value]="l.listkey ?? l.list_key ?? l.id">{{ l.listname ?? l.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <button mat-stroked-button (click)="loadSubscribers()" [disabled]="subLoading()">
+              <mat-icon>refresh</mat-icon> Refresh
+            </button>
+            <button mat-flat-button color="primary" (click)="openSubCreate()" [disabled]="subPanelMode !== 'hidden' || !selectedListKey">
+              <mat-icon>add</mat-icon> Add Subscriber
+            </button>
+          </div>
+        </mat-card>
+
+        @if (subPanelMode === 'create') {
+          <mat-card class="form-card">
+            <mat-card-header><mat-card-title>Add Subscriber</mat-card-title></mat-card-header>
+            <mat-card-content>
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Email *</mat-label>
+                  <input matInput type="email" [(ngModel)]="subForm.contact_email" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>First Name</mat-label>
+                  <input matInput [(ngModel)]="subForm.first_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Last Name</mat-label>
+                  <input matInput [(ngModel)]="subForm.last_name" />
+                </mat-form-field>
+              </div>
+            </mat-card-content>
+            <mat-card-actions align="end">
+              <button mat-button (click)="cancelSubPanel()">Cancel</button>
+              <button mat-flat-button color="primary" (click)="saveSubCreate()" [disabled]="subLoading()">
+                <mat-icon>save</mat-icon> Add
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+
+        @if (subLoading()) {
+          <div class="spinner-center"><mat-spinner diameter="40" /></div>
+        } @else {
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="subscribers()" class="mgmt-table">
+              <ng-container matColumnDef="contact_email">
+                <th mat-header-cell *matHeaderCellDef>Email</th>
+                <td mat-cell *matCellDef="let row">{{ row.contact_email || row.email || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="first_name">
+                <th mat-header-cell *matHeaderCellDef>First Name</th>
+                <td mat-cell *matCellDef="let row">{{ row.first_name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="last_name">
+                <th mat-header-cell *matHeaderCellDef>Last Name</th>
+                <td mat-cell *matCellDef="let row">{{ row.last_name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row" class="actions-cell">
+                  <button mat-icon-button matTooltip="Remove" color="warn" (click)="removeSub(row)"><mat-icon>person_remove</mat-icon></button>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="subColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: subColumns;"></tr>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- ══ TAB 3 ─ Campaigns ═════════════════════════════════════════════ -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">campaign</mat-icon>Campaigns
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <span class="toolbar-title">Campaigns</span>
+          <div class="toolbar-actions">
+            <button mat-stroked-button (click)="loadCampaigns()" [disabled]="campLoading()">
+              <mat-icon>refresh</mat-icon> Refresh
+            </button>
+          </div>
+        </div>
+
+        @if (campLoading()) {
+          <div class="spinner-center"><mat-spinner diameter="40" /></div>
+        } @else {
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="campaigns()" class="mgmt-table">
+              <ng-container matColumnDef="campaign_name">
+                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <td mat-cell *matCellDef="let row">{{ row.campaign_name || row.name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="campaign_type">
+                <th mat-header-cell *matHeaderCellDef>Type</th>
+                <td mat-cell *matCellDef="let row">{{ row.campaign_type || row.type || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="badge" [class]="'badge--' + (row.status || 'draft')">{{ row.status || 'draft' }}</span>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="sent_time">
+                <th mat-header-cell *matHeaderCellDef>Sent</th>
+                <td mat-cell *matCellDef="let row">{{ row.sent_time || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row" class="actions-cell">
+                  <button mat-icon-button matTooltip="Send" (click)="sendCampaign(row)"><mat-icon>send</mat-icon></button>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="campColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: campColumns;"></tr>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- ══ TAB 4 ─ Topics ════════════════════════════════════════════════ -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">topic</mat-icon>Topics
+      </ng-template>
+
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <span class="toolbar-title">Topics</span>
+          <div class="toolbar-actions">
+            <button mat-stroked-button (click)="loadTopics()" [disabled]="topicLoading()">
+              <mat-icon>refresh</mat-icon> Refresh
+            </button>
+          </div>
+        </div>
+
+        @if (topicLoading()) {
+          <div class="spinner-center"><mat-spinner diameter="40" /></div>
+        } @else {
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="topics()" class="mgmt-table">
+              <ng-container matColumnDef="topic_name">
+                <th mat-header-cell *matHeaderCellDef>Topic</th>
+                <td mat-cell *matCellDef="let row">{{ row.topicName || row.topic_name || row.name || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="topic_key">
+                <th mat-header-cell *matHeaderCellDef>Key</th>
+                <td mat-cell *matCellDef="let row"><code>{{ row.topicKey || row.topic_key || row.id || '—' }}</code></td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="topicColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: topicColumns;"></tr>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>

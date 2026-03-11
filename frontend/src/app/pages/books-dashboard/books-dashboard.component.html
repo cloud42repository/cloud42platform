@@ -1,0 +1,197 @@
+<div class="dash-wrapper">
+  <div class="dash-header">
+    <mat-icon class="dash-icon">menu_book</mat-icon>
+    <div>
+      <h1 class="dash-title">Books Dashboard</h1>
+      <p class="dash-subtitle">Zoho Books · real-time financial overview</p>
+    </div>
+    <span class="header-spacer"></span>
+    @if (!loading) {
+      <button mat-flat-button class="export-btn" (click)="exportPdf()" [disabled]="exporting">
+        <mat-icon>picture_as_pdf</mat-icon>
+        {{ exporting ? 'Exporting…' : 'Export PDF' }}
+      </button>
+    }
+  </div>
+
+  @if (loading) {
+    <div class="loading-center">
+      <mat-spinner diameter="56" />
+      <p class="loading-text">Loading financial data…</p>
+    </div>
+  } @else {
+
+    <div #dashContent>
+    <!-- ── KPI Cards ───────────────────────────────────────────────────── -->
+    <div class="kpi-row">
+      <mat-card class="kpi-card kpi-total">
+        <mat-card-content>
+          <mat-icon>contacts</mat-icon>
+          <div class="kpi-body">
+            <span class="kpi-label">Contacts</span>
+            <span class="kpi-value">{{ totalContacts }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-revenue">
+        <mat-card-content>
+          <mat-icon>description</mat-icon>
+          <div class="kpi-body">
+            <span class="kpi-label">Invoices</span>
+            <span class="kpi-value">{{ totalInvoices }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-paid">
+        <mat-card-content>
+          <mat-icon>receipt</mat-icon>
+          <div class="kpi-body">
+            <span class="kpi-label">Bills</span>
+            <span class="kpi-value">{{ totalBills }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-outstanding">
+        <mat-card-content>
+          <mat-icon>attach_money</mat-icon>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Revenue</span>
+            <span class="kpi-value">{{ totalRevenue | currency }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-overdue">
+        <mat-card-content>
+          <mat-icon>money_off</mat-icon>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Expenses</span>
+            <span class="kpi-value">{{ totalExpenses | currency }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-rate">
+        <mat-card-content>
+          <mat-icon>payments</mat-icon>
+          <div class="kpi-body">
+            <span class="kpi-label">Payments Received</span>
+            <span class="kpi-value">{{ paymentsReceived | currency }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- ── Charts Row 1 ───────────────────────────────────────────────── -->
+    <div class="charts-row">
+      <mat-card class="chart-card chart-bar">
+        <mat-card-content>
+          <canvas baseChart
+            [data]="statusBarData"
+            [options]="statusBarOptions"
+            type="bar">
+          </canvas>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card chart-gauge">
+        <mat-card-content>
+          <canvas baseChart
+            [data]="gaugeData"
+            [options]="gaugeOptions"
+            type="doughnut">
+          </canvas>
+          <div class="gauge-center-label">
+            <span class="gauge-pct">{{ totalRevenue | currency:'USD':'symbol':'1.0-0' }}</span>
+            <span class="gauge-sub">revenue</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- ── Charts Row 2 ───────────────────────────────────────────────── -->
+    <div class="charts-row">
+      <mat-card class="chart-card chart-line">
+        <mat-card-content>
+          <canvas baseChart
+            [data]="lineData"
+            [options]="lineOptions"
+            type="line">
+          </canvas>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card chart-pie">
+        <mat-card-content>
+          <canvas baseChart
+            [data]="pieData"
+            [options]="pieOptions"
+            type="doughnut">
+          </canvas>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- ── Recent Invoices Table ──────────────────────────────────────── -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon style="vertical-align:middle;margin-right:8px">table_rows</mat-icon>
+          Recent Invoices
+        </mat-card-title>
+      </mat-card-header>
+      <mat-divider />
+      <mat-card-content class="table-wrap">
+        <table mat-table [dataSource]="recentInvoices" class="invoice-table">
+
+          <ng-container matColumnDef="invoice_number">
+            <th mat-header-cell *matHeaderCellDef>Invoice #</th>
+            <td mat-cell *matCellDef="let r">{{ r.invoice_number }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="customer_name">
+            <th mat-header-cell *matHeaderCellDef>Customer</th>
+            <td mat-cell *matCellDef="let r">{{ r.customer_name }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef>Date</th>
+            <td mat-cell *matCellDef="let r">{{ r.date | date:'mediumDate' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="due_date">
+            <th mat-header-cell *matHeaderCellDef>Due Date</th>
+            <td mat-cell *matCellDef="let r">{{ r.due_date | date:'mediumDate' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="total">
+            <th mat-header-cell *matHeaderCellDef>Total</th>
+            <td mat-cell *matCellDef="let r">{{ r.total | currency }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="balance">
+            <th mat-header-cell *matHeaderCellDef>Balance</th>
+            <td mat-cell *matCellDef="let r">{{ r.balance | currency }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let r">
+              <span class="status-chip" [ngClass]="statusClass(r.status)">
+                {{ r.status }}
+              </span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="tableColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: tableColumns;"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
+    </div>
+
+  }
+</div>
