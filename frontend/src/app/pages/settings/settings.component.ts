@@ -13,6 +13,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { MODULES, ModuleDef } from '../../config/endpoints';
 import {
@@ -20,6 +21,7 @@ import {
   AUTH_TYPE_LABELS, AUTH_TYPE_FIELDS, AUTH_FIELD_LABELS,
 } from '../../config/auth-config.types';
 import { AuthConfigService } from '../../services/auth-config.service';
+import { ModuleVisibilityService } from '../../services/module-visibility.service';
 
 interface ModuleAuthState {
   module: ModuleDef;
@@ -36,6 +38,7 @@ interface ModuleAuthState {
     MatExpansionModule, MatSelectModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatChipsModule, MatCardModule,
     MatTooltipModule, MatDividerModule, MatSnackBarModule, MatTabsModule,
+    MatSlideToggleModule,
   ],
   template: `
     <div class="settings-root">
@@ -169,15 +172,39 @@ interface ModuleAuthState {
           </div>
         </mat-tab>
 
-        <!-- ─────────── Tab: General (placeholder) ─────────── -->
+        <!-- ─────────── Tab: General ─────────── -->
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">tune</mat-icon>
             General
           </ng-template>
-          <div class="placeholder-tab">
-            <mat-icon class="placeholder-icon">construction</mat-icon>
-            <p>General settings coming soon.</p>
+          <div class="general-section">
+            <h2 class="section-title">Menu Modules</h2>
+            <p class="section-hint">
+              Enable or disable API modules in the sidebar navigation.
+              Disabled modules are hidden from the menu but their configuration is preserved.
+            </p>
+            <div class="toggle-actions">
+              <button mat-stroked-button (click)="enableAllModules()">
+                <mat-icon>check_box</mat-icon> Enable All
+              </button>
+              <button mat-stroked-button (click)="disableAllModules()">
+                <mat-icon>check_box_outline_blank</mat-icon> Disable All
+              </button>
+              <span class="toggle-count">{{ enabledCount() }} / {{ allModules.length }} enabled</span>
+            </div>
+            <div class="toggle-list">
+              @for (mod of allModules; track mod.id) {
+                <div class="toggle-row">
+                  <mat-icon class="toggle-module-icon" [style.color]="moduleColor(mod.id)">{{ mod.icon }}</mat-icon>
+                  <span class="toggle-module-label">{{ mod.label }}</span>
+                  <mat-slide-toggle
+                    [checked]="visibility.isEnabled(mod.id)"
+                    (change)="visibility.setEnabled(mod.id, $event.checked)"
+                    color="primary" />
+                </div>
+              }
+            </div>
           </div>
         </mat-tab>
 
@@ -364,24 +391,66 @@ interface ModuleAuthState {
       border-top: 1px solid #f1f5f9;
     }
 
-    /* ── Placeholder tab ── */
-    .placeholder-tab {
-      padding: 60px 0;
-      text-align: center;
-      color: #94a3b8;
+    /* ── General tab ── */
+    .general-section {
+      padding: 20px 0 0;
     }
-    .placeholder-icon {
-      font-size: 48px;
-      width: 48px;
-      height: 48px;
-      margin-bottom: 12px;
+    .section-title {
+      margin: 0 0 4px;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .toggle-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .toggle-count {
+      margin-left: auto;
+      font-size: 0.82rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+    .toggle-list {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.15s;
+    }
+    .toggle-row:last-child {
+      border-bottom: none;
+    }
+    .toggle-row:hover {
+      background: #f8fafc;
+    }
+    .toggle-module-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+    .toggle-module-label {
+      flex: 1;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #1e293b;
     }
   `],
 })
 export class SettingsComponent implements OnInit {
   private readonly svc = inject(AuthConfigService);
   private readonly snack = inject(MatSnackBar);
+  readonly visibility = inject(ModuleVisibilityService);
 
+  readonly allModules = MODULES;
   states: ModuleAuthState[] = [];
 
   readonly authTypeOptions = Object.entries(AUTH_TYPE_LABELS).map(([value, label]) => ({
@@ -468,5 +537,20 @@ export class SettingsComponent implements OnInit {
     state.config = { type: 'none' };
     state.showSecrets = {};
     state.dirty = true;
+  }
+
+  /* ── General tab helpers ── */
+  enabledCount(): number {
+    return this.allModules.filter(m => this.visibility.isEnabled(m.id)).length;
+  }
+
+  enableAllModules(): void {
+    this.visibility.enableAll();
+    this.snack.open('✓ All modules enabled', '', { duration: 2000 });
+  }
+
+  disableAllModules(): void {
+    this.visibility.disableAll();
+    this.snack.open('✓ All modules disabled', '', { duration: 2000 });
   }
 }

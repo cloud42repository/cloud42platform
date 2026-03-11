@@ -13,6 +13,7 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MODULES } from './config/endpoints';
 import { AuthService } from './services/auth.service';
 import { AgentComponent } from './pages/agent/agent.component';
+import { ModuleVisibilityService } from './services/module-visibility.service';
 
 interface ModuleSubViews {
   dashboard?: { route: string; label: string };
@@ -113,7 +114,7 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
         <mat-divider />
         <div class="nav-modules-label">API Modules</div>
         <mat-accordion class="nav-accordion" displayMode="flat">
-          @for (mod of modules; track mod.id) {
+          @for (mod of modules(); track mod.id) {
             <mat-expansion-panel class="nav-expansion-panel">
               <mat-expansion-panel-header collapsedHeight="44px" expandedHeight="44px">
                 <mat-panel-title class="nav-panel-title">
@@ -165,7 +166,8 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
   styleUrl: './app.css'
 })
 export class App {
-  readonly modules = MODULES;
+  private readonly visibilitySvc = inject(ModuleVisibilityService);
+  readonly modules = this.visibilitySvc.enabledModules;
   readonly moduleViews = MODULE_VIEWS;
   readonly sidenavOpen = signal(true);
   readonly agentOpen = signal(false);
