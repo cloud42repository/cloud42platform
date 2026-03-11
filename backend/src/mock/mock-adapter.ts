@@ -526,6 +526,23 @@ export function attachMockAdapter(instance: AxiosInstance): void {
       try { body = JSON.parse(body); } catch { /* leave as string */ }
     }
 
+    // ── OpenAI / ChatGPT routes ─────────────────────────────────────────────
+    // These must return raw OpenAI-format JSON (no Zoho-style envelope).
+    const openAiRoute = /\/(chat\/completions|embeddings|images\/generations|moderations|models)/.test(url);
+    if (openAiRoute) {
+      const name = resourceFromUrl(url);
+      if (method === 'get') {
+        const col = getCollection(name);
+        const id  = idFromUrl(url);
+        if (id) {
+          return [200, col.get(id) ?? buildRecord(name, id)];
+        }
+        return [200, { data: [...col.values()], object: 'list' }];
+      }
+      // POST — return the record directly (OpenAI format)
+      return [200, buildRecord(name, nextId())];
+    }
+
     switch (method) {
       case 'get':    return [200, handleGet(url)];
       case 'post':   return handlePost(url, body);
