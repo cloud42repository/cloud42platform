@@ -1,57 +1,46 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, computed, inject } from '@angular/core';
 import { MODULES } from '../config/endpoints';
-
-const STORAGE_KEY = 'cloud42_module_visibility';
+import { UserManagementService } from './user-management.service';
 
 @Injectable({ providedIn: 'root' })
 export class ModuleVisibilityService {
-  /** Map of moduleId → enabled (true/false). All modules enabled by default. */
-  private readonly _visibility = signal<Record<string, boolean>>(this.loadFromStorage());
+  private readonly userMgmt = inject(UserManagementService);
 
-  readonly visibility = this._visibility.asReadonly();
-
-  /** Only modules that are enabled */
+  /**
+   * Per-user module visibility from the UserManagementService store.
+   * - Admin / Manager: modules enabled by default (missing key = true)
+   * - User: modules disabled by default (missing key = false)
+   */
   readonly enabledModules = computed(() => {
-    const vis = this._visibility();
-    return MODULES.filter(m => vis[m.id] !== false);
+    const user = this.userMgmt.currentUser();
+    if (!user) return MODULES;                       // not logged in → show all (guards protect anyway)
+    const vis = user.moduleVisibility;
+    const defaultEnabled = user.role === 'admin' || user.role === 'manager';
+    return MODULES.filter(m => vis[m.id] ?? defaultEnabled);
   });
 
-  private loadFromStorage(): Record<string, boolean> {
-    try {
-      const json = localStorage.getItem(STORAGE_KEY);
-      return json ? JSON.parse(json) : {};
-    } catch {
-      return {};
-    }
-  }
-
-  private saveToStorage(data: Record<string, boolean>): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }
-
   isEnabled(moduleId: string): boolean {
-    return this._visibility()[moduleId] !== false;
+    const user = this.userMgmt.currentUser();
+    if (!user) return true;
+    const defaultEnabled = user.role === 'admin' || user.role === 'manager';
+    return user.moduleVisibility[moduleId] ?? defaultEnabled;
   }
 
   setEnabled(moduleId: string, enabled: boolean): void {
-    const updated = { ...this._visibility(), [moduleId]: enabled };
-    this._visibility.set(updated);
-    this.saveToStorage(updated);
+    const email = this.userMgmt.currentUser()?.email;
+    if (!email) return;
+    this.userMgmt.setModuleEnabled(email, moduleId, enabled);
   }
 
-  /** Enable all modules at once */
   enableAll(): void {
-    const updated: Record<string, boolean> = {};
-    MODULES.forEach(m => updated[m.id] = true);
-    this._visibility.set(updated);
-    this.saveToStorage(updated);
+    const email = this.userMgmt.currentUser()?.email;
+    if (!email) return;
+    this.userMgmt.setAllModulesEnabled(email, MODULES.map(m => m.id), true);
   }
 
-  /** Disable all modules at once */
   disableAll(): void {
-    const updated: Record<string, boolean> = {};
-    MODULES.forEach(m => updated[m.id] = false);
-    this._visibility.set(updated);
-    this.saveToStorage(updated);
+    const email = this.userMgmt.currentUser()?.email;
+    if (!email) return;
+    this.userMgmt.setAllModulesEnabled(email, MODULES.map(m => m.id), false);
   }
 }

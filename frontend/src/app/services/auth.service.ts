@@ -1,5 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
+import { UserRole } from '../config/user.types';
 
 export interface CloudUser {
   name: string;
@@ -7,6 +8,7 @@ export interface CloudUser {
   firstName: string;
   photoUrl: string;
   idToken?: string;
+  role?: UserRole;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -32,6 +34,15 @@ export class AuthService {
   setUser(user: CloudUser): void {
     this._user.set(user);
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
+  }
+
+  /** Update the stored role without re-authenticating */
+  patchRole(role: UserRole): void {
+    const u = this._user();
+    if (!u) return;
+    const updated = { ...u, role };
+    this._user.set(updated);
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
   }
 
   logout(): void {

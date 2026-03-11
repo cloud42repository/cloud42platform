@@ -14,6 +14,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatBadgeModule } from '@angular/material/badge';
 
 import { MODULES, ModuleDef } from '../../config/endpoints';
 import {
@@ -22,6 +23,8 @@ import {
 } from '../../config/auth-config.types';
 import { AuthConfigService } from '../../services/auth-config.service';
 import { ModuleVisibilityService } from '../../services/module-visibility.service';
+import { UserManagementService } from '../../services/user-management.service';
+import { UserRole, USER_ROLE_LABELS, StoredUser } from '../../config/user.types';
 
 interface ModuleAuthState {
   module: ModuleDef;
@@ -38,7 +41,7 @@ interface ModuleAuthState {
     MatExpansionModule, MatSelectModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatChipsModule, MatCardModule,
     MatTooltipModule, MatDividerModule, MatSnackBarModule, MatTabsModule,
-    MatSlideToggleModule,
+    MatSlideToggleModule, MatBadgeModule,
   ],
   template: `
     <div class="settings-root">
@@ -172,7 +175,7 @@ interface ModuleAuthState {
           </div>
         </mat-tab>
 
-        <!-- ─────────── Tab: General ─────────── -->
+        <!-- ─────────── Tab: General (Module Visibility) ─────────── -->
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">tune</mat-icon>
@@ -184,15 +187,23 @@ interface ModuleAuthState {
               Enable or disable API modules in the sidebar navigation.
               Disabled modules are hidden from the menu but their configuration is preserved.
             </p>
-            <div class="toggle-actions">
-              <button mat-stroked-button (click)="enableAllModules()">
-                <mat-icon>check_box</mat-icon> Enable All
-              </button>
-              <button mat-stroked-button (click)="disableAllModules()">
-                <mat-icon>check_box_outline_blank</mat-icon> Disable All
-              </button>
-              <span class="toggle-count">{{ enabledCount() }} / {{ allModules.length }} enabled</span>
-            </div>
+            @if (!userMgmt.canEditModules()) {
+              <div class="role-notice">
+                <mat-icon>info</mat-icon>
+                <span>Your role (<strong>{{ roleLabel(userMgmt.currentRole()) }}</strong>) does not allow editing module visibility. Contact an Admin.</span>
+              </div>
+            }
+            @if (userMgmt.canEditModules()) {
+              <div class="toggle-actions">
+                <button mat-stroked-button (click)="enableAllModules()">
+                  <mat-icon>check_box</mat-icon> Enable All
+                </button>
+                <button mat-stroked-button (click)="disableAllModules()">
+                  <mat-icon>check_box_outline_blank</mat-icon> Disable All
+                </button>
+                <span class="toggle-count">{{ enabledCount() }} / {{ allModules.length }} enabled</span>
+              </div>
+            }
             <div class="toggle-list">
               @for (mod of allModules; track mod.id) {
                 <div class="toggle-row">
@@ -201,12 +212,107 @@ interface ModuleAuthState {
                   <mat-slide-toggle
                     [checked]="visibility.isEnabled(mod.id)"
                     (change)="visibility.setEnabled(mod.id, $event.checked)"
+                    [disabled]="!userMgmt.canEditModules()"
                     color="primary" />
                 </div>
               }
             </div>
           </div>
         </mat-tab>
+
+        <!-- ─────────── Tab: User Management (Admin only) ─────────── -->
+        @if (userMgmt.isAdmin()) {
+          <mat-tab>
+            <ng-template mat-tab-label>
+              <mat-icon class="tab-icon">group</mat-icon>
+              Users
+            </ng-template>
+            <div class="general-section">
+              <h2 class="section-title">User Management</h2>
+              <p class="section-hint">
+                Manage platform users, assign roles, and configure per-user module access.
+                Users are registered automatically on their first Google sign-in.
+              </p>
+
+              <div class="users-list">
+                @for (u of userMgmt.users(); track u.email) {
+                  <mat-expansion-panel class="user-panel">
+                    <mat-expansion-panel-header>
+                      <mat-panel-title class="user-panel-title">
+                        @if (u.photoUrl) {
+                          <img [src]="u.photoUrl" class="user-avatar-sm" alt="" />
+                        } @else {
+                          <mat-icon class="user-avatar-icon">account_circle</mat-icon>
+                        }
+                        <div class="user-info-col">
+                          <span class="user-name-text">{{ u.name || u.email }}</span>
+                          <span class="user-email-text">{{ u.email }}</span>
+                        </div>
+                      </mat-panel-title>
+                      <mat-panel-description class="user-panel-desc">
+                        <span class="badge" [class]="'badge-role-' + u.role">{{ roleLabel(u.role) }}</span>
+                      </mat-panel-description>
+                    </mat-expansion-panel-header>
+
+                    <!-- User detail content -->
+                    <div class="user-detail">
+                      <div class="user-meta">
+                        <span><strong>First login:</strong> {{ u.createdAt | date:'medium' }}</span>
+                        <span><strong>Last login:</strong> {{ u.lastLoginAt | date:'medium' }}</span>
+                      </div>
+
+                      <!-- Role selector -->
+                      <mat-form-field appearance="outline" class="role-select">
+                        <mat-label>Role</mat-label>
+                        <mat-select [value]="u.role" (selectionChange)="changeRole(u.email, $event.value)">
+                          @for (r of roleOptions; track r.value) {
+                            <mat-option [value]="r.value">{{ r.label }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+
+                      <!-- Per-user module toggles -->
+                      <h3 class="user-modules-title">Module Access</h3>
+                      <div class="toggle-actions">
+                        <button mat-stroked-button (click)="enableAllForUser(u.email)">
+                          <mat-icon>check_box</mat-icon> Enable All
+                        </button>
+                        <button mat-stroked-button (click)="disableAllForUser(u.email)">
+                          <mat-icon>check_box_outline_blank</mat-icon> Disable All
+                        </button>
+                        <span class="toggle-count">{{ userEnabledCount(u) }} / {{ allModules.length }}</span>
+                      </div>
+                      <div class="toggle-list">
+                        @for (mod of allModules; track mod.id) {
+                          <div class="toggle-row">
+                            <mat-icon class="toggle-module-icon" [style.color]="moduleColor(mod.id)">{{ mod.icon }}</mat-icon>
+                            <span class="toggle-module-label">{{ mod.label }}</span>
+                            <mat-slide-toggle
+                              [checked]="isUserModuleEnabled(u, mod.id)"
+                              (change)="userMgmt.setModuleEnabled(u.email, mod.id, $event.checked)"
+                              color="primary" />
+                          </div>
+                        }
+                      </div>
+
+                      <!-- remove user (cannot remove yourself) -->
+                      @if (u.email !== userMgmt.currentUser()?.email) {
+                        <div class="panel-actions">
+                          <button mat-stroked-button color="warn" (click)="removeUser(u.email, u.name)">
+                            <mat-icon>person_remove</mat-icon> Remove User
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </mat-expansion-panel>
+                }
+              </div>
+              @if (userMgmt.users().length === 0) {
+                <p class="summary-empty">No users registered yet.</p>
+              }
+            </div>
+          </mat-tab>
+        }
 
       </mat-tab-group>
     </div>
@@ -443,12 +549,117 @@ interface ModuleAuthState {
       font-weight: 500;
       color: #1e293b;
     }
+
+    /* ── Role notice ── */
+    .role-notice {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #9a3412;
+    }
+
+    /* ── User Management ── */
+    .users-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .user-panel {
+      border-radius: 8px !important;
+    }
+    .user-panel-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 500;
+    }
+    .user-avatar-sm {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .user-avatar-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      color: #94a3b8;
+    }
+    .user-info-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .user-name-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .user-email-text {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+    .user-panel-desc {
+      display: flex;
+      align-items: center;
+    }
+    .badge-role-admin {
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-role-manager {
+      background: #fef3c7;
+      color: #b45309;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-role-user {
+      background: #f1f5f9;
+      color: #475569;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .user-detail {
+      padding: 8px 0 4px;
+    }
+    .user-meta {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 16px;
+      font-size: 0.82rem;
+      color: #64748b;
+    }
+    .role-select {
+      width: 220px;
+      margin-bottom: 8px;
+    }
+    .user-modules-title {
+      margin: 16px 0 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #0f172a;
+    }
   `],
 })
 export class SettingsComponent implements OnInit {
   private readonly svc = inject(AuthConfigService);
   private readonly snack = inject(MatSnackBar);
   readonly visibility = inject(ModuleVisibilityService);
+  readonly userMgmt = inject(UserManagementService);
 
   readonly allModules = MODULES;
   states: ModuleAuthState[] = [];
@@ -457,6 +668,12 @@ export class SettingsComponent implements OnInit {
     value: value as AuthType,
     label,
   }));
+
+  readonly roleOptions: { value: UserRole; label: string }[] = [
+    { value: 'admin', label: 'Admin' },
+    { value: 'manager', label: 'Manager' },
+    { value: 'user', label: 'User' },
+  ];
 
   private readonly PALETTE = [
     '#0284c7', '#7c3aed', '#16a34a', '#dc2626', '#b45309',
@@ -552,5 +769,41 @@ export class SettingsComponent implements OnInit {
   disableAllModules(): void {
     this.visibility.disableAll();
     this.snack.open('✓ All modules disabled', '', { duration: 2000 });
+  }
+
+  /* ── User Management helpers (admin) ── */
+
+  roleLabel(role: UserRole): string {
+    return USER_ROLE_LABELS[role] ?? role;
+  }
+
+  changeRole(email: string, role: UserRole): void {
+    this.userMgmt.setRole(email, role);
+    this.snack.open(`✓ Role updated to ${USER_ROLE_LABELS[role]}`, '', { duration: 2500 });
+  }
+
+  removeUser(email: string, name: string): void {
+    if (!confirm(`Remove user "${name || email}" from the platform?`)) return;
+    this.userMgmt.removeUser(email);
+    this.snack.open(`✓ User removed`, '', { duration: 2500 });
+  }
+
+  isUserModuleEnabled(user: StoredUser, moduleId: string): boolean {
+    const defaultEnabled = user.role === 'admin' || user.role === 'manager';
+    return user.moduleVisibility[moduleId] ?? defaultEnabled;
+  }
+
+  userEnabledCount(user: StoredUser): number {
+    return this.allModules.filter(m => this.isUserModuleEnabled(user, m.id)).length;
+  }
+
+  enableAllForUser(email: string): void {
+    this.userMgmt.setAllModulesEnabled(email, this.allModules.map(m => m.id), true);
+    this.snack.open('✓ All modules enabled for user', '', { duration: 2000 });
+  }
+
+  disableAllForUser(email: string): void {
+    this.userMgmt.setAllModulesEnabled(email, this.allModules.map(m => m.id), false);
+    this.snack.open('✓ All modules disabled for user', '', { duration: 2000 });
   }
 }

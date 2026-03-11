@@ -1,6 +1,7 @@
-import { Component, OnInit, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService, CloudUser } from '../../services/auth.service';
+import { UserManagementService } from '../../services/user-management.service';
 import { MODULES } from '../../config/endpoints';
 import { environment } from '../../../environments/environment';
 
@@ -136,6 +137,8 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
   scriptError = false;
 
+  private readonly userMgmt = inject(UserManagementService);
+
   constructor(
     private authService: AuthService,
     private router: Router,
@@ -177,12 +180,19 @@ export class LoginComponent implements OnInit, AfterViewInit {
       callback: (response: GisCredentialResponse) => {
         try {
           const payload = this.decodeJwt(response.credential);
+          // Register / update user in the user management store
+          const storedUser = this.userMgmt.registerLogin(
+            payload.email ?? '',
+            payload.name ?? '',
+            payload.picture ?? '',
+          );
           const user: CloudUser = {
             name: payload.name ?? '',
             email: payload.email ?? '',
             firstName: payload.given_name ?? payload.name?.split(' ')[0] ?? '',
             photoUrl: payload.picture ?? '',
             idToken: response.credential,
+            role: storedUser.role,
           };
           this.authService.setUser(user);
           this.router.navigate([`/${MODULES[0].id}`]);

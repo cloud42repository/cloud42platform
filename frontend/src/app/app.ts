@@ -14,6 +14,8 @@ import { MODULES } from './config/endpoints';
 import { AuthService } from './services/auth.service';
 import { AgentComponent } from './pages/agent/agent.component';
 import { ModuleVisibilityService } from './services/module-visibility.service';
+import { UserManagementService } from './services/user-management.service';
+import { USER_ROLE_LABELS } from './config/user.types';
 
 interface ModuleSubViews {
   dashboard?: { route: string; label: string };
@@ -61,6 +63,7 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
             <mat-icon>account_circle</mat-icon>
           }
           <span class="user-name">{{ auth.user()?.firstName }}</span>
+          <span class="toolbar-role-badge" [class]="'badge-' + userMgmt.currentRole()">{{ roleLabels[userMgmt.currentRole()] }}</span>
           <mat-icon>arrow_drop_down</mat-icon>
         </button>
         <mat-menu #userMenu="matMenu" xPosition="before">
@@ -71,6 +74,7 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
             <div class="user-menu-info">
               <span class="user-full-name">{{ auth.user()?.name }}</span>
               <span class="user-email">{{ auth.user()?.email }}</span>
+            <span class="menu-role-chip" [class]="'chip-' + userMgmt.currentRole()">{{ roleLabels[userMgmt.currentRole()] }}</span>
             </div>
           </div>
           <mat-divider />
@@ -167,8 +171,10 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
 })
 export class App {
   private readonly visibilitySvc = inject(ModuleVisibilityService);
+  readonly userMgmt = inject(UserManagementService);
   readonly modules = this.visibilitySvc.enabledModules;
   readonly moduleViews = MODULE_VIEWS;
+  readonly roleLabels = USER_ROLE_LABELS;
   readonly sidenavOpen = signal(true);
   readonly agentOpen = signal(false);
   readonly auth = inject(AuthService);

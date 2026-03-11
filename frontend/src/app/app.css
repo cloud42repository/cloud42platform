@@ -212,3 +212,33 @@
   background: rgba(255,255,255,.18) !important;
   border-radius: 8px;
 }
+
+/* ── Role badges in toolbar / user menu ──────────────── */
+.toolbar-role-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  line-height: 1.4;
+  margin-left: 4px;
+}
+.toolbar-role-badge.badge-admin  { background: #fbbf24; color: #78350f; }
+.toolbar-role-badge.badge-manager { background: #60a5fa; color: #1e3a5f; }
+.toolbar-role-badge.badge-user   { background: rgba(255,255,255,.2); color: #e0f2fe; }
+
+.menu-role-chip {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-top: 4px;
+  width: fit-content;
+}
+.menu-role-chip.chip-admin   { background: #fef3c7; color: #92400e; }
+.menu-role-chip.chip-manager { background: #dbeafe; color: #1e40af; }
+.menu-role-chip.chip-user    { background: #f1f5f9; color: #475569; }
