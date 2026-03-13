@@ -18,6 +18,8 @@ import {
   type ChartData, type ChartOptions,
 } from 'chart.js';
 import { ImpossibleCloudService } from '../../services/impossible-cloud.service';
+import { TranslatePipe } from '../../i18n/translate.pipe';
+import { TranslateService } from '../../services/translate.service';
 import {
   ICRegion, ICContract, ICPartner, ICStorageAccount,
 } from '../../services/impossible-cloud.types';
@@ -45,13 +47,14 @@ const IC_PURPLE = '#6a1b9a';
     CommonModule, DecimalPipe, PercentPipe,
     MatCardModule, MatIconModule, MatProgressSpinnerModule,
     MatTableModule, MatDividerModule, MatTooltipModule, MatBadgeModule, MatButtonModule,
-    NgChartsModule,
+    NgChartsModule, TranslatePipe,
   ],
   templateUrl: './ic-dashboard.component.html',
   styleUrl:    './ic-dashboard.component.scss',
 })
 export class IcDashboardComponent implements OnInit {
   private readonly icSvc = inject(ImpossibleCloudService);
+  private readonly i18n = inject(TranslateService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   @ViewChild('dashContent', { static: false }) dashContentRef!: ElementRef<HTMLElement>;

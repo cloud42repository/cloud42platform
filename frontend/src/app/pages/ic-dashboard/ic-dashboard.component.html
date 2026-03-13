@@ -4,14 +4,14 @@
   <div class="dash-header">
     <mat-icon class="dash-icon">cloud</mat-icon>
     <div>
-      <h1 class="dash-title">Impossible Cloud Dashboard</h1>
-      <p class="dash-subtitle">Infrastructure overview · mock data</p>
+      <h1 class="dash-title">{{ 'ic.dashboard-title' | t }}</h1>
+      <p class="dash-subtitle">{{ 'ic.dashboard-subtitle' | t }}</p>
     </div>
     <span class="header-spacer"></span>
     @if (!loading) {
       <button mat-flat-button class="export-btn" (click)="exportPdf()" [disabled]="exporting">
         <mat-icon>picture_as_pdf</mat-icon>
-        {{ exporting ? 'Exporting…' : 'Export PDF' }}
+        {{ exporting ? ('dashboard.exporting' | t) : ('dashboard.export' | t) }}
       </button>
     }
   </div>
@@ -19,7 +19,7 @@
   @if (loading) {
     <div class="loading-center">
       <mat-spinner diameter="56" />
-      <p class="loading-text">Loading cloud data…</p>
+      <p class="loading-text">{{ 'ic.loading' | t }}</p>
     </div>
   } @else {
 
@@ -31,7 +31,7 @@
         <mat-card-content>
           <mat-icon>public</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Regions</span>
+            <span class="kpi-label">{{ 'ic.regions' | t }}</span>
             <span class="kpi-value">{{ totalRegions }}</span>
           </div>
         </mat-card-content>
@@ -41,7 +41,7 @@
         <mat-card-content>
           <mat-icon>assignment</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Contracts</span>
+            <span class="kpi-label">{{ 'ic.contracts' | t }}</span>
             <span class="kpi-value">{{ totalContracts }}</span>
           </div>
         </mat-card-content>
@@ -51,7 +51,7 @@
         <mat-card-content>
           <mat-icon>group</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Partners</span>
+            <span class="kpi-label">{{ 'ic.partners' | t }}</span>
             <span class="kpi-value">{{ totalPartners }}</span>
           </div>
         </mat-card-content>
@@ -61,7 +61,7 @@
         <mat-card-content>
           <mat-icon>storage</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Storage Accounts</span>
+            <span class="kpi-label">{{ 'ic.storage-accounts' | t }}</span>
             <span class="kpi-value">{{ totalStorageAccounts }}</span>
           </div>
         </mat-card-content>
@@ -71,7 +71,7 @@
         <mat-card-content>
           <mat-icon>dns</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Allocated Capacity</span>
+            <span class="kpi-label">{{ 'ic.allocated-capacity' | t }}</span>
             <span class="kpi-value">{{ totalAllocatedTB | number:'1.1-2' }} TB</span>
           </div>
         </mat-card-content>
@@ -81,7 +81,7 @@
         <mat-card-content>
           <mat-icon>warning_amber</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Overdraft Enabled</span>
+            <span class="kpi-label">{{ 'ic.overdraft-enabled' | t }}</span>
             <span class="kpi-value">{{ overdraftEnabledCount }}</span>
           </div>
         </mat-card-content>
@@ -147,13 +147,13 @@
     @if (regions.length) {
       <mat-card class="regions-card">
         <mat-card-content>
-          <h3 class="section-title"><mat-icon>public</mat-icon> Available Regions</h3>
+          <h3 class="section-title"><mat-icon>public</mat-icon> {{ 'ic.available-regions' | t }}</h3>
           <div class="regions-strip">
             @for (r of regions; track r.name) {
               <mat-card class="region-chip" matTooltip="{{ r.s3_url }}">
                 <mat-card-content>
                   <mat-icon class="region-icon">location_on</mat-icon>
-                  <span class="region-name">{{ r.name ?? 'Unknown' }}</span>
+                  <span class="region-name">{{ r.name ?? ('ic.unknown' | t) }}</span>
                 </mat-card-content>
               </mat-card>
             }
@@ -165,51 +165,51 @@
     <!-- ── Recent Storage Accounts Table ─────────────────────────────── -->
     <mat-card class="table-card">
       <mat-card-content>
-        <h3 class="section-title"><mat-icon>storage</mat-icon> Recent Storage Accounts</h3>
+        <h3 class="section-title"><mat-icon>storage</mat-icon> {{ 'ic.recent-storage-accounts' | t }}</h3>
         <table mat-table [dataSource]="recentAccounts" class="accounts-table">
 
           <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Name</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'common.name' | t }}</th>
             <td mat-cell *matCellDef="let row">{{ row.name ?? '—' }}</td>
           </ng-container>
 
           <ng-container matColumnDef="clientAccountId">
-            <th mat-header-cell *matHeaderCellDef>Client ID</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'ic.client-id' | t }}</th>
             <td mat-cell *matCellDef="let row">
               <code class="id-code">{{ row.clientAccountId ?? '—' }}</code>
             </td>
           </ng-container>
 
           <ng-container matColumnDef="contactEmail">
-            <th mat-header-cell *matHeaderCellDef>Contact Email</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'ic.contact-email' | t }}</th>
             <td mat-cell *matCellDef="let row">{{ row.contactEmail ?? '—' }}</td>
           </ng-container>
 
           <ng-container matColumnDef="allocatedCapacity">
-            <th mat-header-cell *matHeaderCellDef>Capacity</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'ic.capacity' | t }}</th>
             <td mat-cell *matCellDef="let row">{{ formatCapacity(row.allocatedCapacity) }}</td>
           </ng-container>
 
           <ng-container matColumnDef="allowOverdraft">
-            <th mat-header-cell *matHeaderCellDef>Overdraft</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'ic.overdraft' | t }}</th>
             <td mat-cell *matCellDef="let row">
               @if (row.allowOverdraft) {
-                <span class="badge badge-warning">Enabled</span>
+                <span class="badge badge-warning">{{ 'common.enabled' | t }}</span>
               } @else {
-                <span class="badge badge-ok">Disabled</span>
+                <span class="badge badge-ok">{{ 'common.disabled' | t }}</span>
               }
             </td>
           </ng-container>
 
           <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'common.status' | t }}</th>
             <td mat-cell *matCellDef="let row">
               @if (isOverdue(row)) {
                 <span class="badge badge-danger" [matTooltip]="'Deletion: ' + row.pendingDeletedAt">
-                  Pending Deletion
+                  {{ 'ic.pending-deletion' | t }}
                 </span>
               } @else {
-                <span class="badge badge-active">Active</span>
+                <span class="badge badge-active">{{ 'common.active' | t }}</span>
               }
             </td>
           </ng-container>

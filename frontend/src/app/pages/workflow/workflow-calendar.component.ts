@@ -7,6 +7,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatChipsModule } from '@angular/material/chips';
 import { WorkflowService } from '../../services/workflow.service';
 import { Workflow } from '../../config/workflow.types';
+import { TranslatePipe } from '../../i18n/translate.pipe';
+import { TranslateService } from '../../services/translate.service';
 
 interface CalendarEvent {
   workflow: Workflow;
@@ -27,7 +29,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   selector: 'app-workflow-calendar',
   standalone: true,
   imports: [
-    CommonModule, RouterLink,
+    CommonModule, RouterLink, TranslatePipe,
     MatButtonModule, MatIconModule, MatTooltipModule, MatChipsModule,
   ],
   providers: [DatePipe],
@@ -38,19 +40,19 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         <div class="page-title">
           <mat-icon class="title-icon">calendar_month</mat-icon>
           <div>
-            <h1>Schedule Calendar</h1>
-            <p>Scheduled workflow steps across all workflows</p>
+            <h1>{{ 'calendar.title' | t }}</h1>
+            <p>{{ 'calendar.subtitle' | t }}</p>
           </div>
         </div>
         <div class="cal-nav">
-          <button mat-icon-button (click)="prevMonth()" matTooltip="Previous month">
+          <button mat-icon-button (click)="prevMonth()" [matTooltip]="'calendar.prev-month' | t">
             <mat-icon>chevron_left</mat-icon>
           </button>
           <span class="cal-month-label">{{ monthLabel() }}</span>
-          <button mat-icon-button (click)="nextMonth()" matTooltip="Next month">
+          <button mat-icon-button (click)="nextMonth()" [matTooltip]="'calendar.next-month' | t">
             <mat-icon>chevron_right</mat-icon>
           </button>
-          <button mat-stroked-button (click)="goToday()" style="margin-left:8px">Today</button>
+          <button mat-stroked-button (click)="goToday()" style="margin-left:8px">{{ 'calendar.today' | t }}</button>
         </div>
         <button mat-flat-button color="primary" routerLink="/workflows">
           <mat-icon>account_tree</mat-icon> Workflows
@@ -61,12 +63,12 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       @if (totalScheduled() > 0) {
         <div class="cal-stats">
           <mat-icon>schedule</mat-icon>
-          <span>{{ totalScheduled() }} scheduled workflow{{ totalScheduled() !== 1 ? 's' : '' }} this month</span>
+          <span>{{ 'calendar.scheduled-count' | t:{count: totalScheduled()} }}</span>
         </div>
       } @else {
         <div class="cal-stats empty">
           <mat-icon>event_busy</mat-icon>
-          <span>No scheduled steps this month. Open a workflow to schedule endpoint steps.</span>
+          <span>{{ 'calendar.no-scheduled' | t }}</span>
         </div>
       }
 
@@ -183,6 +185,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export class WorkflowCalendarComponent {
   private readonly svc = inject(WorkflowService);
   private readonly router = inject(Router);
+  readonly i18n = inject(TranslateService);
 
   readonly weekdays = WEEKDAYS;
 

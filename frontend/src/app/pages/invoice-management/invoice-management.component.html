@@ -1,18 +1,19 @@
 <div class="page-header">
   <mat-icon class="header-icon">receipt_long</mat-icon>
-  <h1>Invoice Management</h1>
+  <h1>{{ 'invoice.mgmt-title' | t }}</h1>
 </div>
 
 <mat-tab-group class="mgmt-tabs" animationDuration="200ms"
                (selectedIndexChange)="$event===0?loadCustomers():$event===1?loadInvoices():$event===2?loadEstimates():$event===3?loadRecurring():loadPayments()">
 
   <!-- ═══════════════════════  TAB 1 – CUSTOMERS  ═══════════════════════ -->
-  <mat-tab label="Customers">
+  <mat-tab>
+    <ng-template mat-tab-label>{{ 'invoice.tab-customers' | t }}</ng-template>
     <div class="tab-content">
       <div class="tab-toolbar">
-        <span class="tab-title">Customers</span>
+        <span class="tab-title">{{ 'invoice.tab-customers' | t }}</span>
         <button mat-flat-button color="primary" (click)="openCustCreate()">
-          <mat-icon>add</mat-icon> Add Customer
+          <mat-icon>add</mat-icon> {{ 'invoice.add-customer' | t }}
         </button>
       </div>
 
@@ -20,34 +21,34 @@
       @if (custPanelMode !== 'hidden') {
         <mat-card class="form-card">
           <mat-card-header>
-            <mat-card-title>{{ custPanelMode === 'create' ? 'New Customer' : 'Edit Customer' }}</mat-card-title>
+            <mat-card-title>{{ custPanelMode === 'create' ? ('invoice.new-customer' | t) : ('invoice.edit-customer' | t) }}</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <div class="form-grid">
               <mat-form-field appearance="outline">
-                <mat-label>Name</mat-label>
+                <mat-label>{{ 'common.name' | t }}</mat-label>
                 <input matInput [(ngModel)]="custForm.customer_name" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Email</mat-label>
+                <mat-label>{{ 'common.email' | t }}</mat-label>
                 <input matInput [(ngModel)]="custForm.email" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Phone</mat-label>
+                <mat-label>{{ 'common.phone' | t }}</mat-label>
                 <input matInput [(ngModel)]="custForm.phone" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Company</mat-label>
+                <mat-label>{{ 'common.company' | t }}</mat-label>
                 <input matInput [(ngModel)]="custForm.company_name" />
               </mat-form-field>
             </div>
           </mat-card-content>
           <mat-card-actions align="end">
-            <button mat-button (click)="cancelCustPanel()">Cancel</button>
+            <button mat-button (click)="cancelCustPanel()">{{ 'common.cancel' | t }}</button>
             @if (custPanelMode === 'create') {
-              <button mat-flat-button color="primary" (click)="saveCustCreate()">Create</button>
+              <button mat-flat-button color="primary" (click)="saveCustCreate()">{{ 'common.create' | t }}</button>
             } @else {
-              <button mat-flat-button color="primary" (click)="saveCustEdit()">Save</button>
+              <button mat-flat-button color="primary" (click)="saveCustEdit()">{{ 'common.save' | t }}</button>
             }
           </mat-card-actions>
         </mat-card>
@@ -60,23 +61,23 @@
         <div class="table-wrapper">
           <table mat-table [dataSource]="customers()" class="mgmt-table">
             <ng-container matColumnDef="customer_name">
-              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.name' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.customer_name }}</td>
             </ng-container>
             <ng-container matColumnDef="company_name">
-              <th mat-header-cell *matHeaderCellDef>Company</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.company' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.company_name }}</td>
             </ng-container>
             <ng-container matColumnDef="email">
-              <th mat-header-cell *matHeaderCellDef>Email</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.email' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.email }}</td>
             </ng-container>
             <ng-container matColumnDef="phone">
-              <th mat-header-cell *matHeaderCellDef>Phone</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.phone' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.phone }}</td>
             </ng-container>
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | t }}</th>
               <td mat-cell *matCellDef="let r">
                 <button mat-icon-button matTooltip="Edit" (click)="openCustEdit(r)"><mat-icon>edit</mat-icon></button>
                 <button mat-icon-button matTooltip="Delete" color="warn" (click)="deleteCust(r)"><mat-icon>delete</mat-icon></button>
@@ -91,50 +92,51 @@
   </mat-tab>
 
   <!-- ═══════════════════════  TAB 2 – INVOICES  ═══════════════════════ -->
-  <mat-tab label="Invoices">
+  <mat-tab>
+    <ng-template mat-tab-label>{{ 'invoice.tab-invoices' | t }}</ng-template>
     <div class="tab-content">
       <div class="tab-toolbar">
-        <span class="tab-title">Invoices</span>
+        <span class="tab-title">{{ 'invoice.tab-invoices' | t }}</span>
         <button mat-flat-button color="primary" (click)="openInvCreate()">
-          <mat-icon>add</mat-icon> New Invoice
+          <mat-icon>add</mat-icon> {{ 'invoice.new-invoice' | t }}
         </button>
       </div>
 
       @if (invPanelMode !== 'hidden') {
         <mat-card class="form-card">
           <mat-card-header>
-            <mat-card-title>{{ invPanelMode === 'create' ? 'New Invoice' : 'Edit Invoice' }}</mat-card-title>
+            <mat-card-title>{{ invPanelMode === 'create' ? ('invoice.new-invoice' | t) : ('invoice.edit-invoice' | t) }}</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <div class="form-grid">
               <mat-form-field appearance="outline">
-                <mat-label>Customer Name</mat-label>
+                <mat-label>{{ 'common.customer' | t }}</mat-label>
                 <input matInput [(ngModel)]="invForm.customer_name" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Invoice #</mat-label>
+                <mat-label>{{ 'dashboard.invoice-number' | t }}</mat-label>
                 <input matInput [(ngModel)]="invForm.invoice_number" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Date</mat-label>
+                <mat-label>{{ 'common.date' | t }}</mat-label>
                 <input matInput type="date" [(ngModel)]="invForm.date" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Due Date</mat-label>
+                <mat-label>{{ 'common.due-date' | t }}</mat-label>
                 <input matInput type="date" [(ngModel)]="invForm.due_date" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Total</mat-label>
+                <mat-label>{{ 'common.total' | t }}</mat-label>
                 <input matInput type="number" [(ngModel)]="invForm.total" />
               </mat-form-field>
             </div>
           </mat-card-content>
           <mat-card-actions align="end">
-            <button mat-button (click)="cancelInvPanel()">Cancel</button>
+            <button mat-button (click)="cancelInvPanel()">{{ 'common.cancel' | t }}</button>
             @if (invPanelMode === 'create') {
-              <button mat-flat-button color="primary" (click)="saveInvCreate()">Create</button>
+              <button mat-flat-button color="primary" (click)="saveInvCreate()">{{ 'common.create' | t }}</button>
             } @else {
-              <button mat-flat-button color="primary" (click)="saveInvEdit()">Save</button>
+              <button mat-flat-button color="primary" (click)="saveInvEdit()">{{ 'common.save' | t }}</button>
             }
           </mat-card-actions>
         </mat-card>
@@ -146,33 +148,33 @@
         <div class="table-wrapper">
           <table mat-table [dataSource]="invoices()" class="mgmt-table">
             <ng-container matColumnDef="invoice_number">
-              <th mat-header-cell *matHeaderCellDef>Invoice #</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.invoice-number' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.invoice_number }}</td>
             </ng-container>
             <ng-container matColumnDef="customer_name">
-              <th mat-header-cell *matHeaderCellDef>Customer</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.customer' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.customer_name }}</td>
             </ng-container>
             <ng-container matColumnDef="date">
-              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.date' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.date }}</td>
             </ng-container>
             <ng-container matColumnDef="due_date">
-              <th mat-header-cell *matHeaderCellDef>Due</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.due-date' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.due_date }}</td>
             </ng-container>
             <ng-container matColumnDef="total">
-              <th mat-header-cell *matHeaderCellDef>Total</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.total' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.total | currency }}</td>
             </ng-container>
             <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.status' | t }}</th>
               <td mat-cell *matCellDef="let r">
                 <span class="badge badge-{{ (r.status || 'draft') | lowercase }}">{{ r.status || 'draft' }}</span>
               </td>
             </ng-container>
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | t }}</th>
               <td mat-cell *matCellDef="let r">
                 <button mat-icon-button matTooltip="Send" (click)="sendInv(r)"><mat-icon>send</mat-icon></button>
                 <button mat-icon-button matTooltip="Edit" (click)="openInvEdit(r)"><mat-icon>edit</mat-icon></button>
@@ -188,50 +190,51 @@
   </mat-tab>
 
   <!-- ═══════════════════════  TAB 3 – ESTIMATES  ═══════════════════════ -->
-  <mat-tab label="Estimates">
+  <mat-tab>
+    <ng-template mat-tab-label>{{ 'invoice.tab-estimates' | t }}</ng-template>
     <div class="tab-content">
       <div class="tab-toolbar">
-        <span class="tab-title">Estimates</span>
+        <span class="tab-title">{{ 'invoice.tab-estimates' | t }}</span>
         <button mat-flat-button color="primary" (click)="openEstCreate()">
-          <mat-icon>add</mat-icon> New Estimate
+          <mat-icon>add</mat-icon> {{ 'invoice.new-estimate' | t }}
         </button>
       </div>
 
       @if (estPanelMode !== 'hidden') {
         <mat-card class="form-card">
           <mat-card-header>
-            <mat-card-title>{{ estPanelMode === 'create' ? 'New Estimate' : 'Edit Estimate' }}</mat-card-title>
+            <mat-card-title>{{ estPanelMode === 'create' ? ('invoice.new-estimate' | t) : ('invoice.edit-estimate' | t) }}</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <div class="form-grid">
               <mat-form-field appearance="outline">
-                <mat-label>Customer Name</mat-label>
+                <mat-label>{{ 'common.customer' | t }}</mat-label>
                 <input matInput [(ngModel)]="estForm.customer_name" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Estimate #</mat-label>
+                <mat-label>{{ 'invoice.estimate-hash' | t }}</mat-label>
                 <input matInput [(ngModel)]="estForm.estimate_number" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Date</mat-label>
+                <mat-label>{{ 'common.date' | t }}</mat-label>
                 <input matInput type="date" [(ngModel)]="estForm.date" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Expiry Date</mat-label>
+                <mat-label>{{ 'invoice.expiry-date' | t }}</mat-label>
                 <input matInput type="date" [(ngModel)]="estForm.expiry_date" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Total</mat-label>
+                <mat-label>{{ 'common.total' | t }}</mat-label>
                 <input matInput type="number" [(ngModel)]="estForm.total" />
               </mat-form-field>
             </div>
           </mat-card-content>
           <mat-card-actions align="end">
-            <button mat-button (click)="cancelEstPanel()">Cancel</button>
+            <button mat-button (click)="cancelEstPanel()">{{ 'common.cancel' | t }}</button>
             @if (estPanelMode === 'create') {
-              <button mat-flat-button color="primary" (click)="saveEstCreate()">Create</button>
+              <button mat-flat-button color="primary" (click)="saveEstCreate()">{{ 'common.create' | t }}</button>
             } @else {
-              <button mat-flat-button color="primary" (click)="saveEstEdit()">Save</button>
+              <button mat-flat-button color="primary" (click)="saveEstEdit()">{{ 'common.save' | t }}</button>
             }
           </mat-card-actions>
         </mat-card>
@@ -243,33 +246,33 @@
         <div class="table-wrapper">
           <table mat-table [dataSource]="estimates()" class="mgmt-table">
             <ng-container matColumnDef="estimate_number">
-              <th mat-header-cell *matHeaderCellDef>Estimate #</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'invoice.estimate-hash' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.estimate_number }}</td>
             </ng-container>
             <ng-container matColumnDef="customer_name">
-              <th mat-header-cell *matHeaderCellDef>Customer</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.customer' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.customer_name }}</td>
             </ng-container>
             <ng-container matColumnDef="date">
-              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.date' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.date }}</td>
             </ng-container>
             <ng-container matColumnDef="expiry_date">
-              <th mat-header-cell *matHeaderCellDef>Expiry</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'invoice.expiry' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.expiry_date }}</td>
             </ng-container>
             <ng-container matColumnDef="total">
-              <th mat-header-cell *matHeaderCellDef>Total</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.total' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.total | currency }}</td>
             </ng-container>
             <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.status' | t }}</th>
               <td mat-cell *matCellDef="let r">
                 <span class="badge badge-{{ (r.status || 'draft') | lowercase }}">{{ r.status || 'draft' }}</span>
               </td>
             </ng-container>
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | t }}</th>
               <td mat-cell *matCellDef="let r">
                 <button mat-icon-button matTooltip="Edit" (click)="openEstEdit(r)"><mat-icon>edit</mat-icon></button>
                 <button mat-icon-button matTooltip="Delete" color="warn" (click)="deleteEst(r)"><mat-icon>delete</mat-icon></button>
@@ -284,39 +287,40 @@
   </mat-tab>
 
   <!-- ═══════════════════════  TAB 4 – RECURRING INVOICES  ═══════════════════════ -->
-  <mat-tab label="Recurring Invoices">
+  <mat-tab>
+    <ng-template mat-tab-label>{{ 'invoice.tab-recurring' | t }}</ng-template>
     <div class="tab-content">
       <div class="tab-toolbar">
-        <span class="tab-title">Recurring Invoices</span>
+        <span class="tab-title">{{ 'invoice.tab-recurring' | t }}</span>
         <button mat-flat-button color="primary" (click)="openRecCreate()">
-          <mat-icon>add</mat-icon> New Recurring
+          <mat-icon>add</mat-icon> {{ 'invoice.new-recurring' | t }}
         </button>
       </div>
 
       @if (recPanelMode !== 'hidden') {
         <mat-card class="form-card">
           <mat-card-header>
-            <mat-card-title>New Recurring Invoice</mat-card-title>
+            <mat-card-title>{{ 'invoice.new-recurring-title' | t }}</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <div class="form-grid">
               <mat-form-field appearance="outline">
-                <mat-label>Customer</mat-label>
+                <mat-label>{{ 'common.customer' | t }}</mat-label>
                 <input matInput [(ngModel)]="recForm.customer_name" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Recurrence Name</mat-label>
+                <mat-label>{{ 'invoice.recurrence-name' | t }}</mat-label>
                 <input matInput [(ngModel)]="recForm.recurrence_name" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Total</mat-label>
+                <mat-label>{{ 'common.total' | t }}</mat-label>
                 <input matInput type="number" [(ngModel)]="recForm.total" />
               </mat-form-field>
             </div>
           </mat-card-content>
           <mat-card-actions align="end">
-            <button mat-button (click)="cancelRecPanel()">Cancel</button>
-            <button mat-flat-button color="primary" (click)="saveRecCreate()">Create</button>
+            <button mat-button (click)="cancelRecPanel()">{{ 'common.cancel' | t }}</button>
+            <button mat-flat-button color="primary" (click)="saveRecCreate()">{{ 'common.create' | t }}</button>
           </mat-card-actions>
         </mat-card>
       }
@@ -327,25 +331,25 @@
         <div class="table-wrapper">
           <table mat-table [dataSource]="recurringInvoices()" class="mgmt-table">
             <ng-container matColumnDef="recurrence_name">
-              <th mat-header-cell *matHeaderCellDef>Recurrence</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'invoice.recurrence' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.recurrence_name }}</td>
             </ng-container>
             <ng-container matColumnDef="customer_name">
-              <th mat-header-cell *matHeaderCellDef>Customer</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.customer' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.customer_name }}</td>
             </ng-container>
             <ng-container matColumnDef="total">
-              <th mat-header-cell *matHeaderCellDef>Total</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.total' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.total | currency }}</td>
             </ng-container>
             <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.status' | t }}</th>
               <td mat-cell *matCellDef="let r">
                 <span class="badge badge-{{ (r.status || 'active') | lowercase }}">{{ r.status || 'active' }}</span>
               </td>
             </ng-container>
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | t }}</th>
               <td mat-cell *matCellDef="let r">
                 <button mat-icon-button matTooltip="Delete" color="warn" (click)="deleteRec(r)"><mat-icon>delete</mat-icon></button>
               </td>
@@ -359,43 +363,44 @@
   </mat-tab>
 
   <!-- ═══════════════════════  TAB 5 – PAYMENTS  ═══════════════════════ -->
-  <mat-tab label="Payments">
+  <mat-tab>
+    <ng-template mat-tab-label>{{ 'invoice.tab-payments' | t }}</ng-template>
     <div class="tab-content">
       <div class="tab-toolbar">
-        <span class="tab-title">Payments</span>
+        <span class="tab-title">{{ 'invoice.tab-payments' | t }}</span>
         <button mat-flat-button color="primary" (click)="openPayCreate()">
-          <mat-icon>add</mat-icon> Record Payment
+          <mat-icon>add</mat-icon> {{ 'invoice.record-payment' | t }}
         </button>
       </div>
 
       @if (payPanelMode !== 'hidden') {
         <mat-card class="form-card">
           <mat-card-header>
-            <mat-card-title>Record Payment</mat-card-title>
+            <mat-card-title>{{ 'invoice.record-payment' | t }}</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <div class="form-grid">
               <mat-form-field appearance="outline">
-                <mat-label>Customer</mat-label>
+                <mat-label>{{ 'common.customer' | t }}</mat-label>
                 <input matInput [(ngModel)]="payForm.customer_name" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Amount</mat-label>
+                <mat-label>{{ 'common.amount' | t }}</mat-label>
                 <input matInput type="number" [(ngModel)]="payForm.amount" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Date</mat-label>
+                <mat-label>{{ 'common.date' | t }}</mat-label>
                 <input matInput type="date" [(ngModel)]="payForm.date" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Payment Mode</mat-label>
-                <input matInput [(ngModel)]="payForm.payment_mode" placeholder="e.g. Cash, Bank Transfer" />
+                <mat-label>{{ 'invoice.payment-mode' | t }}</mat-label>
+                <input matInput [(ngModel)]="payForm.payment_mode" [placeholder]="'invoice.payment-mode-hint' | t" />
               </mat-form-field>
             </div>
           </mat-card-content>
           <mat-card-actions align="end">
-            <button mat-button (click)="cancelPayPanel()">Cancel</button>
-            <button mat-flat-button color="primary" (click)="savePayCreate()">Record</button>
+            <button mat-button (click)="cancelPayPanel()">{{ 'common.cancel' | t }}</button>
+            <button mat-flat-button color="primary" (click)="savePayCreate()">{{ 'invoice.record' | t }}</button>
           </mat-card-actions>
         </mat-card>
       }
@@ -406,27 +411,27 @@
         <div class="table-wrapper">
           <table mat-table [dataSource]="payments()" class="mgmt-table">
             <ng-container matColumnDef="payment_number">
-              <th mat-header-cell *matHeaderCellDef>Payment #</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'invoice.payment-hash' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.payment_number }}</td>
             </ng-container>
             <ng-container matColumnDef="customer_name">
-              <th mat-header-cell *matHeaderCellDef>Customer</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.customer' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.customer_name }}</td>
             </ng-container>
             <ng-container matColumnDef="date">
-              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.date' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.date }}</td>
             </ng-container>
             <ng-container matColumnDef="amount">
-              <th mat-header-cell *matHeaderCellDef>Amount</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.amount' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.amount | currency }}</td>
             </ng-container>
             <ng-container matColumnDef="payment_mode">
-              <th mat-header-cell *matHeaderCellDef>Mode</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'invoice.mode' | t }}</th>
               <td mat-cell *matCellDef="let r">{{ r.payment_mode }}</td>
             </ng-container>
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | t }}</th>
               <td mat-cell *matCellDef="let r">
                 <button mat-icon-button matTooltip="Delete" color="warn" (click)="deletePay(r)"><mat-icon>delete</mat-icon></button>
               </td>

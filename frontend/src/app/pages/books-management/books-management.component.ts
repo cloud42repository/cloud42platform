@@ -16,6 +16,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
 import { firstValueFrom } from 'rxjs';
 import { ZohoBooksService } from '../../services/zoho-books.service';
+import { TranslatePipe } from '../../i18n/translate.pipe';
+import { TranslateService } from '../../services/translate.service';
 
 type PanelMode = 'hidden' | 'create' | 'edit';
 
@@ -28,6 +30,7 @@ type PanelMode = 'hidden' | 'create' | 'edit';
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatSnackBarModule, MatProgressSpinnerModule, MatTooltipModule,
     MatCardModule, MatDividerModule, MatChipsModule,
+    TranslatePipe,
   ],
   templateUrl: './books-management.component.html',
   styleUrl:    './books-management.component.scss',
@@ -36,6 +39,7 @@ export class BooksManagementComponent implements OnInit {
   private readonly booksSvc = inject(ZohoBooksService);
   private readonly snack = inject(MatSnackBar);
   private readonly cdr = inject(ChangeDetectorRef);
+  readonly i18n = inject(TranslateService);
 
   ngOnInit() {
     this.loadContacts();

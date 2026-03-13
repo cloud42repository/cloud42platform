@@ -25,6 +25,7 @@ import { AuthConfigService } from '../../services/auth-config.service';
 import { ModuleVisibilityService } from '../../services/module-visibility.service';
 import { UserManagementService } from '../../services/user-management.service';
 import { UserRole, USER_ROLE_LABELS, StoredUser } from '../../config/user.types';
+import { TranslatePipe } from '../../i18n/translate.pipe';
 
 interface ModuleAuthState {
   module: ModuleDef;
@@ -41,7 +42,7 @@ interface ModuleAuthState {
     MatExpansionModule, MatSelectModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatChipsModule, MatCardModule,
     MatTooltipModule, MatDividerModule, MatSnackBarModule, MatTabsModule,
-    MatSlideToggleModule, MatBadgeModule,
+    MatSlideToggleModule, MatBadgeModule, TranslatePipe,
   ],
   template: `
     <div class="settings-root">
@@ -50,13 +51,13 @@ interface ModuleAuthState {
         <div class="page-header-left">
           <mat-icon class="page-header-icon">settings</mat-icon>
           <div>
-            <h1 class="page-title">Settings</h1>
-            <p class="page-subtitle">Configure authentication credentials for each API connector</p>
+            <h1 class="page-title">{{ 'settings.title' | t }}</h1>
+            <p class="page-subtitle">{{ 'settings.subtitle' | t }}</p>
           </div>
         </div>
         <button mat-flat-button color="primary" (click)="saveAll()" [disabled]="!hasAnyDirty()">
           <mat-icon>save</mat-icon>
-          Save All Changes
+          {{ 'settings.save-all' | t }}
         </button>
       </div>
 
@@ -66,18 +67,17 @@ interface ModuleAuthState {
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">lock</mat-icon>
-            API Authentication
+            {{ 'settings.tab-auth' | t }}
           </ng-template>
 
           <div class="auth-section">
             <p class="section-hint">
-              Select an authentication method for each API and fill in the required credentials.
-              Credentials are stored locally in your browser.
+              {{ 'settings.auth-hint' | t }}
             </p>
 
             <!-- Summary chips -->
             <div class="summary-row">
-              <span class="summary-label">Configured:</span>
+              <span class="summary-label">{{ 'settings.configured' | t }}</span>
               @for (s of states; track s.module.id) {
                 @if (s.config.type !== 'none') {
                   <span class="summary-chip" [style.background]="moduleColor(s.module.id)">
@@ -87,7 +87,7 @@ interface ModuleAuthState {
                 }
               }
               @if (configuredCount() === 0) {
-                <span class="summary-empty">None yet</span>
+                <span class="summary-empty">{{ 'settings.none-yet' | t }}</span>
               }
             </div>
 
@@ -161,11 +161,11 @@ interface ModuleAuthState {
                       <button mat-stroked-button color="warn" (click)="clearConfig(state)"
                         [disabled]="state.config.type === 'none' && !state.dirty">
                         <mat-icon>delete_outline</mat-icon>
-                        Clear
+                        {{ 'settings.clear' | t }}
                       </button>
                       <button mat-flat-button color="primary" (click)="saveOne(state)" [disabled]="!state.dirty">
                         <mat-icon>save</mat-icon>
-                        Save
+                        {{ 'settings.save' | t }}
                       </button>
                     </div>
                   </div>
@@ -179,10 +179,10 @@ interface ModuleAuthState {
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon class="tab-icon">tune</mat-icon>
-            General
+            {{ 'settings.tab-general' | t }}
           </ng-template>
           <div class="general-section">
-            <h2 class="section-title">Menu Modules</h2>
+            <h2 class="section-title">{{ 'settings.module-visibility' | t }}</h2>
             <p class="section-hint">
               Enable or disable API modules in the sidebar navigation.
               Disabled modules are hidden from the menu but their configuration is preserved.
@@ -196,10 +196,10 @@ interface ModuleAuthState {
             @if (userMgmt.canEditModules()) {
               <div class="toggle-actions">
                 <button mat-stroked-button (click)="enableAllModules()">
-                  <mat-icon>check_box</mat-icon> Enable All
+                  <mat-icon>check_box</mat-icon> {{ 'settings.enable-all' | t }}
                 </button>
                 <button mat-stroked-button (click)="disableAllModules()">
-                  <mat-icon>check_box_outline_blank</mat-icon> Disable All
+                  <mat-icon>check_box_outline_blank</mat-icon> {{ 'settings.disable-all' | t }}
                 </button>
                 <span class="toggle-count">{{ enabledCount() }} / {{ allModules.length }} enabled</span>
               </div>
@@ -225,10 +225,10 @@ interface ModuleAuthState {
           <mat-tab>
             <ng-template mat-tab-label>
               <mat-icon class="tab-icon">group</mat-icon>
-              Users
+              {{ 'settings.tab-users' | t }}
             </ng-template>
             <div class="general-section">
-              <h2 class="section-title">User Management</h2>
+              <h2 class="section-title">{{ 'users.title' | t }}</h2>
               <p class="section-hint">
                 Manage platform users, assign roles, and configure per-user module access.
                 Users are registered automatically on their first Google sign-in.
@@ -275,10 +275,10 @@ interface ModuleAuthState {
                       <h3 class="user-modules-title">Module Access</h3>
                       <div class="toggle-actions">
                         <button mat-stroked-button (click)="enableAllForUser(u.email)">
-                          <mat-icon>check_box</mat-icon> Enable All
+                          <mat-icon>check_box</mat-icon> {{ 'settings.enable-all' | t }}
                         </button>
                         <button mat-stroked-button (click)="disableAllForUser(u.email)">
-                          <mat-icon>check_box_outline_blank</mat-icon> Disable All
+                          <mat-icon>check_box_outline_blank</mat-icon> {{ 'settings.disable-all' | t }}
                         </button>
                         <span class="toggle-count">{{ userEnabledCount(u) }} / {{ allModules.length }}</span>
                       </div>
@@ -299,7 +299,7 @@ interface ModuleAuthState {
                       @if (u.email !== userMgmt.currentUser()?.email) {
                         <div class="panel-actions">
                           <button mat-stroked-button color="warn" (click)="removeUser(u.email, u.name)">
-                            <mat-icon>person_remove</mat-icon> Remove User
+                            <mat-icon>person_remove</mat-icon> {{ 'users.remove' | t }}
                           </button>
                         </div>
                       }
@@ -308,7 +308,7 @@ interface ModuleAuthState {
                 }
               </div>
               @if (userMgmt.users().length === 0) {
-                <p class="summary-empty">No users registered yet.</p>
+                <p class="summary-empty">{{ 'users.no-users' | t }}</p>
               }
             </div>
           </mat-tab>

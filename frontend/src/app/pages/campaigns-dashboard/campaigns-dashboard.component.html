@@ -2,14 +2,14 @@
   <div class="dash-header">
     <mat-icon class="dash-icon">campaign</mat-icon>
     <div>
-      <h1 class="dash-title">Campaigns Dashboard</h1>
-      <p class="dash-subtitle">Zoho Campaigns · mailing &amp; campaign overview</p>
+      <h1 class="dash-title">{{ 'campaigns.dashboard-title' | t }}</h1>
+      <p class="dash-subtitle">{{ 'campaigns.dashboard-subtitle' | t }}</p>
     </div>
     <span class="header-spacer"></span>
     @if (!loading) {
       <button mat-flat-button class="export-btn" (click)="exportPdf()" [disabled]="exporting">
         <mat-icon>picture_as_pdf</mat-icon>
-        {{ exporting ? 'Exporting…' : 'Export PDF' }}
+        {{ exporting ? ('dashboard.exporting' | t) : ('dashboard.export' | t) }}
       </button>
     }
   </div>
@@ -17,7 +17,7 @@
   @if (loading) {
     <div class="loading-center">
       <mat-spinner diameter="56" />
-      <p class="loading-text">Loading campaigns data…</p>
+      <p class="loading-text">{{ 'campaigns.loading' | t }}</p>
     </div>
   } @else {
 
@@ -28,7 +28,7 @@
         <mat-card-content>
           <mat-icon>list</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Mailing Lists</span>
+            <span class="kpi-label">{{ 'campaigns.mailing-lists' | t }}</span>
             <span class="kpi-value">{{ totalLists }}</span>
           </div>
         </mat-card-content>
@@ -38,7 +38,7 @@
         <mat-card-content>
           <mat-icon>people</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Subscribers</span>
+            <span class="kpi-label">{{ 'campaigns.subscribers' | t }}</span>
             <span class="kpi-value">{{ totalSubscribers }}</span>
           </div>
         </mat-card-content>
@@ -48,7 +48,7 @@
         <mat-card-content>
           <mat-icon>campaign</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Campaigns</span>
+            <span class="kpi-label">{{ 'campaigns.campaigns' | t }}</span>
             <span class="kpi-value">{{ totalCampaigns }}</span>
           </div>
         </mat-card-content>
@@ -58,7 +58,7 @@
         <mat-card-content>
           <mat-icon>send</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Sent</span>
+            <span class="kpi-label">{{ 'campaigns.sent' | t }}</span>
             <span class="kpi-value">{{ sentCampaigns }}</span>
           </div>
         </mat-card-content>
@@ -68,7 +68,7 @@
         <mat-card-content>
           <mat-icon>drafts</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Drafts</span>
+            <span class="kpi-label">{{ 'campaigns.drafts' | t }}</span>
             <span class="kpi-value">{{ draftCampaigns }}</span>
           </div>
         </mat-card-content>
@@ -78,7 +78,7 @@
         <mat-card-content>
           <mat-icon>topic</mat-icon>
           <div class="kpi-body">
-            <span class="kpi-label">Topics</span>
+            <span class="kpi-label">{{ 'campaigns.topics' | t }}</span>
             <span class="kpi-value">{{ totalTopics }}</span>
           </div>
         </mat-card-content>
@@ -98,7 +98,7 @@
           <canvas baseChart [data]="gaugeData" [options]="gaugeOptions" type="doughnut"></canvas>
           <div class="gauge-center-label">
             <span class="gauge-pct">{{ deliveryRate | percent:'1.0-1' }}</span>
-            <span class="gauge-sub">delivered</span>
+            <span class="gauge-sub">{{ 'campaigns.delivered' | t }}</span>
           </div>
         </mat-card-content>
       </mat-card>
@@ -124,28 +124,28 @@
       <mat-card-header>
         <mat-card-title>
           <mat-icon style="vertical-align:middle;margin-right:8px">table_rows</mat-icon>
-          Recent Campaigns
+          {{ 'campaigns.recent-campaigns' | t }}
         </mat-card-title>
       </mat-card-header>
       <mat-divider />
       <mat-card-content class="table-wrap">
         <table mat-table [dataSource]="recentCampaigns" class="campaigns-table">
           <ng-container matColumnDef="campaign_name">
-            <th mat-header-cell *matHeaderCellDef>Campaign</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'campaigns.campaign' | t }}</th>
             <td mat-cell *matCellDef="let r">{{ r.campaign_name }}</td>
           </ng-container>
           <ng-container matColumnDef="campaign_type">
-            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'common.type' | t }}</th>
             <td mat-cell *matCellDef="let r">{{ r.campaign_type }}</td>
           </ng-container>
           <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'common.status' | t }}</th>
             <td mat-cell *matCellDef="let r">
               <span class="status-chip" [ngClass]="statusClass(r.status)">{{ r.status }}</span>
             </td>
           </ng-container>
           <ng-container matColumnDef="sent_time">
-            <th mat-header-cell *matHeaderCellDef>Sent</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'campaigns.sent' | t }}</th>
             <td mat-cell *matCellDef="let r">{{ r.sent_time || '—' }}</td>
           </ng-container>
 

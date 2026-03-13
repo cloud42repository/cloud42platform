@@ -18,6 +18,8 @@ import {
   type ChartData, type ChartOptions,
 } from 'chart.js';
 import { ZohoAnalyticsService } from '../../services/zoho-analytics.service';
+import { TranslatePipe } from '../../i18n/translate.pipe';
+import { TranslateService } from '../../services/translate.service';
 import { firstValueFrom } from 'rxjs';
 
 Chart.register(
@@ -34,13 +36,14 @@ Chart.register(
     CommonModule, PercentPipe,
     MatCardModule, MatIconModule, MatProgressSpinnerModule,
     MatTableModule, MatChipsModule, MatDividerModule, MatTooltipModule, MatButtonModule,
-    NgChartsModule,
+    NgChartsModule, TranslatePipe,
   ],
   templateUrl: './analytics-dashboard.component.html',
   styleUrl:    './analytics-dashboard.component.scss',
 })
 export class AnalyticsDashboardComponent implements OnInit {
   private readonly analyticsSvc = inject(ZohoAnalyticsService);
+  private readonly i18n = inject(TranslateService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   @ViewChild('dashContent', { static: false }) dashContentRef!: ElementRef<HTMLElement>;

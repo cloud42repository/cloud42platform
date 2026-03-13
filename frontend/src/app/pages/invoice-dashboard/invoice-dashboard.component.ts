@@ -18,6 +18,8 @@ import {
   type ChartData, type ChartOptions,
 } from 'chart.js';
 import { ZohoInvoiceService } from '../../services/zoho-invoice.service';
+import { TranslatePipe } from '../../i18n/translate.pipe';
+import { TranslateService } from '../../services/translate.service';
 import { firstValueFrom } from 'rxjs';
 
 Chart.register(
@@ -56,13 +58,14 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
     CommonModule, CurrencyPipe, DatePipe, PercentPipe,
     MatCardModule, MatIconModule, MatProgressSpinnerModule,
     MatTableModule, MatChipsModule, MatDividerModule, MatTooltipModule, MatButtonModule,
-    NgChartsModule,
+    NgChartsModule, TranslatePipe,
   ],
   templateUrl: './invoice-dashboard.component.html',
   styleUrl:    './invoice-dashboard.component.scss',
 })
 export class InvoiceDashboardComponent implements OnInit {
   private readonly invoiceSvc = inject(ZohoInvoiceService);
+  private readonly i18n = inject(TranslateService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   @ViewChild('dashContent', { static: false }) dashContentRef!: ElementRef<HTMLElement>;

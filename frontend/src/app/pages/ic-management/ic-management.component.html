@@ -5,8 +5,8 @@
     <div class="page-header-left">
       <mat-icon class="page-icon">cloud</mat-icon>
       <div>
-        <h1 class="page-title">Impossible Cloud Management</h1>
-        <p class="page-subtitle">Manage storage accounts, partners, members and partner storage</p>
+        <h1 class="page-title">{{ 'ic.mgmt-title' | t }}</h1>
+        <p class="page-subtitle">{{ 'ic.mgmt-subtitle' | t }}</p>
       </div>
     </div>
   </div>
@@ -19,20 +19,20 @@
          ════════════════════════════════════════════════════════════════════ -->
     <mat-tab>
       <ng-template mat-tab-label>
-        <mat-icon class="tab-icon">storage</mat-icon>Storage Accounts
+        <mat-icon class="tab-icon">storage</mat-icon>{{ 'ic.tab-storage' | t }}
       </ng-template>
 
       <div class="tab-content">
 
         <!-- Toolbar -->
         <div class="tab-toolbar">
-          <span class="toolbar-title">Own Storage Accounts</span>
+          <span class="toolbar-title">{{ 'ic.own-storage' | t }}</span>
           <div class="toolbar-actions">
             <button mat-stroked-button (click)="loadStorageAccounts()" [disabled]="saLoading()">
-              <mat-icon>refresh</mat-icon> Refresh
+              <mat-icon>refresh</mat-icon> {{ 'common.refresh' | t }}
             </button>
             <button mat-flat-button color="primary" (click)="openSaCreate()" [disabled]="saPanelMode !== 'hidden'">
-              <mat-icon>add</mat-icon> New Account
+              <mat-icon>add</mat-icon> {{ 'ic.new-account' | t }}
             </button>
           </div>
         </div>
@@ -41,36 +41,36 @@
         @if (saPanelMode === 'create') {
           <mat-card class="form-card">
             <mat-card-header>
-              <mat-card-title>Create Storage Account</mat-card-title>
+              <mat-card-title>{{ 'ic.create-storage' | t }}</mat-card-title>
             </mat-card-header>
             <mat-card-content>
               <div class="form-grid">
                 <mat-form-field appearance="outline">
-                  <mat-label>Account Name *</mat-label>
+                  <mat-label>{{ 'ic.account-name' | t }}</mat-label>
                   <input matInput [(ngModel)]="saForm.name" placeholder="my-storage-account" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Allocated Capacity (GB) *</mat-label>
+                  <mat-label>{{ 'ic.allocated-gb' | t }}</mat-label>
                   <input matInput type="number" [(ngModel)]="saForm.allocatedCapacity" min="1" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Contact Email *</mat-label>
+                  <mat-label>{{ 'ic.contact-email-field' | t }}</mat-label>
                   <input matInput type="email" [(ngModel)]="saForm.contactEmail" placeholder="user@example.com" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Client Password *</mat-label>
+                  <mat-label>{{ 'ic.client-password' | t }}</mat-label>
                   <input matInput type="password" [(ngModel)]="saForm.password" />
-                  <mat-hint>8-128 chars, special char, upper, lower, digit</mat-hint>
+                  <mat-hint>{{ 'ic.password-hint' | t }}</mat-hint>
                 </mat-form-field>
                 <div class="checkbox-field">
-                  <mat-checkbox [(ngModel)]="saForm.allowOverdraft">Allow Overdraft</mat-checkbox>
+                  <mat-checkbox [(ngModel)]="saForm.allowOverdraft">{{ 'ic.allow-overdraft' | t }}</mat-checkbox>
                 </div>
               </div>
             </mat-card-content>
             <mat-card-actions align="end">
-              <button mat-button (click)="cancelSaPanel()">Cancel</button>
+              <button mat-button (click)="cancelSaPanel()">{{ 'common.cancel' | t }}</button>
               <button mat-flat-button color="primary" (click)="saveSaCreate()" [disabled]="saLoading()">
-                <mat-icon>save</mat-icon> Create
+                <mat-icon>save</mat-icon> {{ 'common.create' | t }}
               </button>
             </mat-card-actions>
           </mat-card>
@@ -80,22 +80,22 @@
         @if (saPanelMode === 'edit' && saEditing) {
           <mat-card class="form-card form-card--edit">
             <mat-card-header>
-              <mat-card-title>Update Storage Account — {{ saEditing.name }}</mat-card-title>
-              <mat-card-subtitle>Schedule or cancel deletion</mat-card-subtitle>
+              <mat-card-title>{{ 'ic.update-storage' | t }} — {{ saEditing.name }}</mat-card-title>
+              <mat-card-subtitle>{{ 'ic.schedule-deletion' | t }}</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
               <div class="form-grid">
                 <mat-form-field appearance="outline">
-                  <mat-label>Pending Delete At (ISO-8601, blank to cancel)</mat-label>
+                  <mat-label>{{ 'ic.pending-delete-at' | t }}</mat-label>
                   <input matInput [(ngModel)]="saPatch.pendingDeletedAt" placeholder="2026-06-01T00:00:00Z" />
-                  <mat-hint>Leave empty to cancel a pending deletion</mat-hint>
+                  <mat-hint>{{ 'ic.delete-hint' | t }}</mat-hint>
                 </mat-form-field>
               </div>
             </mat-card-content>
             <mat-card-actions align="end">
-              <button mat-button (click)="cancelSaPanel()">Cancel</button>
+              <button mat-button (click)="cancelSaPanel()">{{ 'common.cancel' | t }}</button>
               <button mat-flat-button color="primary" (click)="saveSaEdit(saEditing!)" [disabled]="saLoading()">
-                <mat-icon>save</mat-icon> Update
+                <mat-icon>save</mat-icon> {{ 'common.update' | t }}
               </button>
             </mat-card-actions>
           </mat-card>
@@ -108,23 +108,23 @@
           <div class="table-wrapper">
             <table mat-table [dataSource]="saAccounts()" class="icm-table">
               <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'common.name' | t }}</th>
                 <td mat-cell *matCellDef="let row">{{ row.name || '—' }}</td>
               </ng-container>
               <ng-container matColumnDef="clientAccountId">
-                <th mat-header-cell *matHeaderCellDef>Client Account ID</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.client-account-id' | t }}</th>
                 <td mat-cell *matCellDef="let row"><code>{{ row.clientAccountId || '—' }}</code></td>
               </ng-container>
               <ng-container matColumnDef="contactEmail">
-                <th mat-header-cell *matHeaderCellDef>Contact Email</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.contact-email' | t }}</th>
                 <td mat-cell *matCellDef="let row">{{ row.contactEmail || '—' }}</td>
               </ng-container>
               <ng-container matColumnDef="allocatedCapacity">
-                <th mat-header-cell *matHeaderCellDef>Allocated</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.allocated' | t }}</th>
                 <td mat-cell *matCellDef="let row">{{ formatGB(row.allocatedCapacity) }}</td>
               </ng-container>
               <ng-container matColumnDef="allowOverdraft">
-                <th mat-header-cell *matHeaderCellDef>Overdraft</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.overdraft' | t }}</th>
                 <td mat-cell *matCellDef="let row">
                   <mat-icon [class]="row.allowOverdraft ? 'icon-yes' : 'icon-no'">
                     {{ row.allowOverdraft ? 'check_circle' : 'cancel' }}
@@ -132,12 +132,12 @@
                 </td>
               </ng-container>
               <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'common.status' | t }}</th>
                 <td mat-cell *matCellDef="let row">
                   @if (isPendingDelete(row)) {
-                    <span class="badge badge--warn">Pending Delete</span>
+                    <span class="badge badge--warn">{{ 'ic.pending-delete' | t }}</span>
                   } @else {
-                    <span class="badge badge--ok">Active</span>
+                    <span class="badge badge--ok">{{ 'common.active' | t }}</span>
                   }
                 </td>
               </ng-container>
@@ -171,7 +171,7 @@
          ════════════════════════════════════════════════════════════════════ -->
     <mat-tab>
       <ng-template mat-tab-label>
-        <mat-icon class="tab-icon">handshake</mat-icon>Partners
+        <mat-icon class="tab-icon">handshake</mat-icon>{{ 'ic.tab-partners' | t }}
       </ng-template>
 
       <div class="tab-content">
@@ -179,7 +179,7 @@
         <mat-card class="filter-card">
           <div class="filter-row">
             <mat-form-field appearance="outline" class="filter-field">
-              <mat-label>Select Contract</mat-label>
+              <mat-label>{{ 'ic.select-contract' | t }}</mat-label>
               <mat-select [(ngModel)]="selectedContractId">
                 @for (c of contracts(); track c.id) {
                   <mat-option [value]="c.id">{{ c.id }} — {{ c.currency }} ({{ formatGB(c.allocatedCapacity) }})</mat-option>
@@ -187,17 +187,17 @@
               </mat-select>
             </mat-form-field>
             <button mat-flat-button color="primary" (click)="loadPartners()" [disabled]="!selectedContractId || partLoading()">
-              <mat-icon>search</mat-icon> Load
+              <mat-icon>search</mat-icon> {{ 'common.load' | t }}
             </button>
           </div>
         </mat-card>
 
         <!-- Toolbar -->
         <div class="tab-toolbar">
-          <span class="toolbar-title">Partners</span>
+          <span class="toolbar-title">{{ 'ic.tab-partners' | t }}</span>
           <div class="toolbar-actions">
             <button mat-flat-button color="primary" (click)="openPartCreate()" [disabled]="partPanelMode !== 'hidden' || !selectedContractId">
-              <mat-icon>add</mat-icon> New Partner
+              <mat-icon>add</mat-icon> {{ 'ic.new-partner' | t }}
             </button>
           </div>
         </div>
@@ -206,27 +206,27 @@
         @if (partPanelMode === 'create') {
           <mat-card class="form-card">
             <mat-card-header>
-              <mat-card-title>Create Partner</mat-card-title>
+              <mat-card-title>{{ 'ic.create-partner' | t }}</mat-card-title>
             </mat-card-header>
             <mat-card-content>
               <div class="form-grid">
                 <mat-form-field appearance="outline">
-                  <mat-label>Partner Name *</mat-label>
+                  <mat-label>{{ 'ic.partner-name' | t }} *</mat-label>
                   <input matInput [(ngModel)]="partForm.name" placeholder="My Partner" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Allocated Capacity (GB) *</mat-label>
+                  <mat-label>{{ 'ic.allocated-gb' | t }} *</mat-label>
                   <input matInput type="number" [(ngModel)]="partForm.allocatedCapacity" min="1" />
                 </mat-form-field>
                 <div class="checkbox-field">
-                  <mat-checkbox [(ngModel)]="partForm.allowOverdraft">Allow Overdraft</mat-checkbox>
+                  <mat-checkbox [(ngModel)]="partForm.allowOverdraft">{{ 'ic.allow-overdraft' | t }}</mat-checkbox>
                 </div>
               </div>
             </mat-card-content>
             <mat-card-actions align="end">
-              <button mat-button (click)="cancelPartPanel()">Cancel</button>
+              <button mat-button (click)="cancelPartPanel()">{{ 'common.cancel' | t }}</button>
               <button mat-flat-button color="primary" (click)="savePartCreate()" [disabled]="partLoading()">
-                <mat-icon>save</mat-icon> Create
+                <mat-icon>save</mat-icon> {{ 'common.create' | t }}
               </button>
             </mat-card-actions>
           </mat-card>
@@ -236,24 +236,24 @@
         @if (partPanelMode === 'edit' && partEditing) {
           <mat-card class="form-card form-card--edit">
             <mat-card-header>
-              <mat-card-title>Update Partner — {{ partEditing.name }}</mat-card-title>
+              <mat-card-title>{{ 'ic.update-partner' | t }} — {{ partEditing.name }}</mat-card-title>
             </mat-card-header>
             <mat-card-content>
               <div class="form-grid">
                 <mat-form-field appearance="outline">
-                  <mat-label>New Name</mat-label>
+                  <mat-label>{{ 'ic.new-name' | t }}</mat-label>
                   <input matInput [(ngModel)]="partPatch.name" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>New Allocated Capacity (GB)</mat-label>
+                  <mat-label>{{ 'ic.new-allocated-gb' | t }}</mat-label>
                   <input matInput type="number" [(ngModel)]="partPatch.allocatedCapacity" min="1" />
                 </mat-form-field>
               </div>
             </mat-card-content>
             <mat-card-actions align="end">
-              <button mat-button (click)="cancelPartPanel()">Cancel</button>
+              <button mat-button (click)="cancelPartPanel()">{{ 'common.cancel' | t }}</button>
               <button mat-flat-button color="primary" (click)="savePartEdit(partEditing!)" [disabled]="partLoading()">
-                <mat-icon>save</mat-icon> Update
+                <mat-icon>save</mat-icon> {{ 'common.update' | t }}
               </button>
             </mat-card-actions>
           </mat-card>
@@ -266,23 +266,23 @@
           <div class="table-wrapper">
             <table mat-table [dataSource]="partners()" class="icm-table">
               <ng-container matColumnDef="id">
-                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'common.id' | t }}</th>
                 <td mat-cell *matCellDef="let row"><code class="id-code">{{ row.id || '—' }}</code></td>
               </ng-container>
               <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'common.name' | t }}</th>
                 <td mat-cell *matCellDef="let row"><strong>{{ row.name || '—' }}</strong></td>
               </ng-container>
               <ng-container matColumnDef="distributorContractId">
-                <th mat-header-cell *matHeaderCellDef>Contract</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.contract' | t }}</th>
                 <td mat-cell *matCellDef="let row"><code>{{ row.distributorContractId || '—' }}</code></td>
               </ng-container>
               <ng-container matColumnDef="allocatedCapacity">
-                <th mat-header-cell *matHeaderCellDef>Allocated</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.allocated' | t }}</th>
                 <td mat-cell *matCellDef="let row">{{ formatGB(row.allocatedCapacity) }}</td>
               </ng-container>
               <ng-container matColumnDef="allowOverdraft">
-                <th mat-header-cell *matHeaderCellDef>Overdraft</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.overdraft' | t }}</th>
                 <td mat-cell *matCellDef="let row">
                   <mat-icon [class]="row.allowOverdraft ? 'icon-yes' : 'icon-no'">
                     {{ row.allowOverdraft ? 'check_circle' : 'cancel' }}
@@ -306,7 +306,7 @@
             @if (partners().length === 0) {
               <div class="empty-state">
                 <mat-icon>handshake</mat-icon>
-                <p>Select a contract and click <strong>Load</strong> to see partners.</p>
+                <p>{{ 'ic.no-partners' | t }}</p>
               </div>
             }
           </div>
@@ -319,7 +319,7 @@
          ════════════════════════════════════════════════════════════════════ -->
     <mat-tab>
       <ng-template mat-tab-label>
-        <mat-icon class="tab-icon">group</mat-icon>Members
+        <mat-icon class="tab-icon">group</mat-icon>{{ 'ic.tab-members' | t }}
       </ng-template>
 
       <div class="tab-content">
@@ -327,22 +327,22 @@
         <mat-card class="filter-card">
           <div class="filter-row">
             <mat-form-field appearance="outline" class="filter-field">
-              <mat-label>Partner ID</mat-label>
+              <mat-label>{{ 'ic.partner-id' | t }}</mat-label>
               <input matInput [(ngModel)]="membPartnerId" placeholder="Paste partner UUID here" />
               <mat-icon matPrefix>badge</mat-icon>
             </mat-form-field>
             <button mat-flat-button color="primary" (click)="loadMembers()" [disabled]="!membPartnerId || membLoading()">
-              <mat-icon>search</mat-icon> Load
+              <mat-icon>search</mat-icon> {{ 'common.load' | t }}
             </button>
           </div>
         </mat-card>
 
         <!-- Toolbar -->
         <div class="tab-toolbar">
-          <span class="toolbar-title">Members</span>
+          <span class="toolbar-title">{{ 'ic.tab-members' | t }}</span>
           <div class="toolbar-actions">
             <button mat-flat-button color="primary" (click)="openMembCreate()" [disabled]="membPanelMode !== 'hidden' || !membPartnerId">
-              <mat-icon>person_add</mat-icon> Invite Member
+              <mat-icon>person_add</mat-icon> {{ 'ic.invite-member' | t }}
             </button>
           </div>
         </div>
@@ -351,25 +351,25 @@
         @if (membPanelMode === 'create') {
           <mat-card class="form-card">
             <mat-card-header>
-              <mat-card-title>Invite Member</mat-card-title>
+              <mat-card-title>{{ 'ic.invite-member' | t }}</mat-card-title>
             </mat-card-header>
             <mat-card-content>
               <div class="form-grid">
                 <mat-form-field appearance="outline">
-                  <mat-label>Email *</mat-label>
+                  <mat-label>{{ 'ic.email-field' | t }} *</mat-label>
                   <input matInput type="email" [(ngModel)]="membForm.email" placeholder="member@company.com" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Password *</mat-label>
+                  <mat-label>{{ 'ic.password-field' | t }} *</mat-label>
                   <input matInput type="password" [(ngModel)]="membForm.password" />
-                  <mat-hint>8-128 chars, special char, upper, lower, digit</mat-hint>
+                  <mat-hint>{{ 'ic.password-hint' | t }}</mat-hint>
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Display Name</mat-label>
+                  <mat-label>{{ 'ic.display-name' | t }}</mat-label>
                   <input matInput [(ngModel)]="membForm.name" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Role *</mat-label>
+                  <mat-label>{{ 'ic.role-field' | t }} *</mat-label>
                   <mat-select [(ngModel)]="membForm.role">
                     @for (r of roles; track r) {
                       <mat-option [value]="r">{{ r | titlecase }}</mat-option>
@@ -379,9 +379,9 @@
               </div>
             </mat-card-content>
             <mat-card-actions align="end">
-              <button mat-button (click)="cancelMembPanel()">Cancel</button>
+              <button mat-button (click)="cancelMembPanel()">{{ 'common.cancel' | t }}</button>
               <button mat-flat-button color="primary" (click)="saveMembCreate()" [disabled]="membLoading()">
-                <mat-icon>send</mat-icon> Invite
+                <mat-icon>send</mat-icon> {{ 'common.invite' | t }}
               </button>
             </mat-card-actions>
           </mat-card>
@@ -394,19 +394,19 @@
           <div class="table-wrapper">
             <table mat-table [dataSource]="members()" class="icm-table">
               <ng-container matColumnDef="id">
-                <th mat-header-cell *matHeaderCellDef>ID</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'common.id' | t }}</th>
                 <td mat-cell *matCellDef="let row"><code class="id-code">{{ row.id || '—' }}</code></td>
               </ng-container>
               <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'common.name' | t }}</th>
                 <td mat-cell *matCellDef="let row">{{ row.name || '—' }}</td>
               </ng-container>
               <ng-container matColumnDef="email">
-                <th mat-header-cell *matHeaderCellDef>Email</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.email' | t }}</th>
                 <td mat-cell *matCellDef="let row"><strong>{{ row.email || '—' }}</strong></td>
               </ng-container>
               <ng-container matColumnDef="role">
-                <th mat-header-cell *matHeaderCellDef>Role</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.role' | t }}</th>
                 <td mat-cell *matCellDef="let row">
                   <span class="role-badge role-badge--{{ row.role }}">{{ row.role | titlecase }}</span>
                 </td>
@@ -414,7 +414,7 @@
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef></th>
                 <td mat-cell *matCellDef="let row" class="actions-cell">
-                  <button mat-icon-button matTooltip="Remove member" color="warn" (click)="deleteMember(row)">
+                  <button mat-icon-button [matTooltip]="'ic.remove-member' | t" color="warn" (click)="deleteMember(row)">
                     <mat-icon>person_remove</mat-icon>
                   </button>
                 </td>
@@ -425,7 +425,7 @@
             @if (members().length === 0) {
               <div class="empty-state">
                 <mat-icon>group</mat-icon>
-                <p>Enter a Partner ID and click <strong>Load</strong> to see members.</p>
+                <p>{{ 'ic.no-members' | t }}</p>
               </div>
             }
           </div>
@@ -438,7 +438,7 @@
          ════════════════════════════════════════════════════════════════════ -->
     <mat-tab>
       <ng-template mat-tab-label>
-        <mat-icon class="tab-icon">folder_shared</mat-icon>Partner Storage
+        <mat-icon class="tab-icon">folder_shared</mat-icon>{{ 'ic.tab-partner-storage' | t }}
       </ng-template>
 
       <div class="tab-content">
@@ -446,22 +446,22 @@
         <mat-card class="filter-card">
           <div class="filter-row">
             <mat-form-field appearance="outline" class="filter-field">
-              <mat-label>Partner ID</mat-label>
+              <mat-label>{{ 'ic.partner-id' | t }}</mat-label>
               <input matInput [(ngModel)]="psPartnerId" placeholder="Paste partner UUID here" />
               <mat-icon matPrefix>badge</mat-icon>
             </mat-form-field>
             <button mat-flat-button color="primary" (click)="loadPartnerStorage()" [disabled]="!psPartnerId || psLoading()">
-              <mat-icon>search</mat-icon> Load
+              <mat-icon>search</mat-icon> {{ 'common.load' | t }}
             </button>
           </div>
         </mat-card>
 
         <!-- Toolbar -->
         <div class="tab-toolbar">
-          <span class="toolbar-title">Partner Storage Accounts</span>
+          <span class="toolbar-title">{{ 'ic.partner-storage-accounts' | t }}</span>
           <div class="toolbar-actions">
             <button mat-flat-button color="primary" (click)="openPsCreate()" [disabled]="psPanelMode !== 'hidden' || !psPartnerId">
-              <mat-icon>add</mat-icon> New Storage Account
+              <mat-icon>add</mat-icon> {{ 'ic.new-storage-account' | t }}
             </button>
           </div>
         </div>
@@ -470,36 +470,36 @@
         @if (psPanelMode === 'create') {
           <mat-card class="form-card">
             <mat-card-header>
-              <mat-card-title>Create Partner Storage Account</mat-card-title>
+              <mat-card-title>{{ 'ic.create-partner-storage' | t }}</mat-card-title>
             </mat-card-header>
             <mat-card-content>
               <div class="form-grid">
                 <mat-form-field appearance="outline">
-                  <mat-label>Account Name *</mat-label>
+                  <mat-label>{{ 'ic.account-name' | t }} *</mat-label>
                   <input matInput [(ngModel)]="psForm.name" placeholder="partner-storage-account" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Allocated Capacity (GB) *</mat-label>
+                  <mat-label>{{ 'ic.allocated-gb' | t }} *</mat-label>
                   <input matInput type="number" [(ngModel)]="psForm.allocatedCapacity" min="1" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Contact Email *</mat-label>
+                  <mat-label>{{ 'ic.contact-email-field' | t }} *</mat-label>
                   <input matInput type="email" [(ngModel)]="psForm.contactEmail" placeholder="user@example.com" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Client Password *</mat-label>
+                  <mat-label>{{ 'ic.client-password' | t }} *</mat-label>
                   <input matInput type="password" [(ngModel)]="psForm.password" />
-                  <mat-hint>8-128 chars, special char, upper, lower, digit</mat-hint>
+                  <mat-hint>{{ 'ic.password-hint' | t }}</mat-hint>
                 </mat-form-field>
                 <div class="checkbox-field">
-                  <mat-checkbox [(ngModel)]="psForm.allowOverdraft">Allow Overdraft</mat-checkbox>
+                  <mat-checkbox [(ngModel)]="psForm.allowOverdraft">{{ 'ic.allow-overdraft' | t }}</mat-checkbox>
                 </div>
               </div>
             </mat-card-content>
             <mat-card-actions align="end">
-              <button mat-button (click)="cancelPsPanel()">Cancel</button>
+              <button mat-button (click)="cancelPsPanel()">{{ 'common.cancel' | t }}</button>
               <button mat-flat-button color="primary" (click)="savePsCreate()" [disabled]="psLoading()">
-                <mat-icon>save</mat-icon> Create
+                <mat-icon>save</mat-icon> {{ 'common.create' | t }}
               </button>
             </mat-card-actions>
           </mat-card>
@@ -509,22 +509,22 @@
         @if (psPanelMode === 'edit' && psEditing) {
           <mat-card class="form-card form-card--edit">
             <mat-card-header>
-              <mat-card-title>Update Partner Storage — {{ psEditing.name }}</mat-card-title>
-              <mat-card-subtitle>Schedule or cancel deletion</mat-card-subtitle>
+              <mat-card-title>{{ 'ic.update-partner-storage' | t }} — {{ psEditing.name }}</mat-card-title>
+              <mat-card-subtitle>{{ 'ic.schedule-deletion' | t }}</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
               <div class="form-grid">
                 <mat-form-field appearance="outline">
-                  <mat-label>Pending Delete At (ISO-8601, blank to cancel)</mat-label>
+                  <mat-label>{{ 'ic.pending-delete-at' | t }}</mat-label>
                   <input matInput [(ngModel)]="psPatch.pendingDeletedAt" placeholder="2026-06-01T00:00:00Z" />
-                  <mat-hint>Leave empty to cancel a pending deletion</mat-hint>
+                  <mat-hint>{{ 'ic.delete-hint' | t }}</mat-hint>
                 </mat-form-field>
               </div>
             </mat-card-content>
             <mat-card-actions align="end">
-              <button mat-button (click)="cancelPsPanel()">Cancel</button>
+              <button mat-button (click)="cancelPsPanel()">{{ 'common.cancel' | t }}</button>
               <button mat-flat-button color="primary" (click)="savePsEdit(psEditing!)" [disabled]="psLoading()">
-                <mat-icon>save</mat-icon> Update
+                <mat-icon>save</mat-icon> {{ 'common.update' | t }}
               </button>
             </mat-card-actions>
           </mat-card>
@@ -537,23 +537,23 @@
           <div class="table-wrapper">
             <table mat-table [dataSource]="psAccounts()" class="icm-table">
               <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'common.name' | t }}</th>
                 <td mat-cell *matCellDef="let row">{{ row.name || '—' }}</td>
               </ng-container>
               <ng-container matColumnDef="clientAccountId">
-                <th mat-header-cell *matHeaderCellDef>Client Account ID</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.client-account-id' | t }}</th>
                 <td mat-cell *matCellDef="let row"><code>{{ row.clientAccountId || '—' }}</code></td>
               </ng-container>
               <ng-container matColumnDef="contactEmail">
-                <th mat-header-cell *matHeaderCellDef>Contact Email</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.contact-email' | t }}</th>
                 <td mat-cell *matCellDef="let row">{{ row.contactEmail || '—' }}</td>
               </ng-container>
               <ng-container matColumnDef="allocatedCapacity">
-                <th mat-header-cell *matHeaderCellDef>Allocated</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.allocated' | t }}</th>
                 <td mat-cell *matCellDef="let row">{{ formatGB(row.allocatedCapacity) }}</td>
               </ng-container>
               <ng-container matColumnDef="allowOverdraft">
-                <th mat-header-cell *matHeaderCellDef>Overdraft</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'ic.overdraft' | t }}</th>
                 <td mat-cell *matCellDef="let row">
                   <mat-icon [class]="row.allowOverdraft ? 'icon-yes' : 'icon-no'">
                     {{ row.allowOverdraft ? 'check_circle' : 'cancel' }}
@@ -561,12 +561,12 @@
                 </td>
               </ng-container>
               <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'common.status' | t }}</th>
                 <td mat-cell *matCellDef="let row">
                   @if (isPendingDelete(row)) {
-                    <span class="badge badge--warn">Pending Delete</span>
+                    <span class="badge badge--warn">{{ 'ic.pending-delete' | t }}</span>
                   } @else {
-                    <span class="badge badge--ok">Active</span>
+                    <span class="badge badge--ok">{{ 'common.active' | t }}</span>
                   }
                 </td>
               </ng-container>
@@ -587,7 +587,7 @@
             @if (psAccounts().length === 0) {
               <div class="empty-state">
                 <mat-icon>folder_shared</mat-icon>
-                <p>Enter a Partner ID and click <strong>Load</strong> to see storage accounts.</p>
+                <p>{{ 'ic.no-partner-storage' | t }}</p>
               </div>
             }
           </div>

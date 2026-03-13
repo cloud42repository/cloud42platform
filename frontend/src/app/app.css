@@ -242,3 +242,9 @@
 .menu-role-chip.chip-admin   { background: #fef3c7; color: #92400e; }
 .menu-role-chip.chip-manager { background: #dbeafe; color: #1e40af; }
 .menu-role-chip.chip-user    { background: #f1f5f9; color: #475569; }
+
+/* ── Language selector ─────────────────────────────── */
+.active-lang {
+  font-weight: 600;
+  background: rgba(2,132,199,.08);
+}

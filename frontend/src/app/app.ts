@@ -16,6 +16,8 @@ import { AgentComponent } from './pages/agent/agent.component';
 import { ModuleVisibilityService } from './services/module-visibility.service';
 import { UserManagementService } from './services/user-management.service';
 import { USER_ROLE_LABELS } from './config/user.types';
+import { TranslateService, type Lang } from './services/translate.service';
+import { TranslatePipe } from './i18n/translate.pipe';
 
 interface ModuleSubViews {
   dashboard?: { route: string; label: string };
@@ -52,19 +54,19 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
     CommonModule, RouterOutlet, RouterLink, RouterLinkActive,
     MatSidenavModule, MatListModule, MatToolbarModule,
     MatIconModule, MatButtonModule, MatTooltipModule, MatMenuModule, MatDividerModule,
-    MatExpansionModule, AgentComponent,
+    MatExpansionModule, AgentComponent, TranslatePipe,
   ],
   template: `
     <mat-toolbar color="primary" class="app-toolbar">
       @if (auth.isLoggedIn()) {
-        <button mat-icon-button (click)="sidenavOpen.set(!sidenavOpen())" matTooltip="Toggle menu" style="color:white">
+        <button mat-icon-button (click)="sidenavOpen.set(!sidenavOpen())" [matTooltip]="'app.toggle-menu' | t" style="color:white">
           <mat-icon>menu</mat-icon>
         </button>
       }
-      <span class="app-title">☁️ Cloud42 Platform Admin</span>
+      <span class="app-title">☁️ {{ 'app.title' | t }}</span>
       <span class="toolbar-spacer"></span>
       @if (auth.isLoggedIn()) {
-        <button mat-icon-button (click)="agentOpen.set(!agentOpen())" matTooltip="Agent" style="color:white" [class.agent-btn-active]="agentOpen()">
+        <button mat-icon-button (click)="agentOpen.set(!agentOpen())" [matTooltip]="'app.agent' | t" style="color:white" [class.agent-btn-active]="agentOpen()">
           <mat-icon>smart_toy</mat-icon>
         </button>
       }
@@ -91,9 +93,21 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
             </div>
           </div>
           <mat-divider />
+          <button mat-menu-item [matMenuTriggerFor]="langMenu">
+            <mat-icon>language</mat-icon>
+            {{ 'app.language' | t }}
+          </button>
+          <mat-menu #langMenu="matMenu">
+            <button mat-menu-item (click)="setLang('en')" [class.active-lang]="i18n.lang() === 'en'">
+              🇬🇧 English
+            </button>
+            <button mat-menu-item (click)="setLang('fr')" [class.active-lang]="i18n.lang() === 'fr'">
+              🇫🇷 Français
+            </button>
+          </mat-menu>
           <button mat-menu-item (click)="auth.logout()">
             <mat-icon>logout</mat-icon>
-            Sign out
+            {{ 'app.sign-out' | t }}
           </button>
         </mat-menu>
       }
@@ -106,30 +120,30 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
              routerLink="/workflows"
              [routerLinkActiveOptions]="{exact: true}"
              routerLinkActive="active-link"
-             matTooltip="Workflows"
+             [matTooltip]="'nav.workflows' | t"
              matTooltipPosition="right">
             <mat-icon matListItemIcon>account_tree</mat-icon>
-            <span matListItemTitle>Workflows</span>
+            <span matListItemTitle>{{ 'nav.workflows' | t }}</span>
           </a>
           <a mat-list-item
              routerLink="/workflows/calendar"
              routerLinkActive="active-link"
-             matTooltip="Schedule Calendar"
+             [matTooltip]="'nav.calendar' | t"
              matTooltipPosition="right">
             <mat-icon matListItemIcon>calendar_month</mat-icon>
-            <span matListItemTitle>Calendar</span>
+            <span matListItemTitle>{{ 'nav.calendar' | t }}</span>
           </a>
           <a mat-list-item
              routerLink="/settings"
              routerLinkActive="active-link"
-             matTooltip="Settings"
+             [matTooltip]="'nav.settings' | t"
              matTooltipPosition="right">
             <mat-icon matListItemIcon>settings</mat-icon>
-            <span matListItemTitle>Settings</span>
+            <span matListItemTitle>{{ 'nav.settings' | t }}</span>
           </a>
         </mat-nav-list>
         <mat-divider />
-        <div class="nav-modules-label">API Modules</div>
+        <div class="nav-modules-label">{{ 'nav.api-modules' | t }}</div>
         <mat-accordion class="nav-accordion" displayMode="flat">
           @for (mod of modules(); track mod.id) {
             <mat-expansion-panel class="nav-expansion-panel">
@@ -163,7 +177,7 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
                    routerLinkActive="active-link"
                    class="nav-sub-item">
                   <mat-icon matListItemIcon>api</mat-icon>
-                  <span matListItemTitle>API Explorer</span>
+                  <span matListItemTitle>{{ 'nav.api-explorer' | t }}</span>
                 </a>
               </mat-nav-list>
             </mat-expansion-panel>
@@ -185,10 +199,15 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
 export class App {
   private readonly visibilitySvc = inject(ModuleVisibilityService);
   readonly userMgmt = inject(UserManagementService);
+  readonly i18n = inject(TranslateService);
   readonly modules = this.visibilitySvc.enabledModules;
   readonly moduleViews = MODULE_VIEWS;
   readonly roleLabels = USER_ROLE_LABELS;
   readonly sidenavOpen = signal(true);
   readonly agentOpen = signal(false);
   readonly auth = inject(AuthService);
+
+  setLang(lang: Lang): void {
+    this.i18n.setLang(lang);
+  }
 }

@@ -18,6 +18,8 @@ import {
   type ChartData, type ChartOptions,
 } from 'chart.js';
 import { ZohoCampaignsService } from '../../services/zoho-campaigns.service';
+import { TranslatePipe } from '../../i18n/translate.pipe';
+import { TranslateService } from '../../services/translate.service';
 import { firstValueFrom } from 'rxjs';
 
 Chart.register(
@@ -42,13 +44,14 @@ const CAMPAIGN_STATUS_COLORS: Record<string, string> = {
     CommonModule, PercentPipe,
     MatCardModule, MatIconModule, MatProgressSpinnerModule,
     MatTableModule, MatChipsModule, MatDividerModule, MatTooltipModule, MatButtonModule,
-    NgChartsModule,
+    NgChartsModule, TranslatePipe,
   ],
   templateUrl: './campaigns-dashboard.component.html',
   styleUrl:    './campaigns-dashboard.component.scss',
 })
 export class CampaignsDashboardComponent implements OnInit {
   private readonly campaignsSvc = inject(ZohoCampaignsService);
+  private readonly i18n = inject(TranslateService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   @ViewChild('dashContent', { static: false }) dashContentRef!: ElementRef<HTMLElement>;

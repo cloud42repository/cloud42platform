@@ -17,6 +17,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
 import { firstValueFrom } from 'rxjs';
 import { ImpossibleCloudService } from '../../services/impossible-cloud.service';
+import { TranslatePipe } from '../../i18n/translate.pipe';
+import { TranslateService } from '../../services/translate.service';
 import {
   ICContract,
   ICPartner,
@@ -53,6 +55,7 @@ type PanelMode = 'hidden' | 'create' | 'edit';
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatSnackBarModule, MatProgressSpinnerModule, MatTooltipModule,
     MatCardModule, MatCheckboxModule, MatDividerModule, MatChipsModule,
+    TranslatePipe,
   ],
   templateUrl: './ic-management.component.html',
   styleUrl:    './ic-management.component.scss',
@@ -61,6 +64,7 @@ export class IcManagementComponent implements OnInit {
   private readonly icSvc = inject(ImpossibleCloudService);
   private readonly snack = inject(MatSnackBar);
   private readonly cdr   = inject(ChangeDetectorRef);
+  readonly i18n = inject(TranslateService);
 
   // ── Contracts (used as foreign-key reference) ──────────────────────────────
   contracts = signal<ICContract[]>([]);

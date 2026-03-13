@@ -16,6 +16,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
 import { firstValueFrom } from 'rxjs';
 import { ZohoCampaignsService } from '../../services/zoho-campaigns.service';
+import { TranslatePipe } from '../../i18n/translate.pipe';
+import { TranslateService } from '../../services/translate.service';
 
 type PanelMode = 'hidden' | 'create';
 
@@ -28,6 +30,7 @@ type PanelMode = 'hidden' | 'create';
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatSnackBarModule, MatProgressSpinnerModule, MatTooltipModule,
     MatCardModule, MatDividerModule, MatChipsModule,
+    TranslatePipe,
   ],
   templateUrl: './campaigns-management.component.html',
   styleUrl:    './campaigns-management.component.scss',
@@ -36,6 +39,7 @@ export class CampaignsManagementComponent implements OnInit {
   private readonly campaignsSvc = inject(ZohoCampaignsService);
   private readonly snack = inject(MatSnackBar);
   private readonly cdr = inject(ChangeDetectorRef);
+  readonly i18n = inject(TranslateService);
 
   ngOnInit() {
     this.loadLists();

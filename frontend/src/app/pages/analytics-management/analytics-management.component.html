@@ -5,8 +5,8 @@
     <div class="page-header-left">
       <mat-icon class="page-icon">analytics</mat-icon>
       <div>
-        <h1 class="page-title">Zoho Analytics Management</h1>
-        <p class="page-subtitle">Manage workspaces, views and data imports</p>
+        <h1 class="page-title">{{ 'analytics.mgmt-title' | t }}</h1>
+        <p class="page-subtitle">{{ 'analytics.mgmt-subtitle' | t }}</p>
       </div>
     </div>
   </div>
@@ -17,41 +17,41 @@
     <!-- ══ TAB 1 ─ Workspaces ════════════════════════════════════════════ -->
     <mat-tab>
       <ng-template mat-tab-label>
-        <mat-icon class="tab-icon">workspaces</mat-icon>Workspaces
+        <mat-icon class="tab-icon">workspaces</mat-icon>{{ 'analytics.tab-workspaces' | t }}
       </ng-template>
 
       <div class="tab-content">
         <div class="tab-toolbar">
-          <span class="toolbar-title">Workspaces</span>
+          <span class="toolbar-title">{{ 'analytics.tab-workspaces' | t }}</span>
           <div class="toolbar-actions">
             <button mat-stroked-button (click)="loadWorkspaces()" [disabled]="wsLoading()">
-              <mat-icon>refresh</mat-icon> Refresh
+              <mat-icon>refresh</mat-icon> {{ 'common.refresh' | t }}
             </button>
             <button mat-flat-button color="primary" (click)="openWsCreate()" [disabled]="wsPanelMode !== 'hidden'">
-              <mat-icon>add</mat-icon> New Workspace
+              <mat-icon>add</mat-icon> {{ 'analytics.new-workspace' | t }}
             </button>
           </div>
         </div>
 
         @if (wsPanelMode === 'create') {
           <mat-card class="form-card">
-            <mat-card-header><mat-card-title>Create Workspace</mat-card-title></mat-card-header>
+            <mat-card-header><mat-card-title>{{ 'analytics.create-workspace' | t }}</mat-card-title></mat-card-header>
             <mat-card-content>
               <div class="form-grid">
                 <mat-form-field appearance="outline">
-                  <mat-label>Workspace Name *</mat-label>
+                  <mat-label>{{ 'analytics.workspace-name' | t }}</mat-label>
                   <input matInput [(ngModel)]="wsForm.workspaceName" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>Description</mat-label>
+                  <mat-label>{{ 'common.description' | t }}</mat-label>
                   <input matInput [(ngModel)]="wsForm.description" />
                 </mat-form-field>
               </div>
             </mat-card-content>
             <mat-card-actions align="end">
-              <button mat-button (click)="cancelWsPanel()">Cancel</button>
+              <button mat-button (click)="cancelWsPanel()">{{ 'common.cancel' | t }}</button>
               <button mat-flat-button color="primary" (click)="saveWsCreate()" [disabled]="wsLoading()">
-                <mat-icon>save</mat-icon> Create
+                <mat-icon>save</mat-icon> {{ 'common.create' | t }}
               </button>
             </mat-card-actions>
           </mat-card>
@@ -63,11 +63,11 @@
           <div class="table-wrapper">
             <table mat-table [dataSource]="workspaces()" class="mgmt-table">
               <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'common.name' | t }}</th>
                 <td mat-cell *matCellDef="let row">{{ row.workspaceName || row.name || '—' }}</td>
               </ng-container>
               <ng-container matColumnDef="workspaceId">
-                <th mat-header-cell *matHeaderCellDef>Workspace ID</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'analytics.workspace-id' | t }}</th>
                 <td mat-cell *matCellDef="let row"><code>{{ row.workspaceId || row.id || '—' }}</code></td>
               </ng-container>
               <ng-container matColumnDef="actions">
@@ -87,14 +87,14 @@
     <!-- ══ TAB 2 ─ Views ═════════════════════════════════════════════════ -->
     <mat-tab>
       <ng-template mat-tab-label>
-        <mat-icon class="tab-icon">view_list</mat-icon>Views
+        <mat-icon class="tab-icon">view_list</mat-icon>{{ 'analytics.tab-views' | t }}
       </ng-template>
 
       <div class="tab-content">
         <mat-card class="filter-card">
           <div class="filter-row">
             <mat-form-field appearance="outline" class="filter-field">
-              <mat-label>Workspace</mat-label>
+              <mat-label>{{ 'analytics.workspace' | t }}</mat-label>
               <mat-select [(value)]="selectedWsId" (selectionChange)="loadViews()">
                 @for (ws of workspaces(); track ws.workspaceId ?? ws.id) {
                   <mat-option [value]="ws.workspaceId ?? ws.id">{{ ws.workspaceName ?? ws.name }}</mat-option>
@@ -102,25 +102,25 @@
               </mat-select>
             </mat-form-field>
             <button mat-stroked-button (click)="loadViews()" [disabled]="viewLoading()">
-              <mat-icon>refresh</mat-icon> Refresh
+              <mat-icon>refresh</mat-icon> {{ 'common.refresh' | t }}
             </button>
             <button mat-flat-button color="primary" (click)="openViewCreate()" [disabled]="viewPanelMode !== 'hidden' || !selectedWsId">
-              <mat-icon>add</mat-icon> New View
+              <mat-icon>add</mat-icon> {{ 'analytics.new-view' | t }}
             </button>
           </div>
         </mat-card>
 
         @if (viewPanelMode === 'create') {
           <mat-card class="form-card">
-            <mat-card-header><mat-card-title>Create View</mat-card-title></mat-card-header>
+            <mat-card-header><mat-card-title>{{ 'analytics.create-view' | t }}</mat-card-title></mat-card-header>
             <mat-card-content>
               <div class="form-grid">
                 <mat-form-field appearance="outline">
-                  <mat-label>View Name *</mat-label>
+                  <mat-label>{{ 'analytics.view-name' | t }}</mat-label>
                   <input matInput [(ngModel)]="viewForm.viewName" />
                 </mat-form-field>
                 <mat-form-field appearance="outline">
-                  <mat-label>View Type</mat-label>
+                  <mat-label>{{ 'analytics.view-type' | t }}</mat-label>
                   <mat-select [(value)]="viewForm.viewType">
                     @for (t of viewTypes; track t) {
                       <mat-option [value]="t">{{ t }}</mat-option>
@@ -130,9 +130,9 @@
               </div>
             </mat-card-content>
             <mat-card-actions align="end">
-              <button mat-button (click)="cancelViewPanel()">Cancel</button>
+              <button mat-button (click)="cancelViewPanel()">{{ 'common.cancel' | t }}</button>
               <button mat-flat-button color="primary" (click)="saveViewCreate()" [disabled]="viewLoading()">
-                <mat-icon>save</mat-icon> Create
+                <mat-icon>save</mat-icon> {{ 'common.create' | t }}
               </button>
             </mat-card-actions>
           </mat-card>
@@ -144,15 +144,15 @@
           <div class="table-wrapper">
             <table mat-table [dataSource]="views()" class="mgmt-table">
               <ng-container matColumnDef="viewName">
-                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'common.name' | t }}</th>
                 <td mat-cell *matCellDef="let row">{{ row.viewName || row.name || '—' }}</td>
               </ng-container>
               <ng-container matColumnDef="viewId">
-                <th mat-header-cell *matHeaderCellDef>View ID</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'analytics.view-id' | t }}</th>
                 <td mat-cell *matCellDef="let row"><code>{{ row.viewId || row.id || '—' }}</code></td>
               </ng-container>
               <ng-container matColumnDef="viewType">
-                <th mat-header-cell *matHeaderCellDef>Type</th>
+                <th mat-header-cell *matHeaderCellDef>{{ 'common.type' | t }}</th>
                 <td mat-cell *matCellDef="let row">
                   <span class="badge badge--info">{{ row.viewType || row.type || 'TABLE' }}</span>
                 </td>
@@ -174,24 +174,24 @@
     <!-- ══ TAB 3 ─ Import ════════════════════════════════════════════════ -->
     <mat-tab>
       <ng-template mat-tab-label>
-        <mat-icon class="tab-icon">cloud_upload</mat-icon>Import
+        <mat-icon class="tab-icon">cloud_upload</mat-icon>{{ 'analytics.tab-import' | t }}
       </ng-template>
 
       <div class="tab-content">
         <mat-card class="form-card">
-          <mat-card-header><mat-card-title>Import Data</mat-card-title></mat-card-header>
+            <mat-card-header><mat-card-title>{{ 'analytics.import-data' | t }}</mat-card-title></mat-card-header>
           <mat-card-content>
             <div class="form-grid">
               <mat-form-field appearance="outline">
-                <mat-label>Workspace ID *</mat-label>
+                  <mat-label>{{ 'analytics.workspace-id' | t }} *</mat-label>
                 <input matInput [(ngModel)]="importForm.workspaceId" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>View ID *</mat-label>
+                  <mat-label>{{ 'analytics.view-id' | t }} *</mat-label>
                 <input matInput [(ngModel)]="importForm.viewId" />
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>Import Type</mat-label>
+                  <mat-label>{{ 'analytics.import-type' | t }}</mat-label>
                 <mat-select [(value)]="importForm.importType">
                   @for (t of importTypes; track t) {
                     <mat-option [value]="t">{{ t }}</mat-option>
@@ -199,7 +199,7 @@
                 </mat-select>
               </mat-form-field>
               <mat-form-field appearance="outline">
-                <mat-label>File URL</mat-label>
+                  <mat-label>{{ 'analytics.file-url' | t }}</mat-label>
                 <input matInput [(ngModel)]="importForm.fileUrl" placeholder="https://..." />
               </mat-form-field>
             </div>
@@ -209,7 +209,7 @@
               @if (importLoading()) {
                 <mat-spinner diameter="20" />
               } @else {
-                <mat-icon>cloud_upload</mat-icon> Start Import
+                <mat-icon>cloud_upload</mat-icon> {{ 'analytics.start-import' | t }}
               }
             </button>
           </mat-card-actions>

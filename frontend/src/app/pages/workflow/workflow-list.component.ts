@@ -10,6 +10,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { WorkflowService } from '../../services/workflow.service';
 import { Workflow, WorkflowStatus } from '../../config/workflow.types';
+import { TranslatePipe } from '../../i18n/translate.pipe';
+import { TranslateService } from '../../services/translate.service';
 
 @Component({
   selector: 'app-workflow-list',
@@ -18,27 +20,28 @@ import { Workflow, WorkflowStatus } from '../../config/workflow.types';
     CommonModule, RouterLink,
     MatButtonModule, MatIconModule, MatTableModule, MatChipsModule,
     MatTooltipModule, MatProgressSpinnerModule, MatExpansionModule,
+    TranslatePipe,
   ],
   template: `
     <div class="page-header">
       <div class="page-title">
         <mat-icon class="title-icon">account_tree</mat-icon>
         <div>
-          <h1>Workflows</h1>
-          <p>Build, schedule and execute API endpoint sequences</p>
+          <h1>{{ 'workflow.list-title' | t }}</h1>
+          <p>{{ 'workflow.list-subtitle' | t }}</p>
         </div>
       </div>
       <button mat-flat-button color="primary" routerLink="/workflows/new">
-        <mat-icon>add</mat-icon> New Workflow
+        <mat-icon>add</mat-icon> {{ 'workflow.new' | t }}
       </button>
     </div>
 
     @if (svc.workflows().length === 0) {
       <div class="empty-state">
         <mat-icon class="empty-icon">account_tree</mat-icon>
-        <p>No workflows yet.</p>
+        <p>{{ 'workflow.no-workflows' | t }}</p>
         <button mat-flat-button color="primary" routerLink="/workflows/new">
-          Create your first workflow
+          {{ 'workflow.create-first' | t }}
         </button>
       </div>
     } @else {
@@ -46,13 +49,13 @@ import { Workflow, WorkflowStatus } from '../../config/workflow.types';
         @for (wf of svc.workflows(); track wf.id) {
           <div class="wf-card">
             <div class="wf-card-header">
-              <div class="wf-name">{{ wf.name || 'Untitled' }}</div>
+              <div class="wf-name">{{ wf.name || ('workflow.untitled' | t) }}</div>
               <span class="status-chip status-{{ wf.status }}">{{ wf.status }}</span>
             </div>
 
             <div class="wf-meta">
               <span class="meta-item">
-                <mat-icon>view_list</mat-icon> {{ wf.steps.length }} step{{ wf.steps.length !== 1 ? 's' : '' }}
+                <mat-icon>view_list</mat-icon> {{ (wf.steps.length === 1 ? 'workflow.step-count' : 'workflow.step-count-plural') | t:{count: wf.steps.length} }}
               </span>
               @if (wf.scheduledAt) {
                 <span class="meta-item">
@@ -79,7 +82,7 @@ import { Workflow, WorkflowStatus } from '../../config/workflow.types';
                 }
               }
               @if (wf.steps.length > 5) {
-                <span class="step-pill more">+{{ wf.steps.length - 5 }} more</span>
+                <span class="step-pill more">{{ 'workflow.more' | t:{count: wf.steps.length - 5} }}</span>
               }
             </div>
 
@@ -90,7 +93,7 @@ import { Workflow, WorkflowStatus } from '../../config/workflow.types';
                     <mat-icon class="{{ wf.lastRunLog.success ? 'ok' : 'err' }}">
                       {{ wf.lastRunLog.success ? 'check_circle' : 'error' }}
                     </mat-icon>
-                    Last run — {{ wf.lastRunLog.startedAt | date:'MMM d HH:mm' }}
+                    {{ 'workflow.last-run' | t }} — {{ wf.lastRunLog.startedAt | date:'MMM d HH:mm' }}
                   </mat-panel-title>
                 </mat-expansion-panel-header>
                 <div class="log-steps">
@@ -110,7 +113,7 @@ import { Workflow, WorkflowStatus } from '../../config/workflow.types';
 
             <div class="wf-actions">
               <button mat-stroked-button [routerLink]="['/workflows', wf.id, 'edit']">
-                <mat-icon>edit</mat-icon> Edit
+                <mat-icon>edit</mat-icon> {{ 'workflow.edit-btn' | t }}
               </button>
               <button mat-stroked-button color="accent"
                       (click)="run(wf)"
@@ -121,11 +124,11 @@ import { Workflow, WorkflowStatus } from '../../config/workflow.types';
                 } @else {
                   <mat-icon>play_arrow</mat-icon>
                 }
-                Run now
+                {{ 'workflow.run-now' | t }}
               </button>
               <button mat-icon-button color="warn"
                       (click)="delete(wf)"
-                      matTooltip="Delete workflow">
+                      [matTooltip]="'workflow.delete-wf' | t">
                 <mat-icon>delete_outline</mat-icon>
               </button>
             </div>
@@ -236,6 +239,7 @@ import { Workflow, WorkflowStatus } from '../../config/workflow.types';
 export class WorkflowListComponent {
   readonly svc = inject(WorkflowService);
   private readonly router = inject(Router);
+  readonly i18n = inject(TranslateService);
   readonly runningId = signal<string | null>(null);
 
   async run(wf: Workflow) {
@@ -250,7 +254,7 @@ export class WorkflowListComponent {
   }
 
   delete(wf: Workflow) {
-    if (confirm(`Delete workflow "${wf.name}"?`)) {
+    if (confirm(this.i18n.t('workflow.confirm-delete', { name: wf.name }))) {
       this.svc.remove(wf.id);
     }
   }
