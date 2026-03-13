@@ -193,6 +193,7 @@ export const EN = {
   'common.load': 'Load',
   'common.new': 'New',
   'common.remove': 'Remove',
+  'common.invite': 'Invite',
 
   /* ── Roles ── */
   'role.admin': 'Admin',
@@ -363,6 +364,9 @@ export const EN = {
   'ic.no-partners': 'Select a contract and click Load to see partners.',
   'ic.no-members': 'Enter a Partner ID and click Load to see members.',
   'ic.no-partner-storage': 'Enter a Partner ID and click Load to see storage accounts.',
+  'ic.email': 'Email',
+  'ic.role': 'Role',
+  'ic.partner-storage-accounts': 'Partner Storage Accounts',
 
   /* ── Invoice Dashboard ── */
   'invoice.dashboard-title': 'Invoice Dashboard',

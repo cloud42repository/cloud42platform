@@ -104,6 +104,9 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
             <button mat-menu-item (click)="setLang('fr')" [class.active-lang]="i18n.lang() === 'fr'">
               🇫🇷 Français
             </button>
+            <button mat-menu-item (click)="setLang('de')" [class.active-lang]="i18n.lang() === 'de'">
+              🇩🇪 Deutsch
+            </button>
           </mat-menu>
           <button mat-menu-item (click)="auth.logout()">
             <mat-icon>logout</mat-icon>

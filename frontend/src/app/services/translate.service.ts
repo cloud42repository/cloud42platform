@@ -1,10 +1,11 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { EN, type TranslationKey } from '../i18n/en';
 import { FR } from '../i18n/fr';
+import { DE } from '../i18n/de';
 
-export type Lang = 'en' | 'fr';
+export type Lang = 'en' | 'fr' | 'de';
 
-const DICTIONARIES: Record<Lang, Record<TranslationKey, string>> = { en: EN, fr: FR };
+const DICTIONARIES: Record<Lang, Record<TranslationKey, string>> = { en: EN, fr: FR, de: DE };
 const STORAGE_KEY = 'c42_lang';
 
 @Injectable({ providedIn: 'root' })
@@ -40,9 +41,11 @@ export class TranslateService {
 
   private restore(): Lang {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'fr' || stored === 'en') return stored;
+    if (stored === 'fr' || stored === 'en' || stored === 'de') return stored;
     // auto-detect browser language
     const browserLang = navigator.language?.slice(0, 2);
-    return browserLang === 'fr' ? 'fr' : 'en';
+    if (browserLang === 'fr') return 'fr';
+    if (browserLang === 'de') return 'de';
+    return 'en';
   }
 }

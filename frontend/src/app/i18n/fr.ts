@@ -195,6 +195,7 @@ export const FR: Record<TranslationKey, string> = {
   'common.load': 'Charger',
   'common.new': 'Nouveau',
   'common.remove': 'Retirer',
+  'common.invite': 'Inviter',
 
   /* ── Roles ── */
   'role.admin': 'Administrateur',
@@ -365,6 +366,9 @@ export const FR: Record<TranslationKey, string> = {
   'ic.no-partners': 'Sélectionnez un contrat et cliquez sur Charger pour voir les partenaires.',
   'ic.no-members': 'Entrez un ID partenaire et cliquez sur Charger pour voir les membres.',
   'ic.no-partner-storage': 'Entrez un ID partenaire et cliquez sur Charger pour voir les comptes.',
+  'ic.email': 'E-mail',
+  'ic.role': 'Rôle',
+  'ic.partner-storage-accounts': 'Comptes de stockage partenaire',
 
   /* ── Invoice Dashboard ── */
   'invoice.dashboard-title': 'Tableau de bord Factures',
