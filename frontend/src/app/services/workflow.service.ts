@@ -264,12 +264,17 @@ export class WorkflowService {
         response = await firstValueFrom(
           this.api[method](step.moduleApiPrefix, step.pathTemplate, pathParams)
         );
-      } else {
-        const mutFn = this.api[method] as (
-          p: string, t: string, params: Record<string, string>, b: unknown
-        ) => ReturnType<typeof this.api.post>;
+      } else if (method === 'post') {
         response = await firstValueFrom(
-          mutFn(step.moduleApiPrefix, step.pathTemplate, pathParams, body ?? {})
+          this.api.post(step.moduleApiPrefix, step.pathTemplate, pathParams, body ?? {})
+        );
+      } else if (method === 'put') {
+        response = await firstValueFrom(
+          this.api.put(step.moduleApiPrefix, step.pathTemplate, pathParams, body ?? {})
+        );
+      } else {
+        response = await firstValueFrom(
+          this.api.patch(step.moduleApiPrefix, step.pathTemplate, pathParams, body ?? {})
         );
       }
 
