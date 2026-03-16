@@ -14,14 +14,14 @@ import { UserService } from './user.service';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         type: 'postgres' as const,
-        host: config.get<string>('DB_HOST', 'localhost'),
-        port: config.get<number>('DB_PORT', 5432),
-        username: config.get<string>('DB_USERNAME', 'postgres'),
-        password: config.get<string>('DB_PASSWORD', 'postgres'),
-        database: config.get<string>('DB_DATABASE', 'cloud42'),
+        host: config.get<string>('AZURE_POSTGRESQL_HOST', 'localhost'),
+        port: config.get<number>('AZURE_POSTGRESQL_PORT', 5432),
+        username: config.get<string>('AZURE_POSTGRESQL_USERNAME', 'postgres'),
+        password: config.get<string>('AZURE_POSTGRESQL_PASSWORD', 'Password1'),
+        database: config.get<string>('AZURE_POSTGRESQL_DATABASE', 'postgres'),
         entities: [UserEntity, WorkflowEntity],
-        synchronize: config.get<string>('DB_SYNC', 'true') === 'true', // auto-create tables (dev only)
-        ssl: config.get<string>('DB_SSL', 'false') === 'true'
+        synchronize: config.get<string>('AZURE_POSTGRESQL_SYNC', 'true') === 'true', // auto-create tables (dev only)
+        ssl: config.get<string>('AZURE_POSTGRESQL_SSL', 'false') === 'true'
           ? { rejectUnauthorized: false }
           : false,
       }),
