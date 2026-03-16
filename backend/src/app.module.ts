@@ -54,7 +54,7 @@ import { UserModule } from './user/user.module';
     ImpossibleCloudModule,
     ChatGPTModule,
     SchemaModule,
-    UserModule,
+    //UserModule,
   ],
 })
 export class AppModule {}
