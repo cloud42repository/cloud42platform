@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
+import { UserManagementService } from './user-management.service';
 import {
   Workflow, WorkflowNode, WorkflowStep, WorkflowStatus,
   TryCatchBlock, LoopBlock, IfElseBlock,
@@ -10,121 +11,118 @@ import {
 @Injectable({ providedIn: 'root' })
 export class WorkflowService {
   private readonly api = inject(ApiService);
+  private readonly userMgmt = inject(UserManagementService);
   private readonly STORAGE_KEY = 'cloud42_workflows';
+  private readonly API_PREFIX = '/workflows';
 
-  private readonly _workflows = signal<Workflow[]>(this.loadFromStorage());
+  private readonly _workflows = signal<Workflow[]>([]);
   readonly workflows = this._workflows.asReadonly();
 
   constructor() {
+    // Load workflows from backend API (replaces localStorage when available)
+    this.loadFromApi();
     // Poll every 30 seconds to fire scheduled workflows
     setInterval(() => this.checkScheduled(), 30_000);
   }
 
-  // ── Persistence ─────────────────────────────────────────────────────────────
+  // ── Backend API ─────────────────────────────────────────────────────────────
 
-  private loadFromStorage(): Workflow[] {
+  /** Fetch all workflows for the current user from the backend */
+  async loadFromApi(): Promise<void> {
+    const email = this.userMgmt.currentUser()?.email;
+    if (!email) return;
     try {
-      const raw = JSON.parse(localStorage.getItem(this.STORAGE_KEY) ?? '[]') as Workflow[];
-      if (raw.length > 0) {
-        // Migrate legacy steps that lack a kind field
-        return raw.map(wf => ({
-          ...wf,
-          steps: wf.steps.map(s => ({
-            ...s,
-            kind: (s as WorkflowNode).kind ?? 'endpoint',
-          })) as WorkflowNode[],
-        }));
+      const res = await firstValueFrom(
+        this.api.get(this.API_PREFIX, '', {}, { userEmail: email })
+      );
+      const apiWorkflows = (res as Record<string, unknown>[]).map(w => this.mapFromApi(w));
+      if (apiWorkflows.length > 0) {
+        this._workflows.set(apiWorkflows);
       }
-      // Seed demo workflows when storage is empty
-      return this.seedDemoWorkflows();
-    } catch {
-      return [];
+    } catch (err) {
+      console.warn('Failed to load workflows from API, using local cache', err);
     }
   }
 
-  private seedDemoWorkflows(): Workflow[] {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth();
-
-    // Helper: ISO string for a date in local time
-    const localISO = (d: Date) => d.toISOString();
-
-    // Schedule one workflow 2 days from now at 10:00 local
-    const d1 = new Date(y, m, now.getDate() + 2, 10, 0, 0, 0);
-    // Schedule one workflow 5 days from now at 14:30 local
-    const d2 = new Date(y, m, now.getDate() + 5, 14, 30, 0, 0);
-    // Schedule one today at end of day
-    const d3 = new Date(y, m, now.getDate(), 17, 0, 0, 0);
-
-    const makeStep = (id: string, label: string, method: string): WorkflowStep => ({
-      id,
-      kind: 'endpoint',
-      moduleId: 'zoho-crm',
-      moduleLabel: 'Zoho CRM',
-      moduleApiPrefix: '/zoho-crm',
-      endpointId: 'list-contacts',
-      endpointLabel: label,
-      method,
-      pathTemplate: '/contacts',
-      pathParamNames: [],
-      hasBody: false,
-      paramSources: {},
-      bodyKeys: [],
-      bodySources: {},
-    });
-
-    const demos: Workflow[] = [
-      {
-        id: 'demo-wf-1',
-        name: 'Daily CRM Sync',
-        steps: [makeStep('s1', 'List Contacts', 'GET'), makeStep('s2', 'List Accounts', 'GET')],
-        status: 'scheduled',
-        scheduledAt: localISO(d1),
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'demo-wf-2',
-        name: 'Weekly Report Run',
-        steps: [makeStep('s3', 'List Contacts', 'GET')],
-        status: 'scheduled',
-        scheduledAt: localISO(d2),
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-      {
-        id: 'demo-wf-3',
-        name: 'End-of-Day Cleanup',
-        steps: [makeStep('s4', 'List Contacts', 'GET'), makeStep('s5', 'List Accounts', 'GET'), makeStep('s6', 'List Deals', 'GET')],
-        status: 'scheduled',
-        scheduledAt: localISO(d3),
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      },
-    ];
-
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(demos));
-    return demos;
+  /** Create a workflow on the backend */
+  private async createOnApi(workflow: Workflow): Promise<void> {
+    const email = this.userMgmt.currentUser()?.email;
+    if (!email) return;
+    try {
+      await firstValueFrom(
+        this.api.post(this.API_PREFIX, '', {}, {
+          id: workflow.id,
+          userEmail: email,
+          name: workflow.name,
+          description: workflow.description ?? '',
+          steps: workflow.steps,
+          status: workflow.status,
+          scheduledAt: workflow.scheduledAt,
+        })
+      );
+    } catch (err) {
+      console.warn('Failed to create workflow on API', err);
+    }
   }
 
-  private persist(): void {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this._workflows()));
+  /** Update a workflow on the backend */
+  private async updateOnApi(workflow: Workflow): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.api.put(this.API_PREFIX, '/:id', { id: workflow.id }, {
+          name: workflow.name,
+          description: workflow.description ?? '',
+          steps: workflow.steps,
+          status: workflow.status,
+          scheduledAt: workflow.scheduledAt,
+          lastRunLog: workflow.lastRunLog,
+        })
+      );
+    } catch (err) {
+      console.warn('Failed to update workflow on API', err);
+    }
+  }
+
+  /** Delete a workflow on the backend */
+  private async deleteFromApi(id: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.api.delete(this.API_PREFIX, '/:id', { id })
+      );
+    } catch (err) {
+      console.warn('Failed to delete workflow from API', err);
+    }
+  }
+
+  /** Map a backend response DTO to the frontend Workflow type */
+  private mapFromApi(dto: Record<string, unknown>): Workflow {
+    return {
+      id: dto['id'] as string,
+      name: dto['name'] as string,
+      description: (dto['description'] as string) || undefined,
+      steps: (dto['steps'] ?? []) as WorkflowNode[],
+      status: (dto['status'] as WorkflowStatus) ?? 'draft',
+      scheduledAt: (dto['scheduledAt'] as string) ?? null,
+      createdAt: dto['createdAt'] as string,
+      updatedAt: dto['updatedAt'] as string,
+      lastRunLog: (dto['lastRunLog'] as WorkflowRunLog) ?? undefined,
+    };
   }
 
   upsert(workflow: Workflow): void {
+    const isNew = !this._workflows().some(w => w.id === workflow.id);
     this._workflows.update(ws => {
       const idx = ws.findIndex(w => w.id === workflow.id);
       return idx >= 0
         ? ws.map(w => w.id === workflow.id ? workflow : w)
         : [...ws, workflow];
     });
-    this.persist();
+    if (isNew) { this.createOnApi(workflow); } else { this.updateOnApi(workflow); }
   }
 
   remove(id: string): void {
     this._workflows.update(ws => ws.filter(w => w.id !== id));
-    this.persist();
+    this.deleteFromApi(id);
   }
 
   getById(id: string): Workflow | undefined {
@@ -162,7 +160,8 @@ export class WorkflowService {
         updatedAt: new Date().toISOString(),
       };
     }));
-    this.persist();
+    const updatedWf = this.getById(workflowId);
+    if (updatedWf) this.updateOnApi(updatedWf);
 
     return log;
   }
@@ -331,7 +330,8 @@ export class WorkflowService {
     this._workflows.update(ws =>
       ws.map(w => w.id === id ? { ...w, status, updatedAt: new Date().toISOString() } : w)
     );
-    this.persist();
+    const wf = this.getById(id);
+    if (wf) this.updateOnApi(wf);
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────

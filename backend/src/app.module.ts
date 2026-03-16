@@ -26,6 +26,7 @@ import { ImpossibleCloudModule } from './impossible-cloud/impossible-cloud.modul
 import { ChatGPTModule } from './chatgpt/chatgpt.module';
 import { SchemaModule } from './schema/schema.module';
 import { UserModule } from './user/user.module';
+import { WorkflowModule } from './workflow/workflow.module';
 
 @Module({
   imports: [
@@ -54,7 +55,8 @@ import { UserModule } from './user/user.module';
     ImpossibleCloudModule,
     ChatGPTModule,
     SchemaModule,
-    //UserModule,
+    UserModule,
+    WorkflowModule,
   ],
 })
 export class AppModule {}

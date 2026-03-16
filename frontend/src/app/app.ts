@@ -144,6 +144,16 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
             <mat-icon matListItemIcon>settings</mat-icon>
             <span matListItemTitle>{{ 'nav.settings' | t }}</span>
           </a>
+          @if (userMgmt.isAdmin()) {
+            <a mat-list-item
+               routerLink="/users"
+               routerLinkActive="active-link"
+               [matTooltip]="'nav.users' | t"
+               matTooltipPosition="right">
+              <mat-icon matListItemIcon>group</mat-icon>
+              <span matListItemTitle>{{ 'nav.users' | t }}</span>
+            </a>
+          }
         </mat-nav-list>
         <mat-divider />
         <div class="nav-modules-label">{{ 'nav.api-modules' | t }}</div>

@@ -8,6 +8,7 @@ import { WorkflowBuilderComponent } from './pages/workflow/workflow-builder.comp
 import { WorkflowCalendarComponent } from './pages/workflow/workflow-calendar.component';
 import { SettingsComponent } from './pages/settings/settings.component';
 import { AgentComponent } from './pages/agent/agent.component';
+import { UserManagementComponent } from './pages/user-management/user-management.component';
 import { IcManagementComponent } from './pages/ic-management/ic-management.component';
 import { BooksDashboardComponent } from './pages/books-dashboard/books-dashboard.component';
 import { BooksManagementComponent } from './pages/books-management/books-management.component';
@@ -32,6 +33,7 @@ export const routes: Routes = [
     ],
   },
   { path: 'settings', component: SettingsComponent, canActivate: [authGuard], title: 'Settings' },
+  { path: 'users', component: UserManagementComponent, canActivate: [authGuard], title: 'User Management' },
   { path: 'invoice-dashboard', component: InvoiceDashboardComponent, canActivate: [authGuard], title: 'Invoice Dashboard' },
   { path: 'ic-dashboard', component: IcDashboardComponent, canActivate: [authGuard], title: 'IC Dashboard' },
   { path: 'ic-management', component: IcManagementComponent, canActivate: [authGuard], title: 'IC Management' },
