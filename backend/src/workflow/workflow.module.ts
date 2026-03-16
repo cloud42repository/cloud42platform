@@ -18,7 +18,7 @@ import { UserEntity } from '../user/user.entity';
           type: 'postgres' as const,
           host: config.get<string>('AZURE_POSTGRESQL_HOST', 'localhost'),
           port: config.get<number>('AZURE_POSTGRESQL_PORT', 5432),
-          username: config.get<string>('AZURE_POSTGRESQL_USERNAME', 'postgres'),
+          username: config.get<string>('AZURE_POSTGRESQL_USER', 'postgres'),
           password: config.get<string>('AZURE_POSTGRESQL_PASSWORD', 'Password1'),
           database: config.get<string>('AZURE_POSTGRESQL_DATABASE', 'postgres'),
           entities: [UserEntity, WorkflowEntity],
