@@ -25,6 +25,7 @@ import { SoftvalueModule } from './softvalue/softvalue.module';
 import { ImpossibleCloudModule } from './impossible-cloud/impossible-cloud.module';
 import { ChatGPTModule } from './chatgpt/chatgpt.module';
 import { SchemaModule } from './schema/schema.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { SchemaModule } from './schema/schema.module';
     ImpossibleCloudModule,
     ChatGPTModule,
     SchemaModule,
+    UserModule,
   ],
 })
 export class AppModule {}
