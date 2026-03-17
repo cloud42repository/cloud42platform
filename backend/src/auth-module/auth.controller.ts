@@ -115,11 +115,12 @@ export class AuthController {
   /* ── Helpers ── */
 
   private setRefreshCookie(res: Response, token: string): void {
+    const isProduction = process.env['NODE_ENV'] === 'production';
     res.cookie(AuthController.REFRESH_COOKIE, token, {
       httpOnly: true,
-      secure: process.env['NODE_ENV'] === 'production', // HTTPS only in prod
-      sameSite: 'strict',
-      path: '/api/auth',          // cookie only sent to auth endpoints
+      secure: isProduction,                    // HTTPS only in prod
+      sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin cookies (SWA ↔ App Service)
+      path: '/api/auth',                       // cookie only sent to auth endpoints
       maxAge: AuthController.REFRESH_MAX_AGE,
     });
   }

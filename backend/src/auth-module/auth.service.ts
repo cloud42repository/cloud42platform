@@ -101,10 +101,12 @@ export class AuthService {
   async loginWithGoogle(googleIdToken: string): Promise<{ accessToken: string; refreshToken: string; user: UserResponseDto }> {
     let payload: Record<string, unknown>;
 
+    this.logger.log(`Login attempt — verifying Google token (clientId: ${this.googleClientId.slice(0, 12)}…)`);
+
     try {
       payload = await verifyGoogleIdToken(googleIdToken, this.googleClientId);
     } catch (err) {
-      this.logger.warn('Google token verification failed', (err as Error).message);
+      this.logger.warn(`Google token verification failed: ${(err as Error).message}`);
       throw new UnauthorizedException('Invalid Google token');
     }
 
@@ -115,6 +117,8 @@ export class AuthService {
     if (!email) {
       throw new UnauthorizedException('Google token missing email claim');
     }
+
+    this.logger.log(`Google token verified for ${email}`);
 
     // Upsert user in DB
     const user = await this.userService.registerLogin(email, name, photoUrl);

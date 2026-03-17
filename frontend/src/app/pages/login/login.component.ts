@@ -49,7 +49,7 @@ declare global {
             <p class="login-error">⚠️ Could not load Google sign-in. Check your internet connection.</p>
           }
           @if (loginError) {
-            <p class="login-error">⚠️ Login failed. Please try again.</p>
+            <p class="login-error">⚠️ {{ loginErrorMessage }}</p>
           }
         </div>
 
@@ -151,6 +151,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
   scriptError = false;
   loginError = false;
+  loginErrorMessage = 'Login failed. Please try again.';
   isMockMode = environment.mockMode ?? false;
 
   constructor(
@@ -178,6 +179,9 @@ export class LoginComponent implements OnInit, AfterViewInit {
       this.router.navigate([`/${MODULES[0].id}`]);
     } catch (err) {
       console.error('Dev login failed', err);
+      this.loginErrorMessage = (err as any)?.error?.message
+        || (err as any)?.message
+        || 'Dev login failed. Is the backend running in MOCK_MODE?';
       this.loginError = true;
     }
   }
@@ -209,8 +213,11 @@ export class LoginComponent implements OnInit, AfterViewInit {
           // Send raw Google ID token to backend for server-side verification
           await this.authService.loginWithGoogle(response.credential);
           this.router.navigate([`/${MODULES[0].id}`]);
-        } catch (err) {
+        } catch (err: any) {
           console.error('Login failed', err);
+          this.loginErrorMessage = err?.error?.message
+            || err?.message
+            || `Login failed (${err?.status ?? 'unknown'}). Please try again.`;
           this.loginError = true;
         }
       },

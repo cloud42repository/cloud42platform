@@ -17,13 +17,25 @@ async function bootstrap(): Promise<void> {
   // Cookie parser — required for HttpOnly refresh-token cookies
   app.use(cookieParser());
 
-  const corsOrigin = process.env['CORS_ORIGIN'] || 'http://localhost:4200';
+  // CORS_ORIGIN may be a single URL or comma-separated list
+  // e.g. "https://black-field-0f1f7e803.azurestaticapps.net,http://localhost:4200"
+  const rawOrigins = process.env['CORS_ORIGIN'] || 'http://localhost:4200';
+  const allowedOrigins = rawOrigins.split(',').map(o => o.trim()).filter(Boolean);
+
   app.setGlobalPrefix('api');
   app.enableCors({
-    origin: corsOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl, Postman, server-to-server)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      console.warn(`CORS blocked origin: ${origin}  (allowed: ${allowedOrigins.join(', ')})`);
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,               // allow cookies cross-origin
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   });
+
+  console.log(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
 
   const port = process.env['PORT'] ?? 3000;
   await app.listen(port);
