@@ -681,7 +681,12 @@ export class SettingsComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.states = MODULES.map((mod, i) => ({
+    this.initAsync();
+  }
+
+  private async initAsync(): Promise<void> {
+    await this.svc.loadAll();
+    this.states = MODULES.map((mod) => ({
       module: mod,
       config: { ...this.svc.getConfig(mod.id) },
       showSecrets: {},
@@ -732,28 +737,45 @@ export class SettingsComponent implements OnInit {
     state.dirty = true;
   }
 
-  saveOne(state: ModuleAuthState): void {
-    this.svc.saveConfig(state.module.id, { ...state.config });
-    state.dirty = false;
-    this.snack.open(`✓ ${state.module.label} auth saved`, '', { duration: 2500 });
+  async saveOne(state: ModuleAuthState): Promise<void> {
+    try {
+      await this.svc.saveConfig(state.module.id, { ...state.config });
+      state.dirty = false;
+      this.snack.open(`✓ ${state.module.label} auth saved`, '', { duration: 2500 });
+    } catch {
+      this.snack.open(`✗ Failed to save ${state.module.label}`, '', { duration: 3000 });
+    }
   }
 
-  saveAll(): void {
+  async saveAll(): Promise<void> {
     let count = 0;
     for (const s of this.states) {
       if (s.dirty) {
-        this.svc.saveConfig(s.module.id, { ...s.config });
-        s.dirty = false;
-        count++;
+        try {
+          await this.svc.saveConfig(s.module.id, { ...s.config });
+          s.dirty = false;
+          count++;
+        } catch {
+          this.snack.open(`✗ Failed to save ${s.module.label}`, '', { duration: 3000 });
+        }
       }
     }
     this.snack.open(`✓ Saved ${count} auth configuration${count !== 1 ? 's' : ''}`, '', { duration: 3000 });
   }
 
-  clearConfig(state: ModuleAuthState): void {
-    state.config = { type: 'none' };
-    state.showSecrets = {};
-    state.dirty = true;
+  async clearConfig(state: ModuleAuthState): Promise<void> {
+    try {
+      await this.svc.deleteConfig(state.module.id);
+      state.config = { type: 'none' };
+      state.showSecrets = {};
+      state.dirty = false;
+      this.snack.open(`✓ ${state.module.label} auth cleared`, '', { duration: 2500 });
+    } catch {
+      // If delete fails (e.g. didn't exist), still clear locally
+      state.config = { type: 'none' };
+      state.showSecrets = {};
+      state.dirty = false;
+    }
   }
 
   /* ── General tab helpers ── */

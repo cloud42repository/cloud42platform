@@ -28,6 +28,7 @@ import { ChatGPTModule } from './chatgpt/chatgpt.module';
 import { SchemaModule } from './schema/schema.module';
 import { UserModule } from './user/user.module';
 import { WorkflowModule } from './workflow/workflow.module';
+import { AuthConfigModule } from './auth-config/auth-config.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { WorkflowModule } from './workflow/workflow.module';
     SchemaModule,
     UserModule,
     WorkflowModule,
+    AuthConfigModule,
   ],
 })
 export class AppModule {}
