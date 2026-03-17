@@ -18,8 +18,9 @@ async function bootstrap(): Promise<void> {
   app.use(cookieParser());
 
   // CORS_ORIGIN may be a single URL or comma-separated list
-  // e.g. "https://black-field-0f1f7e803.azurestaticapps.net,http://localhost:4200"
-  const rawOrigins = process.env['CORS_ORIGIN'] || 'http://localhost:4200';
+  // e.g. "https://black-field-0f1f7e803.2.azurestaticapps.net,http://localhost:4200"
+  const rawOrigins = process.env['CORS_ORIGIN']
+    || 'http://localhost:4200,https://black-field-0f1f7e803.2.azurestaticapps.net';
   const allowedOrigins = rawOrigins.split(',').map(o => o.trim()).filter(Boolean);
 
   app.setGlobalPrefix('api');
