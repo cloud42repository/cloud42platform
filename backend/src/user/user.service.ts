@@ -118,4 +118,15 @@ export class UserService {
     const saved = await this.repo.save(user);
     return this.toDto(saved);
   }
+
+  /* ── Refresh-token storage ── */
+
+  async setHashedRefreshToken(email: string, hash: string | null): Promise<void> {
+    await this.repo.update({ email }, { hashedRefreshToken: hash });
+  }
+
+  async getHashedRefreshToken(email: string): Promise<string | null> {
+    const user = await this.repo.findOneBy({ email });
+    return user?.hashedRefreshToken ?? null;
+  }
 }

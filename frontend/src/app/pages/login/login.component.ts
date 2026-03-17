@@ -1,21 +1,12 @@
 import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService, CloudUser } from '../../services/auth.service';
-import { UserManagementService } from '../../services/user-management.service';
+import { AuthService } from '../../services/auth.service';
 import { MODULES } from '../../config/endpoints';
 import { environment } from '../../../environments/environment';
 
 // Minimal typings for Google Identity Services
 interface GisCredentialResponse {
   credential: string;
-}
-
-interface GisJwtPayload {
-  name?: string;
-  email?: string;
-  given_name?: string;
-  picture?: string;
-  [key: string]: unknown;
 }
 
 declare global {
@@ -49,9 +40,16 @@ declare global {
 
         <div class="login-body">
           <p class="login-prompt">Sign in to continue</p>
-          <div class="google-btn-wrap" #googleBtn></div>
+          @if (isMockMode) {
+            <button class="dev-login-btn" (click)="handleDevLogin()">🧪 Dev Login (Mock Mode)</button>
+          } @else {
+            <div class="google-btn-wrap" #googleBtn></div>
+          }
           @if (scriptError) {
             <p class="login-error">⚠️ Could not load Google sign-in. Check your internet connection.</p>
+          }
+          @if (loginError) {
+            <p class="login-error">⚠️ Login failed. Please try again.</p>
           }
         </div>
 
@@ -120,6 +118,22 @@ declare global {
       margin: 4px 0;
       min-height: 44px;
     }
+    .dev-login-btn {
+      padding: 12px 28px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: 0 2px 8px rgba(3,105,161,.3);
+    }
+    .dev-login-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(3,105,161,.4);
+    }
     .login-error {
       font-size: 0.8rem;
       color: #dc2626;
@@ -136,8 +150,8 @@ export class LoginComponent implements OnInit, AfterViewInit {
   @ViewChild('googleBtn') googleBtnRef?: ElementRef<HTMLDivElement>;
 
   scriptError = false;
-
-  private readonly userMgmt = inject(UserManagementService);
+  loginError = false;
+  isMockMode = environment.mockMode ?? false;
 
   constructor(
     private authService: AuthService,
@@ -151,9 +165,21 @@ export class LoginComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    if (this.isMockMode) return;   // skip Google script in mock mode
     this.loadGoogleScript()
       .then(() => this.renderGoogleButton())
       .catch(() => { this.scriptError = true; });
+  }
+
+  async handleDevLogin(): Promise<void> {
+    try {
+      this.loginError = false;
+      await this.authService.devLogin();
+      this.router.navigate([`/${MODULES[0].id}`]);
+    } catch (err) {
+      console.error('Dev login failed', err);
+      this.loginError = true;
+    }
   }
 
   private loadGoogleScript(): Promise<void> {
@@ -177,27 +203,15 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
     gis.initialize({
       client_id: environment.googleClientId,
-      callback: (response: GisCredentialResponse) => {
+      callback: async (response: GisCredentialResponse) => {
         try {
-          const payload = this.decodeJwt(response.credential);
-          // Register / update user in the user management store
-          const storedUser = this.userMgmt.registerLogin(
-            payload.email ?? '',
-            payload.name ?? '',
-            payload.picture ?? '',
-          );
-          const user: CloudUser = {
-            name: payload.name ?? '',
-            email: payload.email ?? '',
-            firstName: payload.given_name ?? payload.name?.split(' ')[0] ?? '',
-            photoUrl: payload.picture ?? '',
-            idToken: response.credential,
-            role: storedUser.role,
-          };
-          this.authService.setUser(user);
+          this.loginError = false;
+          // Send raw Google ID token to backend for server-side verification
+          await this.authService.loginWithGoogle(response.credential);
           this.router.navigate([`/${MODULES[0].id}`]);
-        } catch {
-          console.error('Failed to decode Google credential');
+        } catch (err) {
+          console.error('Login failed', err);
+          this.loginError = true;
         }
       },
     });
@@ -209,10 +223,5 @@ export class LoginComponent implements OnInit, AfterViewInit {
       text: 'signin_with',
       shape: 'rectangular',
     });
-  }
-
-  private decodeJwt(token: string): GisJwtPayload {
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(base64)) as GisJwtPayload;
   }
 }

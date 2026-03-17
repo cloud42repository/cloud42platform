@@ -30,6 +30,10 @@ export class UserEntity {
   @Column({ type: 'jsonb', default: {} })
   moduleVisibility!: Record<string, boolean>;
 
+  /** SHA-256 hash of the current refresh token (null = revoked / logged-out) */
+  @Column({ type: 'varchar', length: 64, nullable: true, default: null })
+  hashedRefreshToken!: string | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 

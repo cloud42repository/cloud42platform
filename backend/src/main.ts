@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
@@ -12,11 +13,19 @@ async function bootstrap(): Promise<void> {
   }
 
   const app = await NestFactory.create(AppModule);
-  const corsOrigin = process.env.CORS_ORIGIN ?? '*';
-  app.setGlobalPrefix('api');
-  app.enableCors({ origin: corsOrigin });
 
-  const port = process.env.PORT ?? 3000;
+  // Cookie parser — required for HttpOnly refresh-token cookies
+  app.use(cookieParser());
+
+  const corsOrigin = process.env['CORS_ORIGIN'] || 'http://localhost:4200';
+  app.setGlobalPrefix('api');
+  app.enableCors({
+    origin: corsOrigin,
+    credentials: true,               // allow cookies cross-origin
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  });
+
+  const port = process.env['PORT'] ?? 3000;
   await app.listen(port);
   console.log(`API Connector backend running on http://localhost:${port}/api`);
 }

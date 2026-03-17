@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { AuthModule } from './auth-module/auth.module';
 import { ZohoCrmModule } from './zoho-crm/zoho-crm.module';
 import { ZohoBooksModule } from './zoho-books/zoho-books.module';
 import { ZohoInvoiceModule } from './zoho-invoice/zoho-invoice.module';
@@ -31,6 +32,7 @@ import { WorkflowModule } from './workflow/workflow.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    AuthModule,
     ZohoCrmModule,
     ZohoBooksModule,
     ZohoInvoiceModule,
