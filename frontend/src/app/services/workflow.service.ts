@@ -193,12 +193,38 @@ export class WorkflowService {
 
       } else if (kind === 'loop') {
         const block = node as LoopBlock;
-        const count = block.loopCount ?? 1;
-        for (let i = 0; i < count; i++) {
-          const iterLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
-          const ok = await this.executeNodes(block.bodySteps, stepResults, iterLog);
-          log.steps.push(...iterLog.steps);
-          if (!ok) return false;
+        const mode = block.loopMode ?? 'count';
+
+        if (mode === 'for-each' && block.loopSourceStepId) {
+          // Resolve the source array from a previous step's response
+          const srcResult = stepResults.get(block.loopSourceStepId);
+          let items: unknown[];
+          if (block.loopSourceField) {
+            const resolved = this.getPathRaw(srcResult, block.loopSourceField);
+            items = Array.isArray(resolved) ? resolved : [];
+          } else {
+            items = Array.isArray(srcResult) ? srcResult : [];
+          }
+
+          for (let i = 0; i < items.length; i++) {
+            // Store current element so body steps can reference it via "from-step" → this loop block's id
+            stepResults.set(block.id, items[i]);
+            const iterLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
+            const ok = await this.executeNodes(block.bodySteps, stepResults, iterLog);
+            log.steps.push(...iterLog.steps);
+            if (!ok) return false;
+          }
+          // After iteration, store the full array as the block result
+          stepResults.set(block.id, items);
+        } else {
+          // count mode — repeat N times
+          const count = block.loopCount ?? 1;
+          for (let i = 0; i < count; i++) {
+            const iterLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
+            const ok = await this.executeNodes(block.bodySteps, stepResults, iterLog);
+            log.steps.push(...iterLog.steps);
+            if (!ok) return false;
+          }
         }
 
       } else if (kind === 'if-else') {
@@ -383,6 +409,25 @@ export class WorkflowService {
       }
     }
     return cur != null ? String(cur) : '';
+  }
+
+  /** Like getPath but returns the raw value (not stringified) — useful for arrays/objects */
+  private getPathRaw(obj: unknown, path: string): unknown {
+    if (!path) return obj;
+    const parts = path.split('.');
+    let cur: unknown = obj;
+    for (const part of parts) {
+      if (cur == null || typeof cur !== 'object') return undefined;
+      const arrMatch = part.match(/^(\w+)\[(\d+)\]$/);
+      if (arrMatch) {
+        cur = (cur as Record<string, unknown>)[arrMatch[1]];
+        if (Array.isArray(cur)) cur = cur[Number(arrMatch[2])];
+        else return undefined;
+      } else {
+        cur = (cur as Record<string, unknown>)[part];
+      }
+    }
+    return cur;
   }
 
   /** Generate a simple unique ID */

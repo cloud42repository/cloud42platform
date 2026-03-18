@@ -25,7 +25,7 @@ import {
 import { MODULES, ModuleDef, EndpointDef, extractPathParams } from '../../config/endpoints';
 import { WorkflowService } from '../../services/workflow.service';
 import {
-  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock, MapperBlock, FieldMapping, PayloadSource, StepKind, BodyMode,
+  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FieldMapping, PayloadSource, StepKind, BodyMode,
 } from '../../config/workflow.types';
 import { FormViewComponent } from '../../shared/form-view/form-view.component';
 import { TranslatePipe } from '../../i18n/translate.pipe';
@@ -354,7 +354,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                     <div class="block-header">
                       <mat-icon class="block-icon">loop</mat-icon>
                       <span class="block-title">{{ block.label || ('workflow.loop' | t) }}</span>
-                      <span class="block-badge">loop × {{ block.loopCount ?? 1 }}</span>
+                      <span class="block-badge">{{ (block.loopMode ?? 'count') === 'for-each' ? 'for-each' : 'loop × ' + (block.loopCount ?? 1) }}</span>
                       <div class="step-card-actions" (click)="$event.stopPropagation()">
                         <button mat-icon-button (click)="selectStep(node.id)" matTooltip="{{ 'workflow.configure-step' | t }}">
                           <mat-icon>settings</mat-icon>
@@ -773,12 +773,46 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
 
               <mat-divider class="section-divider" />
               <div class="config-section-label">{{ 'workflow.loop-settings' | t }}</div>
-              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
-                <mat-label>{{ 'workflow.repeat-count' | t }}</mat-label>
-                <input matInput type="number" min="1" [value]="block.loopCount ?? 1"
-                       (input)="mutateBlock(block.id, +$any($event.target).value || 1, 'loopCount')" />
-                <mat-hint>{{ 'workflow.repeat-hint' | t }}</mat-hint>
-              </mat-form-field>
+
+              <!-- Loop mode toggle -->
+              <div class="loop-mode-toggle">
+                <button mat-stroked-button [class.active-source]="(block.loopMode ?? 'count') === 'count'" (click)="setLoopMode(block.id, 'count')">
+                  <mat-icon>repeat</mat-icon> {{ 'workflow.loop-repeat' | t }}
+                </button>
+                <button mat-stroked-button [class.active-source]="block.loopMode === 'for-each'" (click)="setLoopMode(block.id, 'for-each')">
+                  <mat-icon>format_list_numbered</mat-icon> {{ 'workflow.loop-for-each' | t }}
+                </button>
+              </div>
+
+              @if ((block.loopMode ?? 'count') === 'count') {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                  <mat-label>{{ 'workflow.repeat-count' | t }}</mat-label>
+                  <input matInput type="number" min="1" [value]="block.loopCount ?? 1"
+                         (input)="mutateBlock(block.id, +$any($event.target).value || 1, 'loopCount')" />
+                  <mat-hint>{{ 'workflow.repeat-hint' | t }}</mat-hint>
+                </mat-form-field>
+              }
+
+              @if (block.loopMode === 'for-each') {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                  <mat-label>{{ 'workflow.source-step' | t }}</mat-label>
+                  <mat-select [value]="block.loopSourceStepId ?? ''" (selectionChange)="mutateBlock(block.id, $event.value, 'loopSourceStepId')">
+                    @for (ps of previousSteps(); track ps.id) {
+                      <mat-option [value]="ps.id">{{ getStepIndex(ps.id) + 1 }}. {{ getNodeLabel(ps) }}</mat-option>
+                    }
+                  </mat-select>
+                  <mat-hint>{{ 'workflow.loop-source-hint' | t }}</mat-hint>
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                  <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
+                  <input matInput [value]="block.loopSourceField ?? ''" (input)="mutateBlock(block.id, $any($event.target).value, 'loopSourceField')" placeholder="e.g. data" />
+                  <mat-hint>{{ 'workflow.loop-field-hint' | t }}</mat-hint>
+                </mat-form-field>
+                <p class="loop-foreach-info">
+                  <mat-icon>info</mat-icon>
+                  {{ 'workflow.loop-item-hint' | t }}
+                </p>
+              }
 
               <mat-divider class="section-divider" />
               <div class="config-section-label">{{ 'workflow.body-steps' | t }}</div>
@@ -1254,6 +1288,21 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
       display: flex; gap: 6px; margin-bottom: 8px;
     }
     .body-mode-toggle button { font-size: 11px; padding: 0 10px !important; height: 30px; }
+
+    /* ── Loop mode toggle ── */
+    .loop-mode-toggle {
+      display: flex; gap: 6px; margin-bottom: 12px;
+    }
+    .loop-mode-toggle button { font-size: 11px; padding: 0 10px !important; height: 30px; }
+    .loop-foreach-info {
+      display: flex; align-items: flex-start; gap: 6px;
+      font-size: 11px; color: #64748b; margin: 4px 0 0;
+      background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px;
+      padding: 8px 10px;
+    }
+    .loop-foreach-info mat-icon {
+      font-size: 14px; width: 14px; height: 14px; color: #0284c7; flex-shrink: 0; margin-top: 1px;
+    }
     .raw-body-textarea { font-family: 'Fira Code', 'Consolas', monospace; font-size: 12px; line-height: 1.5; }
     .form-view-embed {
       border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;
@@ -1868,6 +1917,14 @@ export class WorkflowBuilderComponent implements OnInit {
     this.steps.update(ss => ss.map(s =>
       s.id === id ? { ...s, [field]: value } : s
     ));
+  }
+
+  /** Switch loop mode between 'count' and 'for-each' */
+  setLoopMode(blockId: string, mode: LoopMode) {
+    this.steps.update(ss => ss.map(s => {
+      if (s.id !== blockId || s.kind !== 'loop') return s;
+      return { ...s, loopMode: mode };
+    }));
   }
 
   addToBranch(blockId: string, branch: string, ref: EndpointRef) {

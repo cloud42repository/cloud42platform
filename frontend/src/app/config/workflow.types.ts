@@ -51,13 +51,19 @@ export interface TryCatchBlock {
   catchSteps: WorkflowNode[];
 }
 
-/** Loop control flow block — repeats body N times (or over an array from a prior step) */
+export type LoopMode = 'count' | 'for-each';
+
+/** Loop control flow block — repeats body N times OR iterates over an array from a prior step */
 export interface LoopBlock {
   id: string;
   kind: 'loop';
   label?: string;
+  /** 'count' = repeat N times, 'for-each' = iterate over response array */
+  loopMode?: LoopMode;
   loopCount?: number;
+  /** (for-each) Step whose response contains the array */
   loopSourceStepId?: string;
+  /** (for-each) Dot-notation path to the array inside the response */
   loopSourceField?: string;
   bodySteps: WorkflowNode[];
 }
