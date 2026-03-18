@@ -4,7 +4,7 @@ import { ApiService } from './api.service';
 import { UserManagementService } from './user-management.service';
 import {
   Workflow, WorkflowNode, WorkflowStep, WorkflowStatus,
-  TryCatchBlock, LoopBlock, IfElseBlock,
+  TryCatchBlock, LoopBlock, IfElseBlock, MapperBlock,
   WorkflowRunLog, WorkflowRunStepLog, PayloadSource,
 } from '../config/workflow.types';
 
@@ -209,6 +209,30 @@ export class WorkflowService {
         const ok = await this.executeNodes(branch, stepResults, branchLog);
         log.steps.push(...branchLog.steps);
         if (!ok) return false;
+
+      } else if (kind === 'mapper') {
+        const block = node as MapperBlock;
+        const result: Record<string, unknown> = {};
+        for (const mapping of block.mappings) {
+          if (mapping.source.type === 'from-step') {
+            const srcResult = stepResults.get(mapping.source.stepId);
+            result[mapping.outputField] = srcResult != null
+              ? this.getPath(srcResult, mapping.source.field)
+              : '';
+          } else {
+            result[mapping.outputField] = mapping.source.value;
+          }
+        }
+        stepResults.set(node.id, result);
+        log.steps.push({
+          stepId: node.id,
+          label: block.label || 'Mapper',
+          startedAt: new Date().toISOString(),
+          finishedAt: new Date().toISOString(),
+          resolvedParams: {},
+          response: result,
+          success: true,
+        });
       }
     }
     return true;

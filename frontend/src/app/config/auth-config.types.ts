@@ -75,3 +75,128 @@ export interface ModuleAuthSetting {
   moduleId: string;
   config: AuthConfig;
 }
+
+// ─── Service-specific config interfaces ────────────────────────────────────────
+
+/** Zoho OAuth config — shared by all 20 Zoho modules */
+export interface ZohoProductConfig {
+  clientId: string;
+  clientSecret: string;
+  refreshToken?: string;
+  accountsUrl?: string;
+  apiBaseUrl?: string;
+}
+
+/** ChatGPT / OpenAI config */
+export interface ChatGPTClientConfig {
+  apiKey: string;
+  orgId?: string;
+  baseUrl?: string;
+  timeout?: number;
+}
+
+/** Impossible Cloud config */
+export interface ImpossibleCloudConfig {
+  apiKey: string;
+  baseUrl?: string;
+  timeout?: number;
+}
+
+/** Softvalue API config */
+export interface SoftvalueClientConfig {
+  token: string;
+  baseUrl?: string;
+  timeout?: number;
+}
+
+// ─── Service config groups (for the settings UI) ───────────────────────────────
+
+export type ServiceConfigKind = 'zoho' | 'chatgpt' | 'impossible-cloud' | 'softvalue';
+
+export interface ServiceConfigField {
+  key: string;
+  label: string;
+  placeholder?: string;
+  secret?: boolean;
+  type?: 'text' | 'number';
+}
+
+export interface ServiceConfigGroup {
+  kind: ServiceConfigKind;
+  /** Unique ID used as the moduleId when persisting via AuthConfigService */
+  configId: string;
+  label: string;
+  icon: string;
+  color: string;
+  description: string;
+  /** Module IDs this config covers */
+  moduleIds: string[];
+  fields: ServiceConfigField[];
+}
+
+export const SERVICE_CONFIG_GROUPS: ServiceConfigGroup[] = [
+  {
+    kind: 'zoho',
+    configId: '__zoho__',
+    label: 'Zoho',
+    icon: 'cloud',
+    color: '#dc2626',
+    description: 'OAuth credentials shared by all Zoho modules (CRM, Books, Desk, …)',
+    moduleIds: [
+      'zoho-analytics', 'zoho-books', 'zoho-campaigns', 'zoho-cliq', 'zoho-commerce',
+      'zoho-creator', 'zoho-crm', 'zoho-desk', 'zoho-expense', 'zoho-inventory',
+      'zoho-invoice', 'zoho-mail', 'zoho-payroll', 'zoho-people', 'zoho-projects',
+      'zoho-recruit', 'zoho-salesiq', 'zoho-sign', 'zoho-subscriptions', 'zoho-workdrive',
+    ],
+    fields: [
+      { key: 'clientId',     label: 'Client ID',      placeholder: 'e.g. 1000.ABC123…' },
+      { key: 'clientSecret', label: 'Client Secret',   placeholder: '••••••••', secret: true },
+      { key: 'refreshToken', label: 'Refresh Token',   placeholder: '••••••••', secret: true },
+      { key: 'accountsUrl',  label: 'Accounts URL',    placeholder: 'https://accounts.zoho.com' },
+      { key: 'apiBaseUrl',   label: 'API Base URL',    placeholder: 'https://www.zohoapis.com' },
+    ],
+  },
+  {
+    kind: 'chatgpt',
+    configId: '__chatgpt__',
+    label: 'ChatGPT / OpenAI',
+    icon: 'smart_toy',
+    color: '#10a37f',
+    description: 'API key and settings for OpenAI ChatGPT integration',
+    moduleIds: ['chatgpt'],
+    fields: [
+      { key: 'apiKey',   label: 'API Key',          placeholder: 'sk-…', secret: true },
+      { key: 'orgId',    label: 'Organization ID',  placeholder: 'org-…' },
+      { key: 'baseUrl',  label: 'Base URL',         placeholder: 'https://api.openai.com/v1' },
+      { key: 'timeout',  label: 'Timeout (ms)',     placeholder: '60000', type: 'number' },
+    ],
+  },
+  {
+    kind: 'impossible-cloud',
+    configId: '__impossible-cloud__',
+    label: 'Impossible Cloud',
+    icon: 'cloud_queue',
+    color: '#7c3aed',
+    description: 'API key and settings for Impossible Cloud partner API',
+    moduleIds: ['impossible-cloud'],
+    fields: [
+      { key: 'apiKey',   label: 'API Key',      placeholder: '••••••••', secret: true },
+      { key: 'baseUrl',  label: 'Base URL',     placeholder: 'https://api.partner.impossiblecloud.com/v1' },
+      { key: 'timeout',  label: 'Timeout (ms)', placeholder: '30000', type: 'number' },
+    ],
+  },
+  {
+    kind: 'softvalue',
+    configId: '__softvalue__',
+    label: 'Softvalue',
+    icon: 'token',
+    color: '#0284c7',
+    description: 'Bearer token and settings for the Softvalue API',
+    moduleIds: ['softvalue'],
+    fields: [
+      { key: 'token',    label: 'Bearer Token', placeholder: '••••••••', secret: true },
+      { key: 'baseUrl',  label: 'Base URL',     placeholder: 'https://api.softvalue.com/v1' },
+      { key: 'timeout',  label: 'Timeout (ms)', placeholder: '30000', type: 'number' },
+    ],
+  },
+];

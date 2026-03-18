@@ -16,10 +16,10 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatBadgeModule } from '@angular/material/badge';
 
-import { MODULES, ModuleDef } from '../../config/endpoints';
+import { MODULES } from '../../config/endpoints';
 import {
-  AuthType, AuthConfig,
-  AUTH_TYPE_LABELS, AUTH_TYPE_FIELDS, AUTH_FIELD_LABELS,
+  AuthConfig,
+  SERVICE_CONFIG_GROUPS, ServiceConfigGroup,
 } from '../../config/auth-config.types';
 import { AuthConfigService } from '../../services/auth-config.service';
 import { ModuleVisibilityService } from '../../services/module-visibility.service';
@@ -27,11 +27,12 @@ import { UserManagementService } from '../../services/user-management.service';
 import { UserRole, USER_ROLE_LABELS, StoredUser } from '../../config/user.types';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 
-interface ModuleAuthState {
-  module: ModuleDef;
-  config: AuthConfig;
+export interface ServiceGroupState {
+  group: ServiceConfigGroup;
+  values: Record<string, string>;
   showSecrets: Record<string, boolean>;
   dirty: boolean;
+  hasValue: boolean;
 }
 
 @Component({
@@ -78,92 +79,85 @@ interface ModuleAuthState {
             <!-- Summary chips -->
             <div class="summary-row">
               <span class="summary-label">{{ 'settings.configured' | t }}</span>
-              @for (s of states; track s.module.id) {
-                @if (s.config.type !== 'none') {
-                  <span class="summary-chip" [style.background]="moduleColor(s.module.id)">
-                    <mat-icon class="chip-icon">{{ s.module.icon }}</mat-icon>
-                    {{ s.module.label }}
+              @for (sg of serviceGroups; track sg.group.configId) {
+                @if (sg.hasValue) {
+                  <span class="summary-chip" [style.background]="sg.group.color">
+                    <mat-icon class="chip-icon">{{ sg.group.icon }}</mat-icon>
+                    {{ sg.group.label }}
                   </span>
                 }
               }
-              @if (configuredCount() === 0) {
+              @if (configuredServiceCount() === 0) {
                 <span class="summary-empty">{{ 'settings.none-yet' | t }}</span>
               }
             </div>
 
-            <!-- Expansion panel per module -->
+            <!-- One expansion panel per service config group -->
             <mat-accordion multi>
-              @for (state of states; track state.module.id) {
-                <mat-expansion-panel class="module-panel" [class.panel-configured]="state.config.type !== 'none'">
+              @for (sg of serviceGroups; track sg.group.configId) {
+                <mat-expansion-panel class="module-panel" [class.panel-configured]="sg.hasValue"
+                  [style.border-left-color]="sg.hasValue ? sg.group.color : 'transparent'">
                   <mat-expansion-panel-header>
                     <mat-panel-title class="panel-title">
-                      <mat-icon class="module-icon">{{ state.module.icon }}</mat-icon>
-                      <span>{{ state.module.label }}</span>
+                      <mat-icon class="module-icon" [style.color]="sg.group.color">{{ sg.group.icon }}</mat-icon>
+                      <span>{{ sg.group.label }}</span>
                     </mat-panel-title>
                     <mat-panel-description class="panel-desc">
-                      @if (state.config.type === 'none') {
+                      @if (!sg.hasValue) {
                         <span class="badge badge-none">Not configured</span>
                       } @else {
                         <span class="badge badge-ok">
                           <mat-icon class="badge-icon">check_circle</mat-icon>
-                          {{ authTypeLabel(state.config.type) }}
+                          Configured
                         </span>
                       }
-                      @if (state.dirty) {
+                      @if (sg.dirty) {
                         <span class="badge badge-dirty">Unsaved</span>
                       }
                     </mat-panel-description>
                   </mat-expansion-panel-header>
 
-                  <!-- Panel content -->
                   <div class="panel-body">
+                    <p class="service-desc">{{ sg.group.description }}</p>
 
-                    <!-- Auth type selector -->
-                    <mat-form-field appearance="outline" class="field-wide">
-                      <mat-label>Authentication Type</mat-label>
-                      <mat-select
-                        [(ngModel)]="state.config.type"
-                        (ngModelChange)="onTypeChange(state)">
-                        @for (opt of authTypeOptions; track opt.value) {
-                          <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
-                        }
-                      </mat-select>
-                    </mat-form-field>
-
-                    <!-- Dynamic fields -->
-                    @if (state.config.type !== 'none') {
-                      <div class="fields-grid">
-                        @for (field of fieldsFor(state.config.type); track field) {
-                          <mat-form-field appearance="outline" class="field-item">
-                            <mat-label>{{ fieldMeta(field).label }}</mat-label>
-                            <input
-                              matInput
-                              [type]="fieldInputType(field, state)"
-                              [placeholder]="fieldMeta(field).placeholder || ''"
-                              [(ngModel)]="$any(state.config)[field]"
-                              (ngModelChange)="state.dirty = true"
-                            />
-                            @if (fieldMeta(field).secret) {
-                              <button mat-icon-button matSuffix
-                                type="button"
-                                (click)="toggleSecret(state, field)"
-                                [matTooltip]="state.showSecrets[field] ? 'Hide' : 'Show'">
-                                <mat-icon>{{ state.showSecrets[field] ? 'visibility_off' : 'visibility' }}</mat-icon>
-                              </button>
-                            }
-                          </mat-form-field>
+                    @if (sg.group.moduleIds.length > 1) {
+                      <div class="covers-modules">
+                        <span class="covers-label">Covers:</span>
+                        @for (mid of sg.group.moduleIds; track mid) {
+                          <span class="covers-chip">{{ getModuleLabel(mid) }}</span>
                         }
                       </div>
                     }
 
-                    <!-- Panel actions -->
+                    <div class="fields-grid">
+                      @for (field of sg.group.fields; track field.key) {
+                        <mat-form-field appearance="outline" class="field-item">
+                          <mat-label>{{ field.label }}</mat-label>
+                          <input
+                            matInput
+                            [type]="serviceFieldInputType(field, sg)"
+                            [placeholder]="field.placeholder || ''"
+                            [value]="sg.values[field.key] ?? ''"
+                            (input)="onServiceFieldChange(sg, field.key, $any($event.target).value)"
+                          />
+                          @if (field.secret) {
+                            <button mat-icon-button matSuffix type="button"
+                              (click)="toggleServiceSecret(sg, field.key)"
+                              [matTooltip]="sg.showSecrets[field.key] ? 'Hide' : 'Show'">
+                              <mat-icon>{{ sg.showSecrets[field.key] ? 'visibility_off' : 'visibility' }}</mat-icon>
+                            </button>
+                          }
+                        </mat-form-field>
+                      }
+                    </div>
+
                     <div class="panel-actions">
-                      <button mat-stroked-button color="warn" (click)="clearConfig(state)"
-                        [disabled]="state.config.type === 'none' && !state.dirty">
+                      <button mat-stroked-button color="warn" (click)="clearServiceConfig(sg)"
+                        [disabled]="!sg.hasValue && !sg.dirty">
                         <mat-icon>delete_outline</mat-icon>
                         {{ 'settings.clear' | t }}
                       </button>
-                      <button mat-flat-button color="primary" (click)="saveOne(state)" [disabled]="!state.dirty">
+                      <button mat-flat-button color="primary" (click)="saveServiceConfig(sg)" [disabled]="!sg.dirty">
                         <mat-icon>save</mat-icon>
                         {{ 'settings.save' | t }}
                       </button>
@@ -497,6 +491,34 @@ interface ModuleAuthState {
       border-top: 1px solid #f1f5f9;
     }
 
+    /* ── Service config extras ── */
+    .service-desc {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin: 0 0 12px;
+    }
+    .covers-modules {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .covers-label {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+    .covers-chip {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      background: #f1f5f9;
+      color: #475569;
+    }
+
     /* ── General tab ── */
     .general-section {
       padding: 20px 0 0;
@@ -662,12 +684,9 @@ export class SettingsComponent implements OnInit {
   readonly userMgmt = inject(UserManagementService);
 
   readonly allModules = MODULES;
-  states: ModuleAuthState[] = [];
 
-  readonly authTypeOptions = Object.entries(AUTH_TYPE_LABELS).map(([value, label]) => ({
-    value: value as AuthType,
-    label,
-  }));
+  /** Service-specific config groups (Zoho, ChatGPT, Impossible Cloud, Softvalue) */
+  serviceGroups: ServiceGroupState[] = [];
 
   readonly roleOptions: { value: UserRole; label: string }[] = [
     { value: 'admin', label: 'Admin' },
@@ -686,20 +705,23 @@ export class SettingsComponent implements OnInit {
 
   private async initAsync(): Promise<void> {
     await this.svc.loadAll();
-    this.states = MODULES.map((mod) => ({
-      module: mod,
-      config: { ...this.svc.getConfig(mod.id) },
-      showSecrets: {},
-      dirty: false,
-    }));
+    this.serviceGroups = SERVICE_CONFIG_GROUPS.map((group) => {
+      const saved = this.svc.getConfig(group.configId);
+      const values: Record<string, string> = {};
+      for (const field of group.fields) {
+        values[field.key] = (saved as unknown as Record<string, string>)?.[field.key] ?? '';
+      }
+      const hasValue = group.fields.some(f => !!values[f.key]);
+      return { group, values, showSecrets: {}, dirty: false, hasValue };
+    });
   }
 
-  configuredCount(): number {
-    return this.states.filter(s => s.config.type !== 'none').length;
+  configuredServiceCount(): number {
+    return this.serviceGroups.filter(sg => sg.hasValue).length;
   }
 
   hasAnyDirty(): boolean {
-    return this.states.some(s => s.dirty);
+    return this.serviceGroups.some(sg => sg.dirty);
   }
 
   moduleColor(id: string): string {
@@ -707,75 +729,80 @@ export class SettingsComponent implements OnInit {
     return this.PALETTE[idx % this.PALETTE.length];
   }
 
-  authTypeLabel(type: AuthType): string {
-    return AUTH_TYPE_LABELS[type] ?? type;
+  getModuleLabel(moduleId: string): string {
+    return MODULES.find(m => m.id === moduleId)?.label ?? moduleId;
   }
 
-  fieldsFor(type: AuthType): string[] {
-    return AUTH_TYPE_FIELDS[type] ?? [];
-  }
+  // ── Service config helpers ──────────────────────────────────────────────
 
-  fieldMeta(field: string) {
-    return AUTH_FIELD_LABELS[field] ?? { label: field };
-  }
-
-  fieldInputType(field: string, state: ModuleAuthState): string {
-    const meta = AUTH_FIELD_LABELS[field];
-    if (meta?.secret && !state.showSecrets[field]) return 'password';
+  serviceFieldInputType(field: { key: string; secret?: boolean; type?: string }, sg: ServiceGroupState): string {
+    if (field.type === 'number') return 'number';
+    if (field.secret && !sg.showSecrets[field.key]) return 'password';
     return 'text';
   }
 
-  toggleSecret(state: ModuleAuthState, field: string): void {
-    state.showSecrets[field] = !state.showSecrets[field];
+  toggleServiceSecret(sg: ServiceGroupState, key: string): void {
+    sg.showSecrets[key] = !sg.showSecrets[key];
   }
 
-  onTypeChange(state: ModuleAuthState): void {
-    // Keep type but clear unrelated fields so old secrets don't linger
-    const type = state.config.type;
-    state.config = { type };
-    state.showSecrets = {};
-    state.dirty = true;
+  onServiceFieldChange(sg: ServiceGroupState, key: string, value: string): void {
+    sg.values[key] = value;
+    sg.dirty = true;
   }
 
-  async saveOne(state: ModuleAuthState): Promise<void> {
+  async saveServiceConfig(sg: ServiceGroupState): Promise<void> {
     try {
-      await this.svc.saveConfig(state.module.id, { ...state.config });
-      state.dirty = false;
-      this.snack.open(`✓ ${state.module.label} auth saved`, '', { duration: 2500 });
+      const config: Record<string, unknown> = { type: 'none' };
+      for (const field of sg.group.fields) {
+        const val = sg.values[field.key];
+        if (val !== undefined && val !== '') {
+          config[field.key] = field.type === 'number' ? Number(val) : val;
+        }
+      }
+      await this.svc.saveConfig(sg.group.configId, config as unknown as AuthConfig);
+      sg.dirty = false;
+      sg.hasValue = sg.group.fields.some(f => !!sg.values[f.key]);
+      this.snack.open(`✓ ${sg.group.label} config saved`, '', { duration: 2500 });
     } catch {
-      this.snack.open(`✗ Failed to save ${state.module.label}`, '', { duration: 3000 });
+      this.snack.open(`✗ Failed to save ${sg.group.label}`, '', { duration: 3000 });
     }
   }
 
   async saveAll(): Promise<void> {
     let count = 0;
-    for (const s of this.states) {
-      if (s.dirty) {
+    for (const sg of this.serviceGroups) {
+      if (sg.dirty) {
         try {
-          await this.svc.saveConfig(s.module.id, { ...s.config });
-          s.dirty = false;
+          const config: Record<string, unknown> = { type: 'none' };
+          for (const field of sg.group.fields) {
+            const val = sg.values[field.key];
+            if (val !== undefined && val !== '') {
+              config[field.key] = field.type === 'number' ? Number(val) : val;
+            }
+          }
+          await this.svc.saveConfig(sg.group.configId, config as unknown as AuthConfig);
+          sg.dirty = false;
+          sg.hasValue = sg.group.fields.some(f => !!sg.values[f.key]);
           count++;
         } catch {
-          this.snack.open(`✗ Failed to save ${s.module.label}`, '', { duration: 3000 });
+          this.snack.open(`✗ Failed to save ${sg.group.label}`, '', { duration: 3000 });
         }
       }
     }
-    this.snack.open(`✓ Saved ${count} auth configuration${count !== 1 ? 's' : ''}`, '', { duration: 3000 });
+    this.snack.open(`✓ Saved ${count} configuration${count !== 1 ? 's' : ''}`, '', { duration: 3000 });
   }
 
-  async clearConfig(state: ModuleAuthState): Promise<void> {
+  async clearServiceConfig(sg: ServiceGroupState): Promise<void> {
     try {
-      await this.svc.deleteConfig(state.module.id);
-      state.config = { type: 'none' };
-      state.showSecrets = {};
-      state.dirty = false;
-      this.snack.open(`✓ ${state.module.label} auth cleared`, '', { duration: 2500 });
-    } catch {
-      // If delete fails (e.g. didn't exist), still clear locally
-      state.config = { type: 'none' };
-      state.showSecrets = {};
-      state.dirty = false;
+      await this.svc.deleteConfig(sg.group.configId);
+    } catch { /* ignore if didn't exist */ }
+    for (const field of sg.group.fields) {
+      sg.values[field.key] = '';
     }
+    sg.showSecrets = {};
+    sg.dirty = false;
+    sg.hasValue = false;
+    this.snack.open(`✓ ${sg.group.label} config cleared`, '', { duration: 2500 });
   }
 
   /* ── General tab helpers ── */

@@ -25,13 +25,13 @@ import {
 import { MODULES, ModuleDef, EndpointDef, extractPathParams } from '../../config/endpoints';
 import { WorkflowService } from '../../services/workflow.service';
 import {
-  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock, PayloadSource, StepKind, BodyMode,
+  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock, MapperBlock, FieldMapping, PayloadSource, StepKind, BodyMode,
 } from '../../config/workflow.types';
 import { FormViewComponent } from '../../shared/form-view/form-view.component';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 
 interface EndpointRef { module: ModuleDef; endpoint: EndpointDef; }
-interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string; icon: string; color: string; }
+interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; label: string; icon: string; color: string; }
 
 @Component({
   selector: 'app-workflow-builder',
@@ -120,6 +120,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
                id="controlFlowList"
                [cdkDropListData]="controlFlowItems"
                [cdkDropListConnectedTo]="allBranchDropIds()"
+               [cdkDropListSortingDisabled]="true"
                (cdkDropListDropped)="onBrowserDrop($event)">
             @for (item of controlFlowItems; track item.kind) {
               <div class="cf-item"
@@ -470,6 +471,37 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
                   </div>
                 }
 
+                <!-- ── MAPPER BLOCK ── -->
+                @if (node.kind === 'mapper') {
+                  @let block = asMapper(node);
+                  <div class="block-card block-card--mapper" (click)="selectStep(node.id)">
+                    <div class="block-header">
+                      <mat-icon class="block-icon">swap_horiz</mat-icon>
+                      <span class="block-title">{{ block.label || ('workflow.mapper' | t) }}</span>
+                      <span class="block-badge">{{ block.mappings.length }} {{ 'workflow.mappings' | t }}</span>
+                      <div class="step-card-actions" (click)="$event.stopPropagation()">
+                        <button mat-icon-button (click)="selectStep(node.id)" matTooltip="{{ 'workflow.configure-step' | t }}">
+                          <mat-icon>settings</mat-icon>
+                        </button>
+                        <button mat-icon-button (click)="removeStep(node.id)" color="warn" matTooltip="{{ 'workflow.remove-step' | t }}">
+                          <mat-icon>delete_outline</mat-icon>
+                        </button>
+                        <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
+                      </div>
+                    </div>
+                    @if (block.mappings.length > 0) {
+                      <div class="mapper-preview">
+                        @for (m of block.mappings; track $index) {
+                          <div class="mapper-preview-row">
+                            <mat-icon class="mapper-arrow-icon">arrow_right_alt</mat-icon>
+                            <span class="mapper-output-field">{{ m.outputField || '?' }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+
                 <!-- DnD extras -->
                 <div *cdkDragPlaceholder class="drag-placeholder-canvas"></div>
 
@@ -505,6 +537,9 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
             } @else if (selectedStep()!.kind === 'if-else') {
               <mat-icon style="color:#0284c7">call_split</mat-icon>
               <span class="config-title">{{ asIfElse(selectedStep()!).label || ('workflow.if-else' | t) }}</span>
+            } @else if (selectedStep()!.kind === 'mapper') {
+              <mat-icon style="color:#059669">swap_horiz</mat-icon>
+              <span class="config-title">{{ asMapper(selectedStep()!).label || ('workflow.mapper' | t) }}</span>
             }
             <button mat-icon-button (click)="selectedStepId.set(null)" style="margin-left:auto">
               <mat-icon>close</mat-icon>
@@ -854,6 +889,55 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
                   </mat-select>
                 </mat-form-field>
               </div>
+            }
+
+            <!-- ── MAPPER CONFIG ─────────────────────────────────────────── -->
+            @if (selectedStep()!.kind === 'mapper') {
+              @let block = asMapper(selectedStep()!);
+              <div class="config-section-label">{{ 'workflow.label' | t }}</div>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'workflow.block-label' | t }}</mat-label>
+                <input matInput [value]="block.label ?? ''" (input)="mutateBlock(block.id, $any($event.target).value, 'label')" placeholder="e.g. Build contact payload" />
+              </mat-form-field>
+
+              <mat-divider class="section-divider" />
+              <div class="config-section-label">{{ 'workflow.mappings' | t }}</div>
+
+              @for (m of block.mappings; track $index; let idx = $index) {
+                <div class="mapper-row">
+                  <div class="mapper-row-header">
+                    <span class="mapper-row-num">#{{ idx + 1 }}</span>
+                    <button mat-icon-button (click)="removeMapping(block.id, idx)" color="warn" matTooltip="{{ 'workflow.remove-mapping' | t }}">
+                      <mat-icon>remove_circle_outline</mat-icon>
+                    </button>
+                  </div>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                    <mat-label>{{ 'workflow.output-field' | t }}</mat-label>
+                    <input matInput [value]="m.outputField" (input)="updateMapping(block.id, idx, 'outputField', $any($event.target).value)" placeholder="e.g. contact_name" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                    <mat-label>{{ 'workflow.source-step' | t }}</mat-label>
+                    <mat-select [value]="m.source.type === 'from-step' ? m.source.stepId : ''" (selectionChange)="updateMappingSource(block.id, idx, $event.value, m.source.type === 'from-step' ? m.source.field : '')">
+                      @for (ps of previousSteps(); track ps.id) {
+                        <mat-option [value]="ps.id">{{ getStepIndex(ps.id) + 1 }}. {{ getNodeLabel(ps) }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                    <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
+                    <input matInput [value]="m.source.type === 'from-step' ? m.source.field : ''" (input)="updateMappingSource(block.id, idx, m.source.type === 'from-step' ? m.source.stepId : '', $any($event.target).value)" placeholder="e.g. data.first_name" />
+                    <mat-hint>{{ 'workflow.dot-notation-hint' | t }}</mat-hint>
+                  </mat-form-field>
+                </div>
+              }
+
+              @if (block.mappings.length === 0) {
+                <p class="branch-empty">{{ 'workflow.no-mappings' | t }}</p>
+              }
+
+              <button mat-stroked-button class="add-mapping-btn" (click)="addMapping(block.id)" [disabled]="previousSteps().length === 0">
+                <mat-icon>add</mat-icon> {{ 'workflow.add-mapping' | t }}
+              </button>
             }
 
           </div>
@@ -1369,6 +1453,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
     .block-card--try { border-left: 3px solid #f59e0b !important; }
     .block-card--loop { border-left: 3px solid #8b5cf6 !important; }
     .block-card--ifelse { border-left: 3px solid #0284c7 !important; }
+    .block-card--mapper { border-left: 3px solid #059669 !important; }
 
     .block-header {
       display: flex; align-items: center; gap: 8px; padding: 8px 12px;
@@ -1408,6 +1493,26 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else'; label: string
     .branch-empty { font-size: 11px; color: #94a3b8; margin: 0; padding: 8px 0; }
     .add-inner-step-row { margin-top: 4px; }
     .add-inner-step-row mat-form-field { width: 100%; }
+
+    /* ── Mapper preview on canvas card ── */
+    .mapper-preview { padding: 4px 12px 8px; border-top: 1px solid #e2e8f0; }
+    .mapper-preview-row {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; color: #475569; padding: 1px 0;
+    }
+    .mapper-arrow-icon { font-size: 14px; width: 14px; height: 14px; color: #059669; }
+    .mapper-output-field { font-family: monospace; font-weight: 600; }
+
+    /* ── Mapper config rows ── */
+    .mapper-row {
+      border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;
+      margin-bottom: 10px; background: #f8fafc;
+    }
+    .mapper-row-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
+    }
+    .mapper-row-num { font-size: 11px; font-weight: 700; color: #059669; }
+    .add-mapping-btn { margin-top: 4px; }
 
     /* CDK drag active */
     .cdk-drag-animating { transition: transform 250ms cubic-bezier(0,0,.2,1); }
@@ -1507,6 +1612,7 @@ export class WorkflowBuilderComponent implements OnInit {
     { kind: 'try-catch', label: 'Try / Catch', icon: 'shield',     color: '#f59e0b' },
     { kind: 'loop',      label: 'Loop',        icon: 'loop',       color: '#8b5cf6' },
     { kind: 'if-else',   label: 'If / Else',   icon: 'call_split', color: '#0284c7' },
+    { kind: 'mapper',    label: 'Mapper',       icon: 'swap_horiz', color: '#059669' },
   ];
 
   // ── Browser state ─────────────────────────────────────────────────────────
@@ -1575,6 +1681,7 @@ export class WorkflowBuilderComponent implements OnInit {
   }
 
   onCanvasDrop(event: CdkDragDrop<WorkflowNode[]>) {
+    console.log('[workflow] onCanvasDrop', event.item.data);
     if (event.previousContainer === event.container) {
       // Reorder within canvas
       const arr = [...this.steps()];
@@ -1629,6 +1736,8 @@ export class WorkflowBuilderComponent implements OnInit {
       return { id, kind: 'try-catch', trySteps: [], catchSteps: [] } as TryCatchBlock;
     } else if (ref.kind === 'loop') {
       return { id, kind: 'loop', loopCount: 1, bodySteps: [] } as LoopBlock;
+    } else if (ref.kind === 'mapper') {
+      return { id, kind: 'mapper', mappings: [] } as MapperBlock;
     } else {
       return { id, kind: 'if-else', conditionOperator: '==', thenSteps: [], elseSteps: [] } as IfElseBlock;
     }
@@ -1724,12 +1833,14 @@ export class WorkflowBuilderComponent implements OnInit {
   asTryCatch(node: WorkflowNode): TryCatchBlock { return node as TryCatchBlock; }
   asLoop(node: WorkflowNode): LoopBlock         { return node as LoopBlock; }
   asIfElse(node: WorkflowNode): IfElseBlock     { return node as IfElseBlock; }
+  asMapper(node: WorkflowNode): MapperBlock     { return node as MapperBlock; }
 
   getNodeLabel(node: WorkflowNode): string {
     if (node.kind === 'endpoint') return (node as WorkflowStep).endpointLabel;
     if (node.kind === 'try-catch') return (node as TryCatchBlock).label || 'Try / Catch';
     if (node.kind === 'loop') return (node as LoopBlock).label || 'Loop';
     if (node.kind === 'if-else') return (node as IfElseBlock).label || 'If / Else';
+    if (node.kind === 'mapper') return (node as MapperBlock).label || 'Mapper';
     return 'Step';
   }
 
@@ -1775,6 +1886,46 @@ export class WorkflowBuilderComponent implements OnInit {
       const block = s as unknown as Record<string, unknown>;
       const existing = (block[branch] as WorkflowNode[]) ?? [];
       return { ...s, [branch]: existing.filter(n => n.id !== stepId) };
+    }));
+  }
+
+  // ── Mapper mapping helpers ────────────────────────────────────────────────
+  addMapping(blockId: string) {
+    this.steps.update(ss => ss.map(s => {
+      if (s.id !== blockId || s.kind !== 'mapper') return s;
+      const block = s as MapperBlock;
+      const newMapping: FieldMapping = { outputField: '', source: { type: 'from-step', stepId: '', field: '' } };
+      return { ...block, mappings: [...block.mappings, newMapping] };
+    }));
+  }
+
+  removeMapping(blockId: string, index: number) {
+    this.steps.update(ss => ss.map(s => {
+      if (s.id !== blockId || s.kind !== 'mapper') return s;
+      const block = s as MapperBlock;
+      return { ...block, mappings: block.mappings.filter((_, i) => i !== index) };
+    }));
+  }
+
+  updateMapping(blockId: string, index: number, field: string, value: string) {
+    this.steps.update(ss => ss.map(s => {
+      if (s.id !== blockId || s.kind !== 'mapper') return s;
+      const block = s as MapperBlock;
+      const mappings = block.mappings.map((m, i) =>
+        i === index ? { ...m, [field]: value } : m
+      );
+      return { ...block, mappings };
+    }));
+  }
+
+  updateMappingSource(blockId: string, index: number, stepId: string, field: string) {
+    this.steps.update(ss => ss.map(s => {
+      if (s.id !== blockId || s.kind !== 'mapper') return s;
+      const block = s as MapperBlock;
+      const mappings = block.mappings.map((m, i) =>
+        i === index ? { ...m, source: { type: 'from-step' as const, stepId, field } } : m
+      );
+      return { ...block, mappings };
     }));
   }
 

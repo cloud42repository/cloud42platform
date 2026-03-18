@@ -7,7 +7,7 @@ export type PayloadSource =
   | { type: 'from-step'; stepId: string; field: string };
 
 /** Discriminator for workflow canvas nodes */
-export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else';
+export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else' | 'mapper';
 
 /** How the request body is configured for a POST / PUT / PATCH step */
 export type BodyMode = 'fields' | 'text' | 'form';
@@ -75,8 +75,29 @@ export interface IfElseBlock {
   elseSteps: WorkflowNode[];
 }
 
+/** Field mapping: read a value from a source step and write it to a named output field */
+export interface FieldMapping {
+  /** Output field name in the produced payload (e.g. "contact_name") */
+  outputField: string;
+  /** Where to read the value from */
+  source: PayloadSource;
+}
+
+/**
+ * Mapper block — transforms a previous step's response into a new payload.
+ * Each mapping reads a field from a source step and writes it under a new key.
+ * The assembled object is stored as this block's result so later POST/PUT/PATCH
+ * steps can reference it via "from-step".
+ */
+export interface MapperBlock {
+  id: string;
+  kind: 'mapper';
+  label?: string;
+  mappings: FieldMapping[];
+}
+
 /** Any top-level canvas node (endpoint step or control-flow block) */
-export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock;
+export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock | MapperBlock;
 
 export type WorkflowStatus = 'draft' | 'scheduled' | 'running' | 'completed' | 'failed';
 
