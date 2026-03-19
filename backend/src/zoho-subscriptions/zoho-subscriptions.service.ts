@@ -1,14 +1,21 @@
-﻿import { Injectable } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AuthConfigService } from '../auth-config/auth-config.service';
+import { getCurrentUserEmail } from '../auth-module/user-context';
 import { ZohoSubscriptionsClient } from './ZohoSubscriptionsClient';
 import type { ZohoRegion } from '../base/types';
 
 @Injectable()
 export class ZohoSubscriptionsService {
-  readonly client: ZohoSubscriptionsClient;
+  private readonly logger = new Logger(ZohoSubscriptionsService.name);
+  private readonly defaultClient: ZohoSubscriptionsClient;
+  private readonly clients = new Map<string, { client: ZohoSubscriptionsClient; expiresAt: number }>();
 
-  constructor(private readonly config: ConfigService) {
-    this.client = new ZohoSubscriptionsClient({
+  constructor(
+    private readonly config: ConfigService,
+    private readonly authConfigService: AuthConfigService,
+  ) {
+    this.defaultClient = new ZohoSubscriptionsClient({
       clientId: config.getOrThrow('ZOHO_CLIENT_ID'),
       clientSecret: config.getOrThrow('ZOHO_CLIENT_SECRET'),
       refreshToken: config.getOrThrow('ZOHO_REFRESH_TOKEN'),
@@ -18,28 +25,55 @@ export class ZohoSubscriptionsService {
     });
   }
 
-  listPlans(params?: Record<string, unknown>) { return this.client.listPlans(params as any); }
-  getPlan(code: string) { return this.client.getPlan(code); }
-  createPlan(data: unknown) { return this.client.createPlan(data as any); }
-  updatePlan(code: string, data: unknown) { return this.client.updatePlan(code, data as any); }
-  deletePlan(code: string) { return this.client.deletePlan(code); }
+  private async getClient(): Promise<ZohoSubscriptionsClient> {
+    const email = getCurrentUserEmail();
+    if (!email || email === 'anonymous') return this.defaultClient;
+    const cached = this.clients.get(email);
+    if (cached && cached.expiresAt > Date.now()) return cached.client;
+    try {
+      const row = await this.authConfigService.findOne(email, '__zoho__');
+      if (row?.config) {
+        const c = row.config as unknown as Record<string, unknown>;
+        if (c['clientId'] && c['clientSecret']) {
+          const client = new ZohoSubscriptionsClient({
+            clientId: c['clientId'] as string,
+            clientSecret: c['clientSecret'] as string,
+            refreshToken: (c['refreshToken'] as string) ?? this.config.getOrThrow('ZOHO_REFRESH_TOKEN'),
+            accountsUrl: (c['accountsUrl'] as string) ?? this.config.get('ZOHO_ACCOUNTS_URL'),
+            region: (this.config.get<string>('ZOHO_REGION') as ZohoRegion) ?? 'com',
+            organizationId: this.config.get('ZOHO_ORGANIZATION_ID') ?? '',
+          });
+          this.clients.set(email, { client, expiresAt: Date.now() + 10 * 60_000 });
+          this.logger.log(`Created per-user Zoho Subscriptions client for ${email}`);
+          return client;
+        }
+      }
+    } catch { /* fall through */ }
+    return this.defaultClient;
+  }
 
-  listAddons() { return this.client.listAddons(); }
-  getAddon(code: string) { return this.client.getAddon(code); }
+  async listPlans(params?: Record<string, unknown>) { return (await this.getClient()).listPlans(params as any); }
+  async getPlan(code: string) { return (await this.getClient()).getPlan(code); }
+  async createPlan(data: unknown) { return (await this.getClient()).createPlan(data as any); }
+  async updatePlan(code: string, data: unknown) { return (await this.getClient()).updatePlan(code, data as any); }
+  async deletePlan(code: string) { return (await this.getClient()).deletePlan(code); }
 
-  listCoupons() { return this.client.listCoupons(); }
-  getCoupon(code: string) { return this.client.getCoupon(code); }
+  async listAddons() { return (await this.getClient()).listAddons(); }
+  async getAddon(code: string) { return (await this.getClient()).getAddon(code); }
 
-  listCustomers(params?: Record<string, unknown>) { return this.client.listCustomers(params as any); }
-  getCustomer(id: string) { return this.client.getCustomer(id); }
-  createCustomer(data: unknown) { return this.client.createCustomer(data as any); }
-  updateCustomer(id: string, data: unknown) { return this.client.updateCustomer(id, data as any); }
-  deleteCustomer(id: string) { return this.client.deleteCustomer(id); }
+  async listCoupons() { return (await this.getClient()).listCoupons(); }
+  async getCoupon(code: string) { return (await this.getClient()).getCoupon(code); }
 
-  listSubscriptions(params?: Record<string, unknown>) { return this.client.listSubscriptions(params as any); }
-  getSubscription(id: string) { return this.client.getSubscription(id); }
-  createSubscription(data: unknown) { return this.client.createSubscription(data as any); }
-  updateSubscription(id: string, data: unknown) { return this.client.updateSubscription(id, data as any); }
-  cancelSubscription(id: string) { return this.client.cancelSubscription(id); }
-  reactivateSubscription(id: string) { return this.client.reactivateSubscription(id); }
+  async listCustomers(params?: Record<string, unknown>) { return (await this.getClient()).listCustomers(params as any); }
+  async getCustomer(id: string) { return (await this.getClient()).getCustomer(id); }
+  async createCustomer(data: unknown) { return (await this.getClient()).createCustomer(data as any); }
+  async updateCustomer(id: string, data: unknown) { return (await this.getClient()).updateCustomer(id, data as any); }
+  async deleteCustomer(id: string) { return (await this.getClient()).deleteCustomer(id); }
+
+  async listSubscriptions(params?: Record<string, unknown>) { return (await this.getClient()).listSubscriptions(params as any); }
+  async getSubscription(id: string) { return (await this.getClient()).getSubscription(id); }
+  async createSubscription(data: unknown) { return (await this.getClient()).createSubscription(data as any); }
+  async updateSubscription(id: string, data: unknown) { return (await this.getClient()).updateSubscription(id, data as any); }
+  async cancelSubscription(id: string) { return (await this.getClient()).cancelSubscription(id); }
+  async reactivateSubscription(id: string) { return (await this.getClient()).reactivateSubscription(id); }
 }

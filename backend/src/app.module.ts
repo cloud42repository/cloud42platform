@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { UserContextInterceptor } from './auth-module/user-context';
 
 import { AuthModule } from './auth-module/auth.module';
 import { ZohoCrmModule } from './zoho-crm/zoho-crm.module';
@@ -61,6 +63,9 @@ import { AuthConfigModule } from './auth-config/auth-config.module';
     UserModule,
     WorkflowModule,
     AuthConfigModule,
+  ],
+  providers: [
+    { provide: APP_INTERCEPTOR, useClass: UserContextInterceptor },
   ],
 })
 export class AppModule {}

@@ -1,0 +1,1104 @@
+﻿node.exe : (node:47868) DeprecationWarning: Calling client.query() when the 
+client is already executing a query is deprecated and will be removed in 
+pg@9.0. Use async/await or an external async flow control mechanism instead.
+Au caractère 
+C:\SAPDevelop\cloud42Platform\backend\node_modules\.bin\jest.ps1:24 : 5
++     & "node$exe"  "$basedir/../jest/bin/jest.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:47868) De...hanism instead. 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:27116) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:45768) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:35308) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS src/__tests__/controllers/zoho-salesiq.controller.e2e-spec.ts (93.61 s)
+  ZohoSalesIQController (e2e)
+    ΓêÜ should be defined (97 ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/visitors ΓåÆ listVisitors() (120 ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/visitors/:visitorId ΓåÆ getVisitor() 
+(106 ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/visitors/search ΓåÆ searchVisitors() 
+(110 ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/chats ΓåÆ listChats() (100 ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/chats/:chatId ΓåÆ getChat() (96 ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/chats/:chatId/messages ΓåÆ 
+listChatMessages() (106 ms)
+    ΓêÜ POST /zoho-salesiq/:screenName/chats/:chatId/messages ΓåÆ 
+sendChatMessage() (106 ms)
+    ΓêÜ POST /zoho-salesiq/:screenName/chats/:chatId/rating ΓåÆ setRating() 
+(117 ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/operators ΓåÆ listOperators() (121 ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/operators/:operatorId ΓåÆ getOperator() 
+(101 ms)
+    ΓêÜ POST /zoho-salesiq/:screenName/operators/:operatorId/availability ΓåÆ 
+setOperatorAvailability() (107 ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/departments ΓåÆ listDepartments() (111 
+ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/departments/:id ΓåÆ getDepartment() (95 
+ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/bots ΓåÆ listBots() (93 ms)
+    ΓêÜ POST /zoho-salesiq/:screenName/bots/:botId/messages ΓåÆ 
+sendBotMessage() (94 ms)
+    ΓêÜ GET /zoho-salesiq/:screenName/feedback-forms ΓåÆ listFeedbackForms() 
+(97 ms)
+
+(node:48712) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:14808) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+FAIL src/__tests__/controllers/user.controller.e2e-spec.ts (93.99 s)
+  UserController (e2e)
+    ΓêÜ should be defined (69 ms)
+    ΓêÜ GET /users ΓåÆ findAll() (70 ms)
+    ├ù GET /users/:email ΓåÆ findOne() (39 ms)
+    ΓêÜ POST /users/login ΓåÆ registerLogin() (79 ms)
+    ΓêÜ PATCH /users/:email/role ΓåÆ setRole() (13 ms)
+    ├ù DELETE /users/:email ΓåÆ remove() (17 ms)
+    ├ù PATCH /users/:email/module-visibility ΓåÆ setModuleVisibility() (6 ms)
+    ├ù PATCH /users/:email/modules-bulk ΓåÆ setAllModulesEnabled() (16 ms)
+
+  ΓùÅ UserController (e2e) ΓÇ║ GET /users/:email ΓåÆ findOne()
+
+    NotFoundException: User test@test.com not found
+
+    [0m [90m 37 |[39m   [36masync[39m findByEmail(email[33m:[39m 
+string)[33m:[39m 
+[33mPromise[39m[33m<[39m[33mUserResponseDto[39m[33m>[39m {
+     [90m 38 |[39m     [36mconst[39m user [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39mfindOneBy({ email })[33m;[39m
+    [31m[1m>[22m[39m[90m 39 |[39m     [36mif[39m ([33m![39muser) 
+[36mthrow[39m [36mnew[39m [33mNotFoundException[39m([32m`User ${email} 
+not found`[39m)[33m;[39m
+     [90m    |[39m                      [31m[1m^[22m[39m
+     [90m 40 |[39m     [36mreturn[39m 
+[36mthis[39m[33m.[39mtoDto(user)[33m;[39m
+     [90m 41 |[39m   }
+     [90m 42 |[39m[0m
+
+      at UserService.findByEmail (user/user.service.ts:39:22)
+      at Object.<anonymous> 
+(__tests__/controllers/user.controller.e2e-spec.ts:35:20)
+
+  ΓùÅ UserController (e2e) ΓÇ║ DELETE /users/:email ΓåÆ remove()
+
+    expect(received).toBeDefined()
+
+    Received: undefined
+
+    [0m [90m 53 |[39m   it([32m'DELETE /users/:email ΓåÆ 
+remove()'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 54 |[39m     [36mconst[39m result [33m=[39m [36mawait[39m 
+controller[33m.[39mremove([32m'e2e-test@test.com'[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 55 |[39m     
+expect(result)[33m.[39mtoBeDefined()[33m;[39m
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 56 |[39m   })[33m;[39m
+     [90m 57 |[39m
+     [90m 58 |[39m   it([32m'PATCH /users/:email/module-visibility ΓåÆ 
+setModuleVisibility()'[39m[33m,[39m [36masync[39m () [33m=>[39m {[0m
+
+      at Object.<anonymous> 
+(__tests__/controllers/user.controller.e2e-spec.ts:55:20)
+
+  ΓùÅ UserController (e2e) ΓÇ║ PATCH /users/:email/module-visibility ΓåÆ 
+setModuleVisibility()
+
+    NotFoundException: User e2e-test@test.com not found
+
+    [0m [90m 100 |[39m   )[33m:[39m 
+[33mPromise[39m[33m<[39m[33mUserResponseDto[39m[33m>[39m {
+     [90m 101 |[39m     [36mconst[39m user [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39mfindOneBy({ email })[33m;[39m
+    [31m[1m>[22m[39m[90m 102 |[39m     [36mif[39m ([33m![39muser) 
+[36mthrow[39m [36mnew[39m [33mNotFoundException[39m([32m`User ${email} 
+not found`[39m)[33m;[39m
+     [90m     |[39m                      [31m[1m^[22m[39m
+     [90m 103 |[39m     user[33m.[39mmoduleVisibility [33m=[39m { 
+[33m...[39muser[33m.[39mmoduleVisibility[33m,[39m [moduleId][33m:[39m 
+enabled }[33m;[39m
+     [90m 104 |[39m     [36mconst[39m saved [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39msave(user)[33m;[39m
+     [90m 105 |[39m     [36mreturn[39m 
+[36mthis[39m[33m.[39mtoDto(saved)[33m;[39m[0m
+
+      at UserService.setModuleEnabled (user/user.service.ts:102:22)
+      at Object.<anonymous> 
+(__tests__/controllers/user.controller.e2e-spec.ts:59:20)
+
+  ΓùÅ UserController (e2e) ΓÇ║ PATCH /users/:email/modules-bulk ΓåÆ 
+setAllModulesEnabled()
+
+    NotFoundException: User e2e-test@test.com not found
+
+    [0m [90m 112 |[39m   )[33m:[39m 
+[33mPromise[39m[33m<[39m[33mUserResponseDto[39m[33m>[39m {
+     [90m 113 |[39m     [36mconst[39m user [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39mfindOneBy({ email })[33m;[39m
+    [31m[1m>[22m[39m[90m 114 |[39m     [36mif[39m ([33m![39muser) 
+[36mthrow[39m [36mnew[39m [33mNotFoundException[39m([32m`User ${email} 
+not found`[39m)[33m;[39m
+     [90m     |[39m                      [31m[1m^[22m[39m
+     [90m 115 |[39m     [36mconst[39m vis [33m=[39m { 
+[33m...[39muser[33m.[39mmoduleVisibility }[33m;[39m
+     [90m 116 |[39m     moduleIds[33m.[39mforEach(id [33m=>[39m (vis[id] 
+[33m=[39m enabled))[33m;[39m
+     [90m 117 |[39m     user[33m.[39mmoduleVisibility [33m=[39m 
+vis[33m;[39m[0m
+
+      at UserService.setAllModulesEnabled (user/user.service.ts:114:22)
+      at Object.<anonymous> 
+(__tests__/controllers/user.controller.e2e-spec.ts:67:20)
+
+PASS src/__tests__/controllers/zoho-projects.controller.e2e-spec.ts (93.805 s)
+  ZohoProjectsController (e2e)
+    ΓêÜ should be defined (169 ms)
+    ΓêÜ GET /zoho-projects/projects ΓåÆ listProjects() (145 ms)
+    ΓêÜ GET /zoho-projects/projects/:id ΓåÆ getProject() (112 ms)
+    ΓêÜ POST /zoho-projects/projects ΓåÆ createProject() (115 ms)
+    ΓêÜ POST /zoho-projects/projects/:id ΓåÆ updateProject() (104 ms)
+    ΓêÜ DELETE /zoho-projects/projects/:id ΓåÆ deleteProject() (109 ms)
+    ΓêÜ GET /zoho-projects/projects/:projectId/tasks ΓåÆ listTasks() (105 ms)
+    ΓêÜ GET /zoho-projects/projects/:projectId/tasks/:taskId ΓåÆ getTask() 
+(105 ms)
+    ΓêÜ POST /zoho-projects/projects/:projectId/tasks ΓåÆ createTask() (93 ms)
+    ΓêÜ POST /zoho-projects/projects/:projectId/tasks/:taskId ΓåÆ updateTask() 
+(106 ms)
+    ΓêÜ DELETE /zoho-projects/projects/:projectId/tasks/:taskId ΓåÆ 
+deleteTask() (99 ms)
+    ΓêÜ GET /zoho-projects/projects/:projectId/milestones ΓåÆ listMilestones() 
+(110 ms)
+    ΓêÜ GET /zoho-projects/projects/:projectId/bugs ΓåÆ listBugs() (87 ms)
+    ΓêÜ GET /zoho-projects/projects/:projectId/bugs/:bugId ΓåÆ getBug() (94 ms)
+    ΓêÜ POST /zoho-projects/projects/:projectId/bugs ΓåÆ createBug() (90 ms)
+    ΓêÜ POST /zoho-projects/projects/:projectId/bugs/:bugId ΓåÆ updateBug() 
+(93 ms)
+    ΓêÜ DELETE /zoho-projects/projects/:projectId/bugs/:bugId ΓåÆ deleteBug() 
+(97 ms)
+    ΓêÜ GET /zoho-projects/projects/:projectId/timelogs ΓåÆ listTimeLogs() (91 
+ms)
+    ΓêÜ POST /zoho-projects/projects/:projectId/tasks/:taskId/timelogs ΓåÆ 
+addTimeLog() (94 ms)
+    ΓêÜ DELETE 
+/zoho-projects/projects/:projectId/tasks/:taskId/timelogs/:logId ΓåÆ 
+deleteTimeLog() (101 ms)
+
+(node:43720) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:41128) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS src/__tests__/controllers/zoho-subscriptions.controller.e2e-spec.ts 
+(95.492 s)
+  ZohoSubscriptionsController (e2e)
+    ΓêÜ should be defined (106 ms)
+    ΓêÜ GET /zoho-subscriptions/plans ΓåÆ listPlans() (121 ms)
+    ΓêÜ GET /zoho-subscriptions/plans/:code ΓåÆ getPlan() (99 ms)
+    ΓêÜ POST /zoho-subscriptions/plans ΓåÆ createPlan() (110 ms)
+    ΓêÜ PUT /zoho-subscriptions/plans/:code ΓåÆ updatePlan() (103 ms)
+    ΓêÜ DELETE /zoho-subscriptions/plans/:code ΓåÆ deletePlan() (93 ms)
+    ΓêÜ GET /zoho-subscriptions/addons ΓåÆ listAddons() (91 ms)
+    ΓêÜ GET /zoho-subscriptions/addons/:code ΓåÆ getAddon() (93 ms)
+    ΓêÜ GET /zoho-subscriptions/coupons ΓåÆ listCoupons() (95 ms)
+    ΓêÜ GET /zoho-subscriptions/coupons/:code ΓåÆ getCoupon() (88 ms)
+    ΓêÜ GET /zoho-subscriptions/customers ΓåÆ listCustomers() (99 ms)
+    ΓêÜ GET /zoho-subscriptions/customers/:id ΓåÆ getCustomer() (97 ms)
+    ΓêÜ POST /zoho-subscriptions/customers ΓåÆ createCustomer() (93 ms)
+    ΓêÜ PUT /zoho-subscriptions/customers/:id ΓåÆ updateCustomer() (105 ms)
+    ΓêÜ DELETE /zoho-subscriptions/customers/:id ΓåÆ deleteCustomer() (88 ms)
+    ΓêÜ GET /zoho-subscriptions/subscriptions ΓåÆ listSubscriptions() (95 ms)
+    ΓêÜ GET /zoho-subscriptions/subscriptions/:id ΓåÆ getSubscription() (102 
+ms)
+    ΓêÜ POST /zoho-subscriptions/subscriptions ΓåÆ createSubscription() (99 ms)
+    ΓêÜ PUT /zoho-subscriptions/subscriptions/:id ΓåÆ updateSubscription() (91 
+ms)
+    ΓêÜ POST /zoho-subscriptions/subscriptions/:id/cancel ΓåÆ 
+cancelSubscription() (95 ms)
+    ΓêÜ POST /zoho-subscriptions/subscriptions/:id/reactivate ΓåÆ 
+reactivateSubscription() (91 ms)
+
+PASS src/__tests__/controllers/zoho-invoice.controller.e2e-spec.ts (95.446 s)
+  ZohoInvoiceController (e2e)
+    ΓêÜ should be defined (185 ms)
+    ΓêÜ GET /zoho-invoice/customers ΓåÆ listCustomers() (157 ms)
+    ΓêÜ GET /zoho-invoice/customers/:id ΓåÆ getCustomer() (103 ms)
+    ΓêÜ POST /zoho-invoice/customers ΓåÆ createCustomer() (96 ms)
+    ΓêÜ PUT /zoho-invoice/customers/:id ΓåÆ updateCustomer() (98 ms)
+    ΓêÜ DELETE /zoho-invoice/customers/:id ΓåÆ deleteCustomer() (108 ms)
+    ΓêÜ GET /zoho-invoice/invoices ΓåÆ listInvoices() (107 ms)
+    ΓêÜ GET /zoho-invoice/invoices/:id ΓåÆ getInvoice() (103 ms)
+    ΓêÜ POST /zoho-invoice/invoices ΓåÆ createInvoice() (109 ms)
+    ΓêÜ PUT /zoho-invoice/invoices/:id ΓåÆ updateInvoice() (89 ms)
+    ΓêÜ DELETE /zoho-invoice/invoices/:id ΓåÆ deleteInvoice() (98 ms)
+    ΓêÜ POST /zoho-invoice/invoices/:id/send ΓåÆ sendInvoice() (96 ms)
+    ΓêÜ GET /zoho-invoice/estimates ΓåÆ listEstimates() (101 ms)
+    ΓêÜ GET /zoho-invoice/estimates/:id ΓåÆ getEstimate() (90 ms)
+    ΓêÜ POST /zoho-invoice/estimates ΓåÆ createEstimate() (85 ms)
+    ΓêÜ PUT /zoho-invoice/estimates/:id ΓåÆ updateEstimate() (97 ms)
+    ΓêÜ DELETE /zoho-invoice/estimates/:id ΓåÆ deleteEstimate() (92 ms)
+    ΓêÜ GET /zoho-invoice/recurring-invoices ΓåÆ listRecurringInvoices() (102 
+ms)
+    ΓêÜ GET /zoho-invoice/recurring-invoices/:id ΓåÆ getRecurringInvoice() (99 
+ms)
+    ΓêÜ POST /zoho-invoice/recurring-invoices ΓåÆ createRecurringInvoice() 
+(100 ms)
+    ΓêÜ DELETE /zoho-invoice/recurring-invoices/:id ΓåÆ 
+deleteRecurringInvoice() (105 ms)
+    ΓêÜ GET /zoho-invoice/payments ΓåÆ listPayments() (94 ms)
+    ΓêÜ POST /zoho-invoice/payments ΓåÆ createPayment() (108 ms)
+    ΓêÜ DELETE /zoho-invoice/payments/:id ΓåÆ deletePayment() (92 ms)
+
+(node:15176) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:48464) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:18480) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS src/__tests__/controllers/zoho-books.controller.e2e-spec.ts (99.002 s)
+  ZohoBooksController (e2e)
+    ΓêÜ should be defined (106 ms)
+    ΓêÜ GET /zoho-books/contacts ΓåÆ listContacts() (137 ms)
+    ΓêÜ GET /zoho-books/contacts/:id ΓåÆ getContact() (91 ms)
+    ΓêÜ POST /zoho-books/contacts ΓåÆ createContact() (92 ms)
+    ΓêÜ PUT /zoho-books/contacts/:id ΓåÆ updateContact() (99 ms)
+    ΓêÜ DELETE /zoho-books/contacts/:id ΓåÆ deleteContact() (103 ms)
+    ΓêÜ GET /zoho-books/invoices ΓåÆ listInvoices() (101 ms)
+    ΓêÜ GET /zoho-books/invoices/:id ΓåÆ getInvoice() (96 ms)
+    ΓêÜ POST /zoho-books/invoices ΓåÆ createInvoice() (107 ms)
+    ΓêÜ PUT /zoho-books/invoices/:id ΓåÆ updateInvoice() (139 ms)
+    ΓêÜ DELETE /zoho-books/invoices/:id ΓåÆ deleteInvoice() (129 ms)
+    ΓêÜ POST /zoho-books/invoices/:id/send ΓåÆ sendInvoice() (122 ms)
+    ΓêÜ POST /zoho-books/invoices/:id/sent ΓåÆ markInvoiceAsSent() (103 ms)
+    ΓêÜ POST /zoho-books/invoices/:id/void ΓåÆ voidInvoice() (124 ms)
+    ΓêÜ GET /zoho-books/bills ΓåÆ listBills() (107 ms)
+    ΓêÜ GET /zoho-books/bills/:id ΓåÆ getBill() (100 ms)
+    ΓêÜ POST /zoho-books/bills ΓåÆ createBill() (108 ms)
+    ΓêÜ PUT /zoho-books/bills/:id ΓåÆ updateBill() (116 ms)
+    ΓêÜ DELETE /zoho-books/bills/:id ΓåÆ deleteBill() (116 ms)
+    ΓêÜ GET /zoho-books/expenses ΓåÆ listExpenses() (89 ms)
+    ΓêÜ GET /zoho-books/expenses/:id ΓåÆ getExpense() (110 ms)
+    ΓêÜ POST /zoho-books/expenses ΓåÆ createExpense() (85 ms)
+    ΓêÜ PUT /zoho-books/expenses/:id ΓåÆ updateExpense() (101 ms)
+    ΓêÜ DELETE /zoho-books/expenses/:id ΓåÆ deleteExpense() (93 ms)
+    ΓêÜ GET /zoho-books/payments ΓåÆ listPayments() (100 ms)
+    ΓêÜ GET /zoho-books/payments/:id ΓåÆ getPayment() (101 ms)
+    ΓêÜ POST /zoho-books/payments ΓåÆ createPayment() (92 ms)
+    ΓêÜ DELETE /zoho-books/payments/:id ΓåÆ deletePayment() (94 ms)
+    ΓêÜ GET /zoho-books/items ΓåÆ listItems() (100 ms)
+    ΓêÜ GET /zoho-books/items/:id ΓåÆ getItem() (113 ms)
+    ΓêÜ POST /zoho-books/items ΓåÆ createItem() (99 ms)
+    ΓêÜ PUT /zoho-books/items/:id ΓåÆ updateItem() (97 ms)
+    ΓêÜ DELETE /zoho-books/items/:id ΓåÆ deleteItem() (109 ms)
+
+PASS src/__tests__/controllers/zoho-workdrive.controller.e2e-spec.ts (98.915 s)
+  ZohoWorkdriveController (e2e)
+    ΓêÜ should be defined (255 ms)
+    ΓêÜ GET /zoho-workdrive/teams ΓåÆ listTeams() (158 ms)
+    ΓêÜ GET /zoho-workdrive/teams/:id ΓåÆ getTeam() (95 ms)
+    ΓêÜ GET /zoho-workdrive/teams/:teamId/files/search ΓåÆ searchFiles() (103 
+ms)
+    ΓêÜ GET /zoho-workdrive/folders/:id ΓåÆ getFolder() (98 ms)
+    ΓêÜ POST /zoho-workdrive/folders ΓåÆ createFolder() (102 ms)
+    ΓêÜ PATCH /zoho-workdrive/folders/:id/rename ΓåÆ renameFolder() (111 ms)
+    ΓêÜ DELETE /zoho-workdrive/folders/:id ΓåÆ deleteFolder() (90 ms)
+    ΓêÜ GET /zoho-workdrive/folders/:folderId/files ΓåÆ listFolderContents() 
+(97 ms)
+    ΓêÜ GET /zoho-workdrive/files/:id ΓåÆ getFile() (109 ms)
+    ΓêÜ POST /zoho-workdrive/files/:fileId/copy ΓåÆ copyFile() (120 ms)
+    ΓêÜ PATCH /zoho-workdrive/files/:fileId/move ΓåÆ moveFile() (114 ms)
+    ΓêÜ DELETE /zoho-workdrive/files/:id ΓåÆ deleteFile() (110 ms)
+    ΓêÜ POST /zoho-workdrive/sharelinks ΓåÆ createShareLink() (103 ms)
+    ΓêÜ GET /zoho-workdrive/files/:fileId/sharelinks ΓåÆ getShareLink() (102 
+ms)
+    ΓêÜ GET /zoho-workdrive/workspaces/:workspaceId/members ΓåÆ 
+listWorkspaceMembers() (91 ms)
+    ΓêÜ POST /zoho-workdrive/workspaces/:workspaceId/members ΓåÆ 
+addWorkspaceMember() (107 ms)
+    ΓêÜ DELETE /zoho-workdrive/workspaces/:workspaceId/members/:memberId ΓåÆ 
+removeWorkspaceMember() (111 ms)
+
+PASS src/__tests__/controllers/impossible-cloud.controller.e2e-spec.ts (98.81 
+s)
+  ImpossibleCloudController (e2e)
+    ΓêÜ should be defined (341 ms)
+    ΓêÜ GET /impossible-cloud/regions ΓåÆ listRegions() (165 ms)
+    ΓêÜ GET /impossible-cloud/contracts ΓåÆ listContracts() (108 ms)
+    ΓêÜ GET /impossible-cloud/contracts/:contractId/partners ΓåÆ 
+listContractPartners() (91 ms)
+    ΓêÜ POST /impossible-cloud/partners ΓåÆ createPartner() (110 ms)
+    ΓêÜ GET /impossible-cloud/partners/:partnerId ΓåÆ getPartner() (110 ms)
+    ΓêÜ PUT /impossible-cloud/partners/:partnerId ΓåÆ updatePartner() (106 ms)
+    ΓêÜ DELETE /impossible-cloud/partners/:partnerId ΓåÆ deletePartner() (100 
+ms)
+    ΓêÜ GET /impossible-cloud/partners/:partnerId/members ΓåÆ listMembers() 
+(110 ms)
+    ΓêÜ POST /impossible-cloud/partners/:partnerId/members ΓåÆ createMember() 
+(100 ms)
+    ΓêÜ DELETE /impossible-cloud/partners/:partnerId/members/:memberId ΓåÆ 
+deleteMember() (110 ms)
+    ΓêÜ GET /impossible-cloud/partners/:partnerId/storage-accounts ΓåÆ 
+listPartnerStorageAccounts() (92 ms)
+    ΓêÜ POST /impossible-cloud/partners/:partnerId/storage-accounts ΓåÆ 
+createPartnerStorageAccount() (96 ms)
+    ΓêÜ GET /impossible-cloud/partners/:partnerId/storage-accounts/:accountId 
+ΓåÆ getPartnerStorageAccount() (101 ms)
+    ΓêÜ DELETE 
+/impossible-cloud/partners/:partnerId/storage-accounts/:accountId ΓåÆ 
+deletePartnerStorageAccount() (102 ms)
+    ΓêÜ PATCH 
+/impossible-cloud/partners/:partnerId/storage-accounts/:accountId ΓåÆ 
+patchPartnerStorageAccount() (108 ms)
+    ΓêÜ GET 
+/impossible-cloud/partners/:partnerId/storage-accounts/:accountId/usage ΓåÆ 
+getPartnerStorageAccountUsage() (104 ms)
+    ΓêÜ GET /impossible-cloud/partners/:partnerId/usage ΓåÆ getPartnerUsage() 
+(98 ms)
+    ΓêÜ POST /impossible-cloud/storage-accounts ΓåÆ createStorageAccount() (93 
+ms)
+    ΓêÜ GET /impossible-cloud/storage-accounts ΓåÆ listStorageAccounts() (123 
+ms)
+    ΓêÜ GET /impossible-cloud/storage-accounts/usage ΓåÆ 
+getAllStorageAccountsUsage() (98 ms)
+    ΓêÜ GET /impossible-cloud/storage-accounts/:accountId ΓåÆ 
+getStorageAccount() (108 ms)
+    ΓêÜ DELETE /impossible-cloud/storage-accounts/:accountId ΓåÆ 
+deleteStorageAccount() (92 ms)
+    ΓêÜ PATCH /impossible-cloud/storage-accounts/:accountId ΓåÆ 
+patchStorageAccount() (108 ms)
+    ΓêÜ GET /impossible-cloud/storage-accounts/:accountId/usage ΓåÆ 
+getStorageAccountUsage() (96 ms)
+
+FAIL src/__tests__/controllers/workflow.controller.e2e-spec.ts (98.901 s)
+  WorkflowController (e2e)
+    ΓêÜ should be defined (111 ms)
+    ΓêÜ GET /workflows ΓåÆ findAll() (108 ms)
+    ├ù GET /workflows/:id ΓåÆ findOne() (19 ms)
+    ├ù POST /workflows ΓåÆ create() (179 ms)
+    ├ù PUT /workflows/:id ΓåÆ update() (73 ms)
+    ├ù DELETE /workflows/:id ΓåÆ remove() (28 ms)
+
+  ΓùÅ WorkflowController (e2e) ΓÇ║ GET /workflows/:id ΓåÆ findOne()
+
+    NotFoundException: Workflow 00000000-0000-0000-0000-000000000001 not found
+
+    [0m [90m 51 |[39m   [36masync[39m findById(id[33m:[39m 
+string)[33m:[39m 
+[33mPromise[39m[33m<[39m[33mWorkflowResponseDto[39m[33m>[39m {
+     [90m 52 |[39m     [36mconst[39m wf [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39mfindOneBy({ id })[33m;[39m
+    [31m[1m>[22m[39m[90m 53 |[39m     [36mif[39m ([33m![39mwf) 
+[36mthrow[39m [36mnew[39m [33mNotFoundException[39m([32m`Workflow ${id} 
+not found`[39m)[33m;[39m
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 54 |[39m     [36mreturn[39m 
+[36mthis[39m[33m.[39mtoDto(wf)[33m;[39m
+     [90m 55 |[39m   }
+     [90m 56 |[39m[0m
+
+      at WorkflowService.findById (workflow/workflow.service.ts:53:20)
+      at Object.<anonymous> 
+(__tests__/controllers/workflow.controller.e2e-spec.ts:35:20)
+
+  ΓùÅ WorkflowController (e2e) ΓÇ║ POST /workflows ΓåÆ create()
+
+    QueryFailedError: une instruction insert ou update sur la table ┬½ 
+workflows ┬╗ viole la contrainte de cl├⌐
+    ├⌐trang├¿re ┬½ FK_fb70002522e4dc458a1b7ba705a ┬╗
+
+      at PostgresQueryRunner.query 
+(driver/postgres/PostgresQueryRunner.ts:325:19)
+      at InsertQueryBuilder.execute 
+(query-builder/InsertQueryBuilder.ts:164:33)
+      at SubjectExecutor.executeInsertOperations 
+(persistence/SubjectExecutor.ts:435:42)
+      at SubjectExecutor.execute (persistence/SubjectExecutor.ts:137:9)
+      at EntityPersistExecutor.execute 
+(persistence/EntityPersistExecutor.ts:182:21)
+      at WorkflowService.create (workflow/workflow.service.ts:69:19)
+      at Object.<anonymous> 
+(__tests__/controllers/workflow.controller.e2e-spec.ts:40:20)
+
+  ΓùÅ WorkflowController (e2e) ΓÇ║ PUT /workflows/:id ΓåÆ update()
+
+    NotFoundException: Workflow 00000000-0000-0000-0000-000000000001 not found
+
+    [0m [90m 78 |[39m   )[33m:[39m 
+[33mPromise[39m[33m<[39m[33mWorkflowResponseDto[39m[33m>[39m {
+     [90m 79 |[39m     [36mconst[39m wf [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39mfindOneBy({ id })[33m;[39m
+    [31m[1m>[22m[39m[90m 80 |[39m     [36mif[39m ([33m![39mwf) 
+[36mthrow[39m [36mnew[39m [33mNotFoundException[39m([32m`Workflow ${id} 
+not found`[39m)[33m;[39m
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 81 |[39m
+     [90m 82 |[39m     [36mif[39m (dto[33m.[39mname [33m!==[39m 
+undefined) wf[33m.[39mname [33m=[39m dto[33m.[39mname[33m;[39m
+     [90m 83 |[39m     [36mif[39m (dto[33m.[39mdescription [33m!==[39m 
+undefined) wf[33m.[39mdescription [33m=[39m 
+dto[33m.[39mdescription[33m;[39m[0m
+
+      at WorkflowService.update (workflow/workflow.service.ts:80:20)
+      at Object.<anonymous> 
+(__tests__/controllers/workflow.controller.e2e-spec.ts:49:20)
+
+  ΓùÅ WorkflowController (e2e) ΓÇ║ DELETE /workflows/:id ΓåÆ remove()
+
+    NotFoundException: Workflow 00000000-0000-0000-0000-000000000001 not found
+
+    [0m [90m  98 |[39m     [36mconst[39m result [33m=[39m 
+[36mawait[39m [36mthis[39m[33m.[39mrepo[33m.[39m[36mdelete[39m({ id 
+})[33m;[39m
+     [90m  99 |[39m     [36mif[39m (result[33m.[39maffected 
+[33m===[39m [35m0[39m) {
+    [31m[1m>[22m[39m[90m 100 |[39m       [36mthrow[39m [36mnew[39m 
+[33mNotFoundException[39m([32m`Workflow ${id} not found`[39m)[33m;[39m
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 101 |[39m     }
+     [90m 102 |[39m   }
+     [90m 103 |[39m[0m
+
+      at WorkflowService.remove (workflow/workflow.service.ts:100:13)
+      at Object.<anonymous> 
+(__tests__/controllers/workflow.controller.e2e-spec.ts:56:20)
+
+PASS src/__tests__/controllers/zoho-crm.controller.e2e-spec.ts (99.919 s)
+  ZohoCrmController (e2e)
+    ΓêÜ should be defined (124 ms)
+    ΓêÜ GET /zoho-crm/leads ΓåÆ listLeads() (151 ms)
+    ΓêÜ GET /zoho-crm/leads/search ΓåÆ searchLeads() (105 ms)
+    ΓêÜ GET /zoho-crm/leads/:id ΓåÆ getLead() (95 ms)
+    ΓêÜ POST /zoho-crm/leads ΓåÆ createLeads() (115 ms)
+    ΓêÜ PUT /zoho-crm/leads ΓåÆ updateLeads() (123 ms)
+    ΓêÜ DELETE /zoho-crm/leads/:id ΓåÆ deleteLead() (156 ms)
+    ΓêÜ GET /zoho-crm/contacts ΓåÆ listContacts() (117 ms)
+    ΓêÜ GET /zoho-crm/contacts/search ΓåÆ searchContacts() (118 ms)
+    ΓêÜ GET /zoho-crm/contacts/:id ΓåÆ getContact() (104 ms)
+    ΓêÜ POST /zoho-crm/contacts ΓåÆ createContacts() (125 ms)
+    ΓêÜ PUT /zoho-crm/contacts ΓåÆ updateContacts() (93 ms)
+    ΓêÜ DELETE /zoho-crm/contacts/:id ΓåÆ deleteContact() (100 ms)
+    ΓêÜ GET /zoho-crm/accounts ΓåÆ listAccounts() (118 ms)
+    ΓêÜ GET /zoho-crm/accounts/:id ΓåÆ getAccount() (118 ms)
+    ΓêÜ POST /zoho-crm/accounts ΓåÆ createAccounts() (110 ms)
+    ΓêÜ PUT /zoho-crm/accounts ΓåÆ updateAccounts() (101 ms)
+    ΓêÜ DELETE /zoho-crm/accounts/:id ΓåÆ deleteAccount() (101 ms)
+    ΓêÜ GET /zoho-crm/deals ΓåÆ listDeals() (90 ms)
+    ΓêÜ GET /zoho-crm/deals/:id ΓåÆ getDeal() (103 ms)
+    ΓêÜ POST /zoho-crm/deals ΓåÆ createDeals() (88 ms)
+    ΓêÜ PUT /zoho-crm/deals ΓåÆ updateDeals() (89 ms)
+    ΓêÜ DELETE /zoho-crm/deals/:id ΓåÆ deleteDeal() (98 ms)
+    ΓêÜ GET /zoho-crm/tasks ΓåÆ listTasks() (113 ms)
+    ΓêÜ GET /zoho-crm/tasks/:id ΓåÆ getTask() (100 ms)
+    ΓêÜ POST /zoho-crm/tasks ΓåÆ createTasks() (97 ms)
+    ΓêÜ PUT /zoho-crm/tasks ΓåÆ updateTasks() (96 ms)
+    ΓêÜ DELETE /zoho-crm/tasks/:id ΓåÆ deleteTask() (107 ms)
+    ΓêÜ GET /zoho-crm/notes ΓåÆ listNotes() (111 ms)
+    ΓêÜ GET /zoho-crm/notes/:id ΓåÆ getNote() (99 ms)
+    ΓêÜ POST /zoho-crm/notes ΓåÆ createNotes() (107 ms)
+    ΓêÜ DELETE /zoho-crm/notes/:id ΓåÆ deleteNote() (91 ms)
+    ΓêÜ GET /zoho-crm/modules/:module ΓåÆ listRecords() (105 ms)
+    ΓêÜ GET /zoho-crm/modules/:module/:id ΓåÆ getRecord() (114 ms)
+    ΓêÜ POST /zoho-crm/modules/:module ΓåÆ createRecords() (105 ms)
+    ΓêÜ PUT /zoho-crm/modules/:module ΓåÆ updateRecords() (114 ms)
+    ΓêÜ DELETE /zoho-crm/modules/:module/:id ΓåÆ deleteRecord() (89 ms)
+    ΓêÜ GET /zoho-crm/modules/:module/search ΓåÆ searchRecords() (109 ms)
+
+PASS src/__tests__/controllers/zoho-desk.controller.e2e-spec.ts (99.234 s)
+  ZohoDeskController (e2e)
+    ΓêÜ should be defined (192 ms)
+    ΓêÜ GET /zoho-desk/tickets ΓåÆ listTickets() (165 ms)
+    ΓêÜ GET /zoho-desk/tickets/search ΓåÆ searchTickets() (106 ms)
+    ΓêÜ GET /zoho-desk/tickets/:id ΓåÆ getTicket() (111 ms)
+    ΓêÜ POST /zoho-desk/tickets ΓåÆ createTicket() (121 ms)
+    ΓêÜ PATCH /zoho-desk/tickets/:id ΓåÆ updateTicket() (112 ms)
+    ΓêÜ DELETE /zoho-desk/tickets/:id ΓåÆ deleteTicket() (106 ms)
+    ΓêÜ GET /zoho-desk/tickets/:ticketId/comments ΓåÆ listComments() (128 ms)
+    ΓêÜ POST /zoho-desk/tickets/:ticketId/comments ΓåÆ addComment() (107 ms)
+    ΓêÜ DELETE /zoho-desk/tickets/:ticketId/comments/:commentId ΓåÆ 
+deleteComment() (123 ms)
+    ΓêÜ GET /zoho-desk/contacts ΓåÆ listContacts() (111 ms)
+    ΓêÜ GET /zoho-desk/contacts/:id ΓåÆ getContact() (103 ms)
+    ΓêÜ POST /zoho-desk/contacts ΓåÆ createContact() (95 ms)
+    ΓêÜ PATCH /zoho-desk/contacts/:id ΓåÆ updateContact() (101 ms)
+    ΓêÜ DELETE /zoho-desk/contacts/:id ΓåÆ deleteContact() (96 ms)
+    ΓêÜ GET /zoho-desk/agents ΓåÆ listAgents() (101 ms)
+    ΓêÜ GET /zoho-desk/agents/:id ΓåÆ getAgent() (94 ms)
+    ΓêÜ GET /zoho-desk/departments ΓåÆ listDepartments() (103 ms)
+    ΓêÜ GET /zoho-desk/departments/:id ΓåÆ getDepartment() (111 ms)
+
+(node:47868) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(node:27116) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+PASS src/__tests__/controllers/zoho-people.controller.e2e-spec.ts (18.163 s)
+  ZohoPeopleController (e2e)
+    ΓêÜ should be defined (10 ms)
+    ΓêÜ GET /zoho-people/employees ΓåÆ listEmployees() (340 ms)
+    ΓêÜ GET /zoho-people/employees/:id ΓåÆ getEmployee() (107 ms)
+    ΓêÜ POST /zoho-people/employees ΓåÆ addEmployee() (205 ms)
+    ΓêÜ POST /zoho-people/employees/:id ΓåÆ updateEmployee() (104 ms)
+    ΓêÜ DELETE /zoho-people/employees/:id ΓåÆ deleteEmployee() (95 ms)
+    ΓêÜ GET /zoho-people/departments ΓåÆ listDepartments() (120 ms)
+    ΓêÜ GET /zoho-people/leave-types ΓåÆ listLeaveTypes() (108 ms)
+    ΓêÜ GET /zoho-people/leave-requests ΓåÆ listLeaveRequests() (106 ms)
+    ΓêÜ POST /zoho-people/leave-requests ΓåÆ addLeaveRequest() (105 ms)
+    ΓêÜ POST /zoho-people/leave-requests/:id/approve ΓåÆ approveLeave() (96 ms)
+    ΓêÜ POST /zoho-people/leave-requests/:id/reject ΓåÆ rejectLeave() (105 ms)
+    ΓêÜ GET /zoho-people/attendance/:empId ΓåÆ listAttendance() (95 ms)
+    ΓêÜ GET /zoho-people/forms/:formName/records ΓåÆ getFormRecords() (106 ms)
+    ΓêÜ POST /zoho-people/forms/:formName/records ΓåÆ addFormRecord() (95 ms)
+    ΓêÜ POST /zoho-people/forms/:formName/records/:id ΓåÆ updateFormRecord() 
+(115 ms)
+
+(node:48712) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(node:45768) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+PASS src/__tests__/controllers/zoho-cliq.controller.e2e-spec.ts (18.428 s)
+  ZohoCliqController (e2e)
+    ΓêÜ should be defined (1 ms)
+    ΓêÜ GET /zoho-cliq/channels ΓåÆ listChannels() (101 ms)
+    ΓêÜ GET /zoho-cliq/channels/:name ΓåÆ getChannel() (113 ms)
+    ΓêÜ POST /zoho-cliq/channels ΓåÆ createChannel() (124 ms)
+    ΓêÜ DELETE /zoho-cliq/channels/:name ΓåÆ deleteChannel() (112 ms)
+    ΓêÜ POST /zoho-cliq/channels/:name/members ΓåÆ addChannelMember() (106 ms)
+    ΓêÜ DELETE /zoho-cliq/channels/:name/members ΓåÆ removeChannelMember() 
+(143 ms)
+    ΓêÜ GET /zoho-cliq/channels/:name/messages ΓåÆ listChannelMessages() (96 
+ms)
+    ΓêÜ POST /zoho-cliq/channels/:name/message ΓåÆ sendChannelMessage() (95 ms)
+    ΓêÜ DELETE /zoho-cliq/channels/:name/messages/:messageId ΓåÆ 
+deleteMessage() (113 ms)
+    ΓêÜ POST /zoho-cliq/direct/:email ΓåÆ sendDirectMessage() (107 ms)
+    ΓêÜ GET /zoho-cliq/usergroups ΓåÆ listUserGroups() (141 ms)
+    ΓêÜ GET /zoho-cliq/usergroups/:name ΓåÆ getUserGroup() (104 ms)
+    ΓêÜ POST /zoho-cliq/usergroups ΓåÆ createUserGroup() (120 ms)
+    ΓêÜ GET /zoho-cliq/bots ΓåÆ listBots() (111 ms)
+    ΓêÜ POST /zoho-cliq/bots/:name/message ΓåÆ sendBotMessage() (116 ms)
+
+(node:35308) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+PASS src/__tests__/controllers/zoho-inventory.controller.e2e-spec.ts (19.666 s)
+  ZohoInventoryController (e2e)
+    ΓêÜ should be defined (4 ms)
+    ΓêÜ GET /zoho-inventory/items ΓåÆ listItems() (114 ms)
+    ΓêÜ GET /zoho-inventory/items/:id ΓåÆ getItem() (125 ms)
+    ΓêÜ POST /zoho-inventory/items ΓåÆ createItem() (134 ms)
+    ΓêÜ PUT /zoho-inventory/items/:id ΓåÆ updateItem() (106 ms)
+    ΓêÜ DELETE /zoho-inventory/items/:id ΓåÆ deleteItem() (118 ms)
+    ΓêÜ GET /zoho-inventory/warehouses ΓåÆ listWarehouses() (122 ms)
+    ΓêÜ GET /zoho-inventory/warehouses/:id ΓåÆ getWarehouse() (128 ms)
+    ΓêÜ GET /zoho-inventory/salesorders ΓåÆ listSalesOrders() (104 ms)
+    ΓêÜ GET /zoho-inventory/salesorders/:id ΓåÆ getSalesOrder() (103 ms)
+    ΓêÜ POST /zoho-inventory/salesorders ΓåÆ createSalesOrder() (105 ms)
+    ΓêÜ PUT /zoho-inventory/salesorders/:id ΓåÆ updateSalesOrder() (92 ms)
+    ΓêÜ DELETE /zoho-inventory/salesorders/:id ΓåÆ deleteSalesOrder() (107 ms)
+    ΓêÜ GET /zoho-inventory/purchaseorders ΓåÆ listPurchaseOrders() (104 ms)
+    ΓêÜ GET /zoho-inventory/purchaseorders/:id ΓåÆ getPurchaseOrder() (122 ms)
+    ΓêÜ POST /zoho-inventory/purchaseorders ΓåÆ createPurchaseOrder() (95 ms)
+    ΓêÜ PUT /zoho-inventory/purchaseorders/:id ΓåÆ updatePurchaseOrder() (103 
+ms)
+    ΓêÜ DELETE /zoho-inventory/purchaseorders/:id ΓåÆ deletePurchaseOrder() 
+(99 ms)
+
+(node:41128) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(node:15176) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+PASS src/__tests__/controllers/auth.controller.e2e-spec.ts (19.816 s)
+  AuthController (e2e)
+    ΓêÜ should be defined (1 ms)
+    ΓêÜ POST /auth/login ΓåÆ login() (1415 ms)
+    ΓêÜ POST /auth/dev-login ΓåÆ devLogin() (77 ms)
+    ΓêÜ POST /auth/refresh ΓåÆ refresh() (69 ms)
+    ΓêÜ POST /auth/logout ΓåÆ logout() (7 ms)
+
+PASS src/__tests__/controllers/zoho-recruit.controller.e2e-spec.ts (20.629 s)
+  ZohoRecruitController (e2e)
+    ΓêÜ should be defined (2 ms)
+    ΓêÜ GET /zoho-recruit/job-openings ΓåÆ listJobOpenings() (117 ms)
+    ΓêÜ GET /zoho-recruit/job-openings/:id ΓåÆ getJobOpening() (116 ms)
+    ΓêÜ POST /zoho-recruit/job-openings ΓåÆ createJobOpenings() (121 ms)
+    ΓêÜ PUT /zoho-recruit/job-openings ΓåÆ updateJobOpenings() (92 ms)
+    ΓêÜ DELETE /zoho-recruit/job-openings/:id ΓåÆ deleteJobOpening() (117 ms)
+    ΓêÜ GET /zoho-recruit/candidates ΓåÆ listCandidates() (150 ms)
+    ΓêÜ GET /zoho-recruit/candidates/search ΓåÆ searchCandidates() (139 ms)
+    ΓêÜ GET /zoho-recruit/candidates/:id ΓåÆ getCandidate() (132 ms)
+    ΓêÜ POST /zoho-recruit/candidates ΓåÆ createCandidates() (93 ms)
+    ΓêÜ PUT /zoho-recruit/candidates ΓåÆ updateCandidates() (186 ms)
+    ΓêÜ DELETE /zoho-recruit/candidates/:id ΓåÆ deleteCandidate() (122 ms)
+    ΓêÜ GET /zoho-recruit/interviews ΓåÆ listInterviews() (109 ms)
+    ΓêÜ GET /zoho-recruit/interviews/:id ΓåÆ getInterview() (86 ms)
+    ΓêÜ POST /zoho-recruit/interviews ΓåÆ createInterviews() (133 ms)
+    ΓêÜ DELETE /zoho-recruit/interviews/:id ΓåÆ deleteInterview() (127 ms)
+    ΓêÜ GET /zoho-recruit/offers ΓåÆ listOffers() (122 ms)
+    ΓêÜ GET /zoho-recruit/offers/:id ΓåÆ getOffer() (91 ms)
+
+PASS src/__tests__/controllers/chatgpt.controller.e2e-spec.ts (16.9 s)
+  ChatGPTController (e2e)
+    ΓêÜ should be defined (2 ms)
+    ΓêÜ GET /chatgpt/models ΓåÆ listModels() (111 ms)
+    ΓêÜ GET /chatgpt/models/:modelId ΓåÆ getModel() (141 ms)
+    ΓêÜ POST /chatgpt/chat/completions ΓåÆ createChatCompletion() (146 ms)
+    ΓêÜ POST /chatgpt/embeddings ΓåÆ createEmbedding() (138 ms)
+    ΓêÜ POST /chatgpt/images/generations ΓåÆ generateImage() (103 ms)
+    ΓêÜ POST /chatgpt/moderations ΓåÆ createModeration() (94 ms)
+
+(node:14808) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+PASS src/__tests__/controllers/schema.controller.e2e-spec.ts (17.848 s)
+  SchemaController (e2e)
+    ΓêÜ should be defined (1 ms)
+    ΓêÜ GET /schema ΓåÆ getSchema() (1 ms)
+
+(node:48464) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+PASS src/__tests__/controllers/zoho-commerce.controller.e2e-spec.ts (18.628 s)
+  ZohoCommerceController (e2e)
+    ΓêÜ should be defined (2 ms)
+    ΓêÜ GET /zoho-commerce/products ΓåÆ listProducts() (99 ms)
+    ΓêÜ GET /zoho-commerce/products/:id ΓåÆ getProduct() (94 ms)
+    ΓêÜ POST /zoho-commerce/products ΓåÆ createProduct() (121 ms)
+    ΓêÜ PUT /zoho-commerce/products/:id ΓåÆ updateProduct() (113 ms)
+    ΓêÜ DELETE /zoho-commerce/products/:id ΓåÆ deleteProduct() (97 ms)
+    ΓêÜ GET /zoho-commerce/categories ΓåÆ listCategories() (106 ms)
+    ΓêÜ GET /zoho-commerce/categories/:id ΓåÆ getCategory() (99 ms)
+    ΓêÜ POST /zoho-commerce/categories ΓåÆ createCategory() (115 ms)
+    ΓêÜ DELETE /zoho-commerce/categories/:id ΓåÆ deleteCategory() (129 ms)
+    ΓêÜ GET /zoho-commerce/customers ΓåÆ listCustomers() (112 ms)
+    ΓêÜ GET /zoho-commerce/customers/:id ΓåÆ getCustomer() (111 ms)
+    ΓêÜ GET /zoho-commerce/orders ΓåÆ listOrders() (113 ms)
+    ΓêÜ GET /zoho-commerce/orders/:id ΓåÆ getOrder() (122 ms)
+    ΓêÜ POST /zoho-commerce/orders ΓåÆ createOrder() (103 ms)
+    ΓêÜ PUT /zoho-commerce/orders/:id/status ΓåÆ updateOrderStatus() (89 ms)
+    ΓêÜ POST /zoho-commerce/orders/:id/cancel ΓåÆ cancelOrder() (110 ms)
+
+(node:43720) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(node:18480) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+PASS src/__tests__/controllers/zoho-expense.controller.e2e-spec.ts (19.928 s)
+  ZohoExpenseController (e2e)
+    ΓêÜ should be defined (2 ms)
+    ΓêÜ GET /zoho-expense/categories ΓåÆ listCategories() (130 ms)
+    ΓêÜ GET /zoho-expense/categories/:id ΓåÆ getCategory() (96 ms)
+    ΓêÜ GET /zoho-expense/expenses ΓåÆ listExpenses() (157 ms)
+    ΓêÜ GET /zoho-expense/expenses/:id ΓåÆ getExpense() (147 ms)
+    ΓêÜ POST /zoho-expense/expenses ΓåÆ createExpense() (115 ms)
+    ΓêÜ PUT /zoho-expense/expenses/:id ΓåÆ updateExpense() (120 ms)
+    ΓêÜ DELETE /zoho-expense/expenses/:id ΓåÆ deleteExpense() (96 ms)
+    ΓêÜ GET /zoho-expense/reports ΓåÆ listReports() (127 ms)
+    ΓêÜ GET /zoho-expense/reports/:id ΓåÆ getReport() (107 ms)
+    ΓêÜ POST /zoho-expense/reports ΓåÆ createReport() (98 ms)
+    ΓêÜ PUT /zoho-expense/reports/:id ΓåÆ updateReport() (88 ms)
+    ΓêÜ DELETE /zoho-expense/reports/:id ΓåÆ deleteReport() (94 ms)
+    ΓêÜ POST /zoho-expense/reports/:id/submit ΓåÆ submitReport() (104 ms)
+    ΓêÜ POST /zoho-expense/reports/:id/approve ΓåÆ approveReport() (95 ms)
+    ΓêÜ GET /zoho-expense/advances ΓåÆ listAdvances() (101 ms)
+    ΓêÜ GET /zoho-expense/advances/:id ΓåÆ getAdvance() (103 ms)
+
+PASS src/__tests__/controllers/zoho-payroll.controller.e2e-spec.ts (20.03 s)
+  ZohoPayrollController (e2e)
+    ΓêÜ should be defined (2 ms)
+    ΓêÜ GET /zoho-payroll/employees ΓåÆ listEmployees() (99 ms)
+    ΓêÜ GET /zoho-payroll/employees/:id ΓåÆ getEmployee() (96 ms)
+    ΓêÜ POST /zoho-payroll/employees ΓåÆ createEmployee() (105 ms)
+    ΓêÜ PUT /zoho-payroll/employees/:id ΓåÆ updateEmployee() (115 ms)
+    ΓêÜ POST /zoho-payroll/employees/:id/terminate ΓåÆ terminateEmployee() (95 
+ms)
+    ΓêÜ GET /zoho-payroll/pay-components ΓåÆ listPayComponents() (87 ms)
+    ΓêÜ GET /zoho-payroll/pay-components/:id ΓåÆ getPayComponent() (102 ms)
+    ΓêÜ GET /zoho-payroll/payruns ΓåÆ listPayRuns() (85 ms)
+    ΓêÜ GET /zoho-payroll/payruns/:id ΓåÆ getPayRun() (95 ms)
+    ΓêÜ POST /zoho-payroll/payruns ΓåÆ createPayRun() (101 ms)
+    ΓêÜ POST /zoho-payroll/payruns/:id/approve ΓåÆ approvePayRun() (96 ms)
+    ΓêÜ GET /zoho-payroll/payruns/:payRunId/payslips ΓåÆ listPayslips() (102 
+ms)
+    ΓêÜ GET /zoho-payroll/payruns/:payRunId/payslips/:payslipId ΓåÆ 
+getPayslip() (100 ms)
+    ΓêÜ GET /zoho-payroll/declarations ΓåÆ listDeclarations() (104 ms)
+    ΓêÜ GET /zoho-payroll/declarations/:id ΓåÆ getDeclaration() (93 ms)
+
+PASS src/__tests__/controllers/zoho-creator.controller.e2e-spec.ts (19.37 s)
+  ZohoCreatorController (e2e)
+    ΓêÜ should be defined (4 ms)
+    ΓêÜ GET /zoho-creator/applications ΓåÆ listApplications() (100 ms)
+    ΓêÜ GET /zoho-creator/applications/:appLinkName ΓåÆ getApplication() (100 
+ms)
+    ΓêÜ GET /zoho-creator/applications/:appLinkName/forms ΓåÆ listForms() (92 
+ms)
+    ΓêÜ GET /zoho-creator/applications/:appLinkName/forms/:formLinkName ΓåÆ 
+getForm() (113 ms)
+    ΓêÜ GET 
+/zoho-creator/applications/:appLinkName/reports/:reportLinkName/records ΓåÆ 
+listRecords() (123 ms)
+    ΓêÜ GET 
+/zoho-creator/applications/:appLinkName/reports/:reportLinkName/records/:id 
+ΓåÆ getRecord() (110 ms)
+    ΓêÜ POST 
+/zoho-creator/applications/:appLinkName/forms/:formLinkName/records ΓåÆ 
+createRecord() (97 ms)
+    ΓêÜ PUT 
+/zoho-creator/applications/:appLinkName/reports/:reportLinkName/records/:id 
+ΓåÆ updateRecord() (92 ms)
+    ΓêÜ DELETE 
+/zoho-creator/applications/:appLinkName/reports/:reportLinkName/records/:id 
+ΓåÆ deleteRecord() (93 ms)
+    ΓêÜ GET 
+/zoho-creator/applications/:appLinkName/reports/:reportLinkName/records/search 
+ΓåÆ searchRecords() (108 ms)
+    ΓêÜ GET /zoho-creator/applications/:appLinkName/reports ΓåÆ listReports() 
+(99 ms)
+    ΓêÜ POST 
+/zoho-creator/applications/:appLinkName/workflows/:workflowName/trigger ΓåÆ 
+triggerWorkflow() (104 ms)
+
+(node:47868) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+PASS src/__tests__/controllers/zoho-analytics.controller.e2e-spec.ts (18.155 s)
+  ZohoAnalyticsController (e2e)
+    ΓêÜ should be defined (19 ms)
+    ΓêÜ GET /zoho-analytics/workspaces ΓåÆ listWorkspaces() (135 ms)
+    ΓêÜ GET /zoho-analytics/workspaces/:id ΓåÆ getWorkspace() (105 ms)
+    ΓêÜ POST /zoho-analytics/workspaces ΓåÆ createWorkspace() (110 ms)
+    ΓêÜ DELETE /zoho-analytics/workspaces/:id ΓåÆ deleteWorkspace() (107 ms)
+    ΓêÜ GET /zoho-analytics/workspaces/:workspaceId/views ΓåÆ listViews() (125 
+ms)
+    ΓêÜ GET /zoho-analytics/workspaces/:workspaceId/views/:viewId ΓåÆ 
+getView() (119 ms)
+    ΓêÜ POST /zoho-analytics/workspaces/:workspaceId/views ΓåÆ createView() 
+(233 ms)
+    ΓêÜ DELETE /zoho-analytics/workspaces/:workspaceId/views/:viewId ΓåÆ 
+deleteView() (135 ms)
+    ΓêÜ GET /zoho-analytics/workspaces/:workspaceId/reports ΓåÆ listReports() 
+(126 ms)
+    ΓêÜ GET /zoho-analytics/workspaces/:workspaceId/dashboards ΓåÆ 
+listDashboards() (102 ms)
+    ΓêÜ POST /zoho-analytics/import ΓåÆ importData() (105 ms)
+    ΓêÜ GET /zoho-analytics/workspaces/:workspaceId/views/:viewId/export ΓåÆ 
+exportData() (90 ms)
+
+(node:41128) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(node:48712) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+PASS src/__tests__/controllers/softvalue.controller.e2e-spec.ts (16.413 s)
+  SoftvalueController (e2e)
+    ΓêÜ should be defined (16 ms)
+    ΓêÜ GET /softvalue/proxy ΓåÆ proxyGet() (152 ms)
+    ΓêÜ POST /softvalue/proxy ΓåÆ proxyPost() (127 ms)
+    ΓêÜ PUT /softvalue/proxy ΓåÆ proxyPut() (133 ms)
+    ΓêÜ PATCH /softvalue/proxy ΓåÆ proxyPatch() (166 ms)
+    ΓêÜ DELETE /softvalue/proxy ΓåÆ proxyDelete() (135 ms)
+    ΓêÜ POST /softvalue/token ΓåÆ updateToken() (19 ms)
+    ΓêÜ GET /softvalue/token ΓåÆ getToken() (1 ms)
+
+(node:27116) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(node:35308) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+PASS src/__tests__/controllers/zoho-campaigns.controller.e2e-spec.ts (20.279 s)
+  ZohoCampaignsController (e2e)
+    ΓêÜ should be defined (9 ms)
+    ΓêÜ GET /zoho-campaigns/lists ΓåÆ listMailingLists() (118 ms)
+    ΓêÜ GET /zoho-campaigns/lists/:listKey ΓåÆ getMailingList() (113 ms)
+    ΓêÜ POST /zoho-campaigns/lists ΓåÆ createMailingList() (124 ms)
+    ΓêÜ DELETE /zoho-campaigns/lists/:listKey ΓåÆ deleteMailingList() (143 ms)
+    ΓêÜ GET /zoho-campaigns/lists/:listKey/subscribers ΓåÆ listSubscribers() 
+(103 ms)
+    ΓêÜ POST /zoho-campaigns/lists/:listKey/subscribers ΓåÆ addSubscriber() 
+(114 ms)
+    ΓêÜ DELETE /zoho-campaigns/lists/:listKey/subscribers ΓåÆ 
+removeSubscriber() (97 ms)
+    ΓêÜ GET /zoho-campaigns/topics ΓåÆ listTopics() (93 ms)
+    ΓêÜ GET /zoho-campaigns/campaigns ΓåÆ listCampaigns() (97 ms)
+    ΓêÜ GET /zoho-campaigns/campaigns/:campaignKey ΓåÆ getCampaign() (125 ms)
+    ΓêÜ POST /zoho-campaigns/campaigns/:campaignKey/send ΓåÆ sendCampaign() 
+(119 ms)
+    ΓêÜ POST /zoho-campaigns/campaigns/:campaignKey/schedule ΓåÆ 
+scheduleCampaign() (105 ms)
+
+(node:45768) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+PASS src/__tests__/controllers/auth-config.controller.e2e-spec.ts (19.016 s)
+  AuthConfigController (e2e)
+    ΓêÜ should be defined (9 ms)
+    ΓêÜ GET /auth-configs ΓåÆ findAll() (136 ms)
+    ΓêÜ GET /auth-configs/:moduleId ΓåÆ findOne() (55 ms)
+    ΓêÜ PUT /auth-configs/:moduleId ΓåÆ save() (204 ms)
+    ΓêÜ DELETE /auth-configs/:moduleId ΓåÆ remove() (26 ms)
+    ΓêÜ GET /auth-configs/admin/:userEmail ΓåÆ adminFindAll() (38 ms)
+
+PASS src/__tests__/controllers/zoho-sign.controller.e2e-spec.ts (22.159 s)
+  ZohoSignController (e2e)
+    ΓêÜ should be defined (19 ms)
+    ΓêÜ GET /zoho-sign/requests ΓåÆ listRequests() (113 ms)
+    ΓêÜ GET /zoho-sign/requests/:id ΓåÆ getRequest() (115 ms)
+    ΓêÜ POST /zoho-sign/requests ΓåÆ createRequest() (113 ms)
+    ΓêÜ POST /zoho-sign/requests/:id/send ΓåÆ sendRequest() (113 ms)
+    ΓêÜ DELETE /zoho-sign/requests/:id ΓåÆ deleteRequest() (123 ms)
+    ΓêÜ POST /zoho-sign/requests/:id/recall ΓåÆ recallRequest() (120 ms)
+    ΓêÜ POST /zoho-sign/requests/:id/remind ΓåÆ remindRequest() (105 ms)
+    ΓêÜ GET /zoho-sign/templates ΓåÆ listTemplates() (107 ms)
+    ΓêÜ GET /zoho-sign/templates/:id ΓåÆ getTemplate() (131 ms)
+    ΓêÜ POST /zoho-sign/templates/:id/create-request ΓåÆ 
+createRequestFromTemplate() (104 ms)
+    ΓêÜ GET /zoho-sign/requests/:requestId/documents/:documentId ΓåÆ 
+getDocument() (103 ms)
+    ΓêÜ GET /zoho-sign/requests/:requestId/documents/:documentId/download ΓåÆ 
+downloadDocument() (110 ms)
+
+PASS src/__tests__/controllers/zoho-mail.controller.e2e-spec.ts (21.855 s)
+  ZohoMailController (e2e)
+    ΓêÜ should be defined (16 ms)
+    ΓêÜ GET /zoho-mail/accounts ΓåÆ listAccounts() (150 ms)
+    ΓêÜ GET /zoho-mail/accounts/:accountId ΓåÆ getAccount() (103 ms)
+    ΓêÜ GET /zoho-mail/accounts/:accountId/folders ΓåÆ listFolders() (91 ms)
+    ΓêÜ GET /zoho-mail/accounts/:accountId/folders/:folderId/messages ΓåÆ 
+listMessages() (97 ms)
+    ΓêÜ GET /zoho-mail/accounts/:accountId/messages/search ΓåÆ 
+searchMessages() (112 ms)
+    ΓêÜ GET /zoho-mail/accounts/:accountId/messages/:messageId ΓåÆ 
+getMessage() (104 ms)
+    ΓêÜ POST /zoho-mail/accounts/:accountId/messages ΓåÆ sendMessage() (128 ms)
+    ΓêÜ DELETE /zoho-mail/accounts/:accountId/messages/:messageId ΓåÆ 
+deleteMessage() (95 ms)
+    ΓêÜ POST /zoho-mail/accounts/:accountId/messages/:messageId/move ΓåÆ 
+moveMessage() (100 ms)
+    ΓêÜ POST /zoho-mail/accounts/:accountId/messages/:messageId/read ΓåÆ 
+markRead() (107 ms)
+    ΓêÜ GET /zoho-mail/accounts/:accountId/contacts ΓåÆ listContacts() (103 ms)
+    ΓêÜ POST /zoho-mail/accounts/:accountId/contacts ΓåÆ createContact() (104 
+ms)
+    ΓêÜ DELETE /zoho-mail/accounts/:accountId/contacts/:contactId ΓåÆ 
+deleteContact() (97 ms)
+
+A worker process has failed to exit gracefully and has been force exited. This 
+is likely caused by tests leaking due to improper teardown. Try running with 
+--detectOpenHandles to find leaks. Active timers can also cause this, ensure 
+that .unref() was called on them.
+Summary of all failing tests
+FAIL __tests__/controllers/user.controller.e2e-spec.ts (93.99 s)
+  ΓùÅ UserController (e2e) ΓÇ║ GET /users/:email ΓåÆ findOne()
+
+    NotFoundException: User test@test.com not found
+
+    [0m [90m 37 |[39m   [36masync[39m findByEmail(email[33m:[39m 
+string)[33m:[39m 
+[33mPromise[39m[33m<[39m[33mUserResponseDto[39m[33m>[39m {
+     [90m 38 |[39m     [36mconst[39m user [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39mfindOneBy({ email })[33m;[39m
+    [31m[1m>[22m[39m[90m 39 |[39m     [36mif[39m ([33m![39muser) 
+[36mthrow[39m [36mnew[39m [33mNotFoundException[39m([32m`User ${email} 
+not found`[39m)[33m;[39m
+     [90m    |[39m                      [31m[1m^[22m[39m
+     [90m 40 |[39m     [36mreturn[39m 
+[36mthis[39m[33m.[39mtoDto(user)[33m;[39m
+     [90m 41 |[39m   }
+     [90m 42 |[39m[0m
+
+      at UserService.findByEmail (user/user.service.ts:39:22)
+      at Object.<anonymous> 
+(__tests__/controllers/user.controller.e2e-spec.ts:35:20)
+
+  ΓùÅ UserController (e2e) ΓÇ║ DELETE /users/:email ΓåÆ remove()
+
+    expect(received).toBeDefined()
+
+    Received: undefined
+
+    [0m [90m 53 |[39m   it([32m'DELETE /users/:email ΓåÆ 
+remove()'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 54 |[39m     [36mconst[39m result [33m=[39m [36mawait[39m 
+controller[33m.[39mremove([32m'e2e-test@test.com'[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 55 |[39m     
+expect(result)[33m.[39mtoBeDefined()[33m;[39m
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 56 |[39m   })[33m;[39m
+     [90m 57 |[39m
+     [90m 58 |[39m   it([32m'PATCH /users/:email/module-visibility ΓåÆ 
+setModuleVisibility()'[39m[33m,[39m [36masync[39m () [33m=>[39m {[0m
+
+      at Object.<anonymous> 
+(__tests__/controllers/user.controller.e2e-spec.ts:55:20)
+
+  ΓùÅ UserController (e2e) ΓÇ║ PATCH /users/:email/module-visibility ΓåÆ 
+setModuleVisibility()
+
+    NotFoundException: User e2e-test@test.com not found
+
+    [0m [90m 100 |[39m   )[33m:[39m 
+[33mPromise[39m[33m<[39m[33mUserResponseDto[39m[33m>[39m {
+     [90m 101 |[39m     [36mconst[39m user [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39mfindOneBy({ email })[33m;[39m
+    [31m[1m>[22m[39m[90m 102 |[39m     [36mif[39m ([33m![39muser) 
+[36mthrow[39m [36mnew[39m [33mNotFoundException[39m([32m`User ${email} 
+not found`[39m)[33m;[39m
+     [90m     |[39m                      [31m[1m^[22m[39m
+     [90m 103 |[39m     user[33m.[39mmoduleVisibility [33m=[39m { 
+[33m...[39muser[33m.[39mmoduleVisibility[33m,[39m [moduleId][33m:[39m 
+enabled }[33m;[39m
+     [90m 104 |[39m     [36mconst[39m saved [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39msave(user)[33m;[39m
+     [90m 105 |[39m     [36mreturn[39m 
+[36mthis[39m[33m.[39mtoDto(saved)[33m;[39m[0m
+
+      at UserService.setModuleEnabled (user/user.service.ts:102:22)
+      at Object.<anonymous> 
+(__tests__/controllers/user.controller.e2e-spec.ts:59:20)
+
+  ΓùÅ UserController (e2e) ΓÇ║ PATCH /users/:email/modules-bulk ΓåÆ 
+setAllModulesEnabled()
+
+    NotFoundException: User e2e-test@test.com not found
+
+    [0m [90m 112 |[39m   )[33m:[39m 
+[33mPromise[39m[33m<[39m[33mUserResponseDto[39m[33m>[39m {
+     [90m 113 |[39m     [36mconst[39m user [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39mfindOneBy({ email })[33m;[39m
+    [31m[1m>[22m[39m[90m 114 |[39m     [36mif[39m ([33m![39muser) 
+[36mthrow[39m [36mnew[39m [33mNotFoundException[39m([32m`User ${email} 
+not found`[39m)[33m;[39m
+     [90m     |[39m                      [31m[1m^[22m[39m
+     [90m 115 |[39m     [36mconst[39m vis [33m=[39m { 
+[33m...[39muser[33m.[39mmoduleVisibility }[33m;[39m
+     [90m 116 |[39m     moduleIds[33m.[39mforEach(id [33m=>[39m (vis[id] 
+[33m=[39m enabled))[33m;[39m
+     [90m 117 |[39m     user[33m.[39mmoduleVisibility [33m=[39m 
+vis[33m;[39m[0m
+
+      at UserService.setAllModulesEnabled (user/user.service.ts:114:22)
+      at Object.<anonymous> 
+(__tests__/controllers/user.controller.e2e-spec.ts:67:20)
+
+FAIL __tests__/controllers/workflow.controller.e2e-spec.ts (98.901 s)
+  ΓùÅ WorkflowController (e2e) ΓÇ║ GET /workflows/:id ΓåÆ findOne()
+
+    NotFoundException: Workflow 00000000-0000-0000-0000-000000000001 not found
+
+    [0m [90m 51 |[39m   [36masync[39m findById(id[33m:[39m 
+string)[33m:[39m 
+[33mPromise[39m[33m<[39m[33mWorkflowResponseDto[39m[33m>[39m {
+     [90m 52 |[39m     [36mconst[39m wf [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39mfindOneBy({ id })[33m;[39m
+    [31m[1m>[22m[39m[90m 53 |[39m     [36mif[39m ([33m![39mwf) 
+[36mthrow[39m [36mnew[39m [33mNotFoundException[39m([32m`Workflow ${id} 
+not found`[39m)[33m;[39m
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 54 |[39m     [36mreturn[39m 
+[36mthis[39m[33m.[39mtoDto(wf)[33m;[39m
+     [90m 55 |[39m   }
+     [90m 56 |[39m[0m
+
+      at WorkflowService.findById (workflow/workflow.service.ts:53:20)
+      at Object.<anonymous> 
+(__tests__/controllers/workflow.controller.e2e-spec.ts:35:20)
+
+  ΓùÅ WorkflowController (e2e) ΓÇ║ POST /workflows ΓåÆ create()
+
+    QueryFailedError: une instruction insert ou update sur la table ┬½ 
+workflows ┬╗ viole la contrainte de cl├⌐
+    ├⌐trang├¿re ┬½ FK_fb70002522e4dc458a1b7ba705a ┬╗
+
+      at PostgresQueryRunner.query 
+(driver/postgres/PostgresQueryRunner.ts:325:19)
+      at InsertQueryBuilder.execute 
+(query-builder/InsertQueryBuilder.ts:164:33)
+      at SubjectExecutor.executeInsertOperations 
+(persistence/SubjectExecutor.ts:435:42)
+      at SubjectExecutor.execute (persistence/SubjectExecutor.ts:137:9)
+      at EntityPersistExecutor.execute 
+(persistence/EntityPersistExecutor.ts:182:21)
+      at WorkflowService.create (workflow/workflow.service.ts:69:19)
+      at Object.<anonymous> 
+(__tests__/controllers/workflow.controller.e2e-spec.ts:40:20)
+
+  ΓùÅ WorkflowController (e2e) ΓÇ║ PUT /workflows/:id ΓåÆ update()
+
+    NotFoundException: Workflow 00000000-0000-0000-0000-000000000001 not found
+
+    [0m [90m 78 |[39m   )[33m:[39m 
+[33mPromise[39m[33m<[39m[33mWorkflowResponseDto[39m[33m>[39m {
+     [90m 79 |[39m     [36mconst[39m wf [33m=[39m [36mawait[39m 
+[36mthis[39m[33m.[39mrepo[33m.[39mfindOneBy({ id })[33m;[39m
+    [31m[1m>[22m[39m[90m 80 |[39m     [36mif[39m ([33m![39mwf) 
+[36mthrow[39m [36mnew[39m [33mNotFoundException[39m([32m`Workflow ${id} 
+not found`[39m)[33m;[39m
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 81 |[39m
+     [90m 82 |[39m     [36mif[39m (dto[33m.[39mname [33m!==[39m 
+undefined) wf[33m.[39mname [33m=[39m dto[33m.[39mname[33m;[39m
+     [90m 83 |[39m     [36mif[39m (dto[33m.[39mdescription [33m!==[39m 
+undefined) wf[33m.[39mdescription [33m=[39m 
+dto[33m.[39mdescription[33m;[39m[0m
+
+      at WorkflowService.update (workflow/workflow.service.ts:80:20)
+      at Object.<anonymous> 
+(__tests__/controllers/workflow.controller.e2e-spec.ts:49:20)
+
+  ΓùÅ WorkflowController (e2e) ΓÇ║ DELETE /workflows/:id ΓåÆ remove()
+
+    NotFoundException: Workflow 00000000-0000-0000-0000-000000000001 not found
+
+    [0m [90m  98 |[39m     [36mconst[39m result [33m=[39m 
+[36mawait[39m [36mthis[39m[33m.[39mrepo[33m.[39m[36mdelete[39m({ id 
+})[33m;[39m
+     [90m  99 |[39m     [36mif[39m (result[33m.[39maffected 
+[33m===[39m [35m0[39m) {
+    [31m[1m>[22m[39m[90m 100 |[39m       [36mthrow[39m [36mnew[39m 
+[33mNotFoundException[39m([32m`Workflow ${id} not found`[39m)[33m;[39m
+     [90m     |[39m             [31m[1m^[22m[39m
+     [90m 101 |[39m     }
+     [90m 102 |[39m   }
+     [90m 103 |[39m[0m
+
+      at WorkflowService.remove (workflow/workflow.service.ts:100:13)
+      at Object.<anonymous> 
+(__tests__/controllers/workflow.controller.e2e-spec.ts:56:20)
+
+
+Test Suites: 2 failed, 26 passed, 28 total
+Tests:       8 failed, 433 passed, 441 total
+Snapshots:   0 total
+Time:        153.865 s, estimated 284 s
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect 
+async operations that kept running after all tests finished?

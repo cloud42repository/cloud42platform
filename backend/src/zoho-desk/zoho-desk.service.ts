@@ -1,13 +1,20 @@
-﻿import { Injectable } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AuthConfigService } from '../auth-config/auth-config.service';
+import { getCurrentUserEmail } from '../auth-module/user-context';
 import { ZohoDeskClient } from './ZohoDeskClient';
 
 @Injectable()
 export class ZohoDeskService {
-  readonly client: ZohoDeskClient;
+  private readonly logger = new Logger(ZohoDeskService.name);
+  private readonly defaultClient: ZohoDeskClient;
+  private readonly clients = new Map<string, { client: ZohoDeskClient; expiresAt: number }>();
 
-  constructor(private readonly config: ConfigService) {
-    this.client = new ZohoDeskClient({
+  constructor(
+    private readonly config: ConfigService,
+    private readonly authConfigService: AuthConfigService,
+  ) {
+    this.defaultClient = new ZohoDeskClient({
       clientId: config.getOrThrow('ZOHO_CLIENT_ID'),
       clientSecret: config.getOrThrow('ZOHO_CLIENT_SECRET'),
       refreshToken: config.getOrThrow('ZOHO_REFRESH_TOKEN'),
@@ -15,26 +22,51 @@ export class ZohoDeskService {
     });
   }
 
-  listTickets(params?: Record<string, unknown>) { return this.client.listTickets(params as any); }
-  getTicket(id: string) { return this.client.getTicket(id); }
-  createTicket(data: unknown) { return this.client.createTicket(data as any); }
-  updateTicket(id: string, data: unknown) { return this.client.updateTicket(id, data as any); }
-  deleteTicket(id: string) { return this.client.deleteTicket(id); }
-  searchTickets(params: Record<string, unknown>) { return this.client.searchTickets(params as any); }
+  private async getClient(): Promise<ZohoDeskClient> {
+    const email = getCurrentUserEmail();
+    if (!email || email === 'anonymous') return this.defaultClient;
+    const cached = this.clients.get(email);
+    if (cached && cached.expiresAt > Date.now()) return cached.client;
+    try {
+      const row = await this.authConfigService.findOne(email, '__zoho__');
+      if (row?.config) {
+        const c = row.config as unknown as Record<string, unknown>;
+        if (c['clientId'] && c['clientSecret']) {
+          const client = new ZohoDeskClient({
+            clientId: c['clientId'] as string,
+            clientSecret: c['clientSecret'] as string,
+            refreshToken: (c['refreshToken'] as string) ?? this.config.getOrThrow('ZOHO_REFRESH_TOKEN'),
+            accountsUrl: (c['accountsUrl'] as string) ?? this.config.get('ZOHO_ACCOUNTS_URL'),
+          });
+          this.clients.set(email, { client, expiresAt: Date.now() + 10 * 60_000 });
+          this.logger.log(`Created per-user Zoho Desk client for ${email}`);
+          return client;
+        }
+      }
+    } catch { /* fall through */ }
+    return this.defaultClient;
+  }
 
-  listComments(ticketId: string) { return this.client.listComments(ticketId); }
-  addComment(ticketId: string, data: unknown) { return this.client.addComment(ticketId, data as any); }
-  deleteComment(ticketId: string, commentId: string) { return this.client.deleteComment(ticketId, commentId); }
+  async listTickets(params?: Record<string, unknown>) { return (await this.getClient()).listTickets(params as any); }
+  async getTicket(id: string) { return (await this.getClient()).getTicket(id); }
+  async createTicket(data: unknown) { return (await this.getClient()).createTicket(data as any); }
+  async updateTicket(id: string, data: unknown) { return (await this.getClient()).updateTicket(id, data as any); }
+  async deleteTicket(id: string) { return (await this.getClient()).deleteTicket(id); }
+  async searchTickets(params: Record<string, unknown>) { return (await this.getClient()).searchTickets(params as any); }
 
-  listContacts(params?: Record<string, unknown>) { return this.client.listContacts(params as any); }
-  getContact(id: string) { return this.client.getContact(id); }
-  createContact(data: unknown) { return this.client.createContact(data as any); }
-  updateContact(id: string, data: unknown) { return this.client.updateContact(id, data as any); }
-  deleteContact(id: string) { return this.client.deleteContact(id); }
+  async listComments(ticketId: string) { return (await this.getClient()).listComments(ticketId); }
+  async addComment(ticketId: string, data: unknown) { return (await this.getClient()).addComment(ticketId, data as any); }
+  async deleteComment(ticketId: string, commentId: string) { return (await this.getClient()).deleteComment(ticketId, commentId); }
 
-  listAgents(params?: Record<string, unknown>) { return this.client.listAgents(params as any); }
-  getAgent(id: string) { return this.client.getAgent(id); }
+  async listContacts(params?: Record<string, unknown>) { return (await this.getClient()).listContacts(params as any); }
+  async getContact(id: string) { return (await this.getClient()).getContact(id); }
+  async createContact(data: unknown) { return (await this.getClient()).createContact(data as any); }
+  async updateContact(id: string, data: unknown) { return (await this.getClient()).updateContact(id, data as any); }
+  async deleteContact(id: string) { return (await this.getClient()).deleteContact(id); }
 
-  listDepartments() { return this.client.listDepartments(); }
-  getDepartment(id: string) { return this.client.getDepartment(id); }
+  async listAgents(params?: Record<string, unknown>) { return (await this.getClient()).listAgents(params as any); }
+  async getAgent(id: string) { return (await this.getClient()).getAgent(id); }
+
+  async listDepartments() { return (await this.getClient()).listDepartments(); }
+  async getDepartment(id: string) { return (await this.getClient()).getDepartment(id); }
 }

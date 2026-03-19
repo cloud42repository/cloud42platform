@@ -1,0 +1,379 @@
+﻿node.exe : (node:19300) DeprecationWarning: Calling client.query() when the 
+client is already executing a query is deprecated and will be removed in 
+pg@9.0. Use async/await or an external async flow control mechanism instead.
+Au caractère 
+C:\SAPDevelop\cloud42Platform\backend\node_modules\.bin\jest.ps1:24 : 5
++     & "node$exe"  "$basedir/../jest/bin/jest.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:19300) De...hanism instead. 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:54588) DeprecationWarning: Calling client.query() when the client is 
+already executing a query is deprecated and will be removed in pg@9.0. Use 
+async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  console.log
+    [MOCK_MODE] Store seeded with 82 resource types (5 records each).
+
+      at seedStore (mock/mock-adapter.ts:155:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 13)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 13)
+
+  console.log
+    [MOCK_MODE] Store seeded with 82 resource types (5 records each).
+
+      at seedStore (mock/mock-adapter.ts:155:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 13)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 13)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 14)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 14)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 15)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 15)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 16)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 16)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 17)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 17)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 18)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 18)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 19)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 19)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 20)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 20)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 21)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 21)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 22)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 22)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 23)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 23)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 24)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 24)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 25)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 25)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 26)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 26)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 27)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 27)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 28)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 28)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 29)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 29)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 30)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 30)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 31)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 31)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 32)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 32)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 33)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 33)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 34)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 34)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 35)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:556:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 35)
+
+PASS src/__tests__/controllers/user.controller.e2e-spec.ts (25.995 s)
+  UserController (e2e)
+    ΓêÜ should be defined (17 ms)
+    ΓêÜ GET /users ΓåÆ findAll() (10 ms)
+    ΓêÜ GET /users/:email ΓåÆ findOne() (2 ms)
+    ΓêÜ POST /users/login ΓåÆ registerLogin() (18 ms)
+    ΓêÜ PATCH /users/:email/role ΓåÆ setRole() (6 ms)
+    ΓêÜ PATCH /users/:email/module-visibility ΓåÆ setModuleVisibility() (13 ms)
+    ΓêÜ PATCH /users/:email/modules-bulk ΓåÆ setAllModulesEnabled() (10 ms)
+    ΓêÜ DELETE /users/:email ΓåÆ remove() (8 ms)
+
+PASS src/__tests__/controllers/workflow.controller.e2e-spec.ts (26.015 s)
+  WorkflowController (e2e)
+    ΓêÜ should be defined (16 ms)
+    ΓêÜ POST /workflows ΓåÆ create() (30 ms)
+    ΓêÜ GET /workflows ΓåÆ findAll() (5 ms)
+    ΓêÜ GET /workflows/:id ΓåÆ findOne() (3 ms)
+    ΓêÜ PUT /workflows/:id ΓåÆ update() (13 ms)
+    ΓêÜ DELETE /workflows/:id ΓåÆ remove() (4 ms)
+
+Test Suites: 2 passed, 2 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        38.025 s, estimated 85 s
+Ran all test suites matching /(user|workflow)\.controller/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect 
+async operations that kept running after all tests finished?

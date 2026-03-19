@@ -1,53 +1,84 @@
-﻿import { Injectable } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AuthConfigService } from '../auth-config/auth-config.service';
+import { getCurrentUserEmail } from '../auth-module/user-context';
 import { ImpossibleCloudClient } from './ImpossibleCloudClient';
 
 @Injectable()
 export class ImpossibleCloudService {
-  readonly client: ImpossibleCloudClient;
+  private readonly logger = new Logger(ImpossibleCloudService.name);
+  private readonly defaultClient: ImpossibleCloudClient;
+  private readonly clients = new Map<string, { client: ImpossibleCloudClient; expiresAt: number }>();
 
-  constructor(private readonly config: ConfigService) {
-    this.client = new ImpossibleCloudClient({
+  constructor(
+    private readonly config: ConfigService,
+    private readonly authConfigService: AuthConfigService,
+  ) {
+    this.defaultClient = new ImpossibleCloudClient({
       apiKey: config.getOrThrow('IC_API_KEY'),
       baseUrl: config.get('IC_BASE_URL'),
     });
   }
 
+  private async getClient(): Promise<ImpossibleCloudClient> {
+    const email = getCurrentUserEmail();
+    if (!email || email === 'anonymous') return this.defaultClient;
+    const cached = this.clients.get(email);
+    if (cached && cached.expiresAt > Date.now()) return cached.client;
+    try {
+      const row = await this.authConfigService.findOne(email, '__impossible-cloud__');
+      if (row?.config) {
+        const c = row.config as unknown as Record<string, unknown>;
+        if (c['apiKey']) {
+          const client = new ImpossibleCloudClient({
+            apiKey: c['apiKey'] as string,
+            baseUrl: (c['baseUrl'] as string) ?? this.config.get('IC_BASE_URL'),
+            timeout: c['timeout'] ? Number(c['timeout']) : undefined,
+          });
+          this.clients.set(email, { client, expiresAt: Date.now() + 10 * 60_000 });
+          this.logger.log(`Created per-user Impossible Cloud client for ${email}`);
+          return client;
+        }
+      }
+    } catch { /* fall through */ }
+    return this.defaultClient;
+  }
+
   // Integrations
-  listRegions() { return this.client.listRegions(); }
+  async listRegions() { return (await this.getClient()).listRegions(); }
 
   // Contracts
-  listContracts() { return this.client.listContracts(); }
-  listContractPartners(contractId: string) { return this.client.listContractPartners(contractId); }
+  async listContracts() { return (await this.getClient()).listContracts(); }
+  async listContractPartners(contractId: string) { return (await this.getClient()).listContractPartners(contractId); }
 
   // Partners
-  createPartner(data: unknown) { return this.client.createPartner(data as any); }
-  getPartner(partnerId: string) { return this.client.getPartner(partnerId); }
-  updatePartner(partnerId: string, data: unknown) { return this.client.updatePartner(partnerId, data as any); }
-  deletePartner(partnerId: string) { return this.client.deletePartner(partnerId); }
+  async createPartner(data: unknown) { return (await this.getClient()).createPartner(data as any); }
+  async getPartner(partnerId: string) { return (await this.getClient()).getPartner(partnerId); }
+  async updatePartner(partnerId: string, data: unknown) { return (await this.getClient()).updatePartner(partnerId, data as any); }
+  async deletePartner(partnerId: string) { return (await this.getClient()).deletePartner(partnerId); }
 
   // Members
-  createMember(partnerId: string, data: unknown) { return this.client.createMember(partnerId, data as any); }
-  deleteMember(partnerId: string, memberId: string) { return this.client.deleteMember(partnerId, memberId); }
-  listMembers(partnerId: string) { return this.client.listMembers(partnerId); }
+  async createMember(partnerId: string, data: unknown) { return (await this.getClient()).createMember(partnerId, data as any); }
+  async deleteMember(partnerId: string, memberId: string) { return (await this.getClient()).deleteMember(partnerId, memberId); }
+  async listMembers(partnerId: string) { return (await this.getClient()).listMembers(partnerId); }
 
   // Partner Storage Accounts
-  listPartnerStorageAccounts(partnerId: string) { return this.client.listPartnerStorageAccounts(partnerId); }
-  createPartnerStorageAccount(partnerId: string, data: unknown) { return this.client.createPartnerStorageAccount(partnerId, data as any); }
-  getPartnerStorageAccount(partnerId: string, accountId: string) { return this.client.getPartnerStorageAccount(partnerId, accountId); }
-  deletePartnerStorageAccount(partnerId: string, accountId: string) { return this.client.deletePartnerStorageAccount(partnerId, accountId); }
-  patchPartnerStorageAccount(partnerId: string, accountId: string, data: unknown) { return this.client.patchPartnerStorageAccount(partnerId, accountId, data as any); }
+  async listPartnerStorageAccounts(partnerId: string) { return (await this.getClient()).listPartnerStorageAccounts(partnerId); }
+  async createPartnerStorageAccount(partnerId: string, data: unknown) { return (await this.getClient()).createPartnerStorageAccount(partnerId, data as any); }
+  async getPartnerStorageAccount(partnerId: string, accountId: string) { return (await this.getClient()).getPartnerStorageAccount(partnerId, accountId); }
+  async deletePartnerStorageAccount(partnerId: string, accountId: string) { return (await this.getClient()).deletePartnerStorageAccount(partnerId, accountId); }
+  async patchPartnerStorageAccount(partnerId: string, accountId: string, data: unknown) { return (await this.getClient()).patchPartnerStorageAccount(partnerId, accountId, data as any); }
 
   // Partner / Account Usage
-  getPartnerStorageAccountUsage(partnerId: string, accountId: string, params: Record<string, unknown>) { return this.client.getPartnerStorageAccountUsage(partnerId, accountId, params as any); }
-  getPartnerUsage(partnerId: string, params: Record<string, unknown>) { return this.client.getPartnerUsage(partnerId, params as any); }
+  async getPartnerStorageAccountUsage(partnerId: string, accountId: string, params: Record<string, unknown>) { return (await this.getClient()).getPartnerStorageAccountUsage(partnerId, accountId, params as any); }
+  async getPartnerUsage(partnerId: string, params: Record<string, unknown>) { return (await this.getClient()).getPartnerUsage(partnerId, params as any); }
 
   // Own Storage Accounts
-  createStorageAccount(data: unknown) { return this.client.createStorageAccount(data as any); }
-  listStorageAccounts() { return this.client.listStorageAccounts(); }
-  getStorageAccount(accountId: string) { return this.client.getStorageAccount(accountId); }
-  deleteStorageAccount(accountId: string) { return this.client.deleteStorageAccount(accountId); }
-  patchStorageAccount(accountId: string, data: unknown) { return this.client.patchStorageAccount(accountId, data as any); }
-  getStorageAccountUsage(accountId: string, params: Record<string, unknown>) { return this.client.getStorageAccountUsage(accountId, params as any); }
-  getAllStorageAccountsUsage(params: Record<string, unknown>) { return this.client.getAllStorageAccountsUsage(params as any); }
+  async createStorageAccount(data: unknown) { return (await this.getClient()).createStorageAccount(data as any); }
+  async listStorageAccounts() { return (await this.getClient()).listStorageAccounts(); }
+  async getStorageAccount(accountId: string) { return (await this.getClient()).getStorageAccount(accountId); }
+  async deleteStorageAccount(accountId: string) { return (await this.getClient()).deleteStorageAccount(accountId); }
+  async patchStorageAccount(accountId: string, data: unknown) { return (await this.getClient()).patchStorageAccount(accountId, data as any); }
+  async getStorageAccountUsage(accountId: string, params: Record<string, unknown>) { return (await this.getClient()).getStorageAccountUsage(accountId, params as any); }
+  async getAllStorageAccountsUsage(params: Record<string, unknown>) { return (await this.getClient()).getAllStorageAccountsUsage(params as any); }
 }

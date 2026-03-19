@@ -1,0 +1,238 @@
+﻿node.exe : (node:53132) DeprecationWarning: Calling client.query() when the 
+client is already executing a query is deprecated and will be removed in 
+pg@9.0. Use async/await or an external async flow control mechanism instead.
+Au caractère 
+C:\SAPDevelop\cloud42Platform\backend\node_modules\.bin\jest.ps1:24 : 5
++     & "node$exe"  "$basedir/../jest/bin/jest.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:53132) De...hanism instead. 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  console.log
+    [MOCK_MODE] Store seeded with 82 resource types (5 records each).
+
+      at seedStore (mock/mock-adapter.ts:155:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 13)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 13)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 14)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 15)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 16)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 17)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 18)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 19)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 20)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 21)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 22)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 23)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 24)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 25)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 26)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 27)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 28)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 29)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 30)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 31)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 32)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 33)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 34)
+
+  console.log
+    [MOCK_MODE] Axios mock adapter attached ΓÇö all HTTP calls are stubbed.
+
+      at attachMockAdapter (mock/mock-adapter.ts:803:11)
+          at async Promise.all (index 3)
+          at async Promise.all (index 35)
+
+PASS src/__tests__/controllers/impossible-cloud.controller.e2e-spec.ts (15.218 
+s)
+  ImpossibleCloudController (e2e)
+    ΓêÜ should be defined (3 ms)
+    ΓêÜ GET /impossible-cloud/regions ΓåÆ listRegions() (89 ms)
+    ΓêÜ GET /impossible-cloud/contracts ΓåÆ listContracts() (83 ms)
+    ΓêÜ GET /impossible-cloud/contracts/:contractId/partners ΓåÆ 
+listContractPartners() (85 ms)
+    ΓêÜ POST /impossible-cloud/partners ΓåÆ createPartner() (98 ms)
+    ΓêÜ GET /impossible-cloud/partners/:partnerId ΓåÆ getPartner() (83 ms)
+    ΓêÜ PUT /impossible-cloud/partners/:partnerId ΓåÆ updatePartner() (83 ms)
+    ΓêÜ DELETE /impossible-cloud/partners/:partnerId ΓåÆ deletePartner() (81 
+ms)
+    ΓêÜ GET /impossible-cloud/partners/:partnerId/members ΓåÆ listMembers() 
+(85 ms)
+    ΓêÜ POST /impossible-cloud/partners/:partnerId/members ΓåÆ createMember() 
+(82 ms)
+    ΓêÜ DELETE /impossible-cloud/partners/:partnerId/members/:memberId ΓåÆ 
+deleteMember() (84 ms)
+    ΓêÜ GET /impossible-cloud/partners/:partnerId/storage-accounts ΓåÆ 
+listPartnerStorageAccounts() (81 ms)
+    ΓêÜ POST /impossible-cloud/partners/:partnerId/storage-accounts ΓåÆ 
+createPartnerStorageAccount() (83 ms)
+    ΓêÜ GET /impossible-cloud/partners/:partnerId/storage-accounts/:accountId 
+ΓåÆ getPartnerStorageAccount() (83 ms)
+    ΓêÜ DELETE 
+/impossible-cloud/partners/:partnerId/storage-accounts/:accountId ΓåÆ 
+deletePartnerStorageAccount() (82 ms)
+    ΓêÜ PATCH 
+/impossible-cloud/partners/:partnerId/storage-accounts/:accountId ΓåÆ 
+patchPartnerStorageAccount() (84 ms)
+    ΓêÜ GET 
+/impossible-cloud/partners/:partnerId/storage-accounts/:accountId/usage ΓåÆ 
+getPartnerStorageAccountUsage() (82 ms)
+    ΓêÜ GET /impossible-cloud/partners/:partnerId/usage ΓåÆ getPartnerUsage() 
+(84 ms)
+    ΓêÜ POST /impossible-cloud/storage-accounts ΓåÆ createStorageAccount() (84 
+ms)
+    ΓêÜ GET /impossible-cloud/storage-accounts ΓåÆ listStorageAccounts() (82 
+ms)
+    ΓêÜ GET /impossible-cloud/storage-accounts/usage ΓåÆ 
+getAllStorageAccountsUsage() (85 ms)
+    ΓêÜ GET /impossible-cloud/storage-accounts/:accountId ΓåÆ 
+getStorageAccount() (82 ms)
+    ΓêÜ DELETE /impossible-cloud/storage-accounts/:accountId ΓåÆ 
+deleteStorageAccount() (82 ms)
+    ΓêÜ PATCH /impossible-cloud/storage-accounts/:accountId ΓåÆ 
+patchStorageAccount() (84 ms)
+    ΓêÜ GET /impossible-cloud/storage-accounts/:accountId/usage ΓåÆ 
+getStorageAccountUsage() (83 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       25 passed, 25 total
+Snapshots:   0 total
+Time:        15.755 s, estimated 87 s
+Ran all test suites matching /impossible-cloud/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect 
+async operations that kept running after all tests finished?
