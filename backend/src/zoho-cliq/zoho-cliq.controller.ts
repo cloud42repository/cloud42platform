@@ -26,4 +26,9 @@ export class ZohoCliqController {
 
   @Get('bots') listBots() { return this.service.listBots(); }
   @Post('bots/:name/message') sendBotMessage(@Param('name') name: string, @Body() body: unknown) { return this.service.sendBotMessage(name, body); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

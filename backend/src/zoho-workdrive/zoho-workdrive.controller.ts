@@ -28,4 +28,9 @@ export class ZohoWorkdriveController {
   @Get('workspaces/:workspaceId/members') listWorkspaceMembers(@Param('workspaceId') wsId: string) { return this.service.listWorkspaceMembers(wsId); }
   @Post('workspaces/:workspaceId/members') addWorkspaceMember(@Param('workspaceId') wsId: string, @Body() body: { email: string; role: string }) { return this.service.addWorkspaceMember(wsId, body.email, body.role); }
   @Delete('workspaces/:workspaceId/members/:memberId') removeWorkspaceMember(@Param('workspaceId') wsId: string, @Param('memberId') mId: string) { return this.service.removeWorkspaceMember(wsId, mId); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

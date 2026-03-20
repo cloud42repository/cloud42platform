@@ -26,4 +26,9 @@ export class ZohoCommerceController {
   @Post('orders') createOrder(@Body() body: unknown) { return this.service.createOrder(body); }
   @Put('orders/:id/status') updateOrderStatus(@Param('id') id: string, @Body() body: { status: string }) { return this.service.updateOrderStatus(id, body.status); }
   @Post('orders/:id/cancel') cancelOrder(@Param('id') id: string) { return this.service.cancelOrder(id); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

@@ -30,4 +30,9 @@ export class ZohoProjectsController {
   @Get('projects/:projectId/timelogs') listTimeLogs(@Param('projectId') projectId: string) { return this.service.listTimeLogs(projectId); }
   @Post('projects/:projectId/tasks/:taskId/timelogs') addTimeLog(@Param('projectId') projectId: string, @Param('taskId') taskId: string, @Body() body: unknown) { return this.service.addTimeLog(projectId, taskId, body); }
   @Delete('projects/:projectId/tasks/:taskId/timelogs/:logId') deleteTimeLog(@Param('projectId') projectId: string, @Param('taskId') taskId: string, @Param('logId') logId: string) { return this.service.deleteTimeLog(projectId, taskId, logId); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

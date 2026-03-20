@@ -136,4 +136,9 @@ export class ZohoCrmController {
   searchRecords(@Param('module') module: string, @Query() params: Record<string, unknown>) {
     return this.service.searchRecords(module, params);
   }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

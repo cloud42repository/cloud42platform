@@ -1,6 +1,7 @@
 ﻿import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthConfigService } from '../auth-config/auth-config.service';
+import { ZohoOAuthService } from '../zoho-oauth/zoho-oauth.service';
 import { getCurrentUserEmail } from '../auth-module/user-context';
 import { ZohoCRMClient } from './ZohoCRMClient';
 import type { ZohoRegion } from '../base/types';
@@ -14,6 +15,7 @@ export class ZohoCrmService {
   constructor(
     private readonly config: ConfigService,
     private readonly authConfigService: AuthConfigService,
+    private readonly zohoOAuth: ZohoOAuthService,
   ) {
     this.defaultClient = new ZohoCRMClient({
       clientId: config.getOrThrow('ZOHO_CLIENT_ID'),
@@ -104,4 +106,17 @@ export class ZohoCrmService {
   async updateRecords(module: string, data: unknown[]) { return (await this.getClient()).updateRecords(module, data as any); }
   async deleteRecord(module: string, id: string) { return (await this.getClient()).deleteRecord(module, id); }
   async searchRecords(module: string, params: Record<string, unknown>) { return (await this.getClient()).searchRecords(module, params as any); }
+
+  // ── OAuth lifecycle ──────────────────────────────────────────────────────
+  getAuthUrl(scope: string) { return this.zohoOAuth.buildAuthorizationUrl({ scope }); }
+  async exchangeGrantCode(code: string) {
+    const result = await this.zohoOAuth.exchangeAndStore(code);
+    const email = getCurrentUserEmail(); if (email) this.clients.delete(email);
+    return result;
+  }
+  async revokeAuth() {
+    const result = await this.zohoOAuth.revokeAndClear();
+    const email = getCurrentUserEmail(); if (email) this.clients.delete(email);
+    return result;
+  }
 }

@@ -34,4 +34,9 @@ export class ZohoInvoiceController {
   @Get('payments') listPayments(@Query() q: Record<string, unknown>) { return this.service.listPayments(q); }
   @Post('payments') createPayment(@Body() body: unknown) { return this.service.createPayment(body); }
   @Delete('payments/:id') deletePayment(@Param('id') id: string) { return this.service.deletePayment(id); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

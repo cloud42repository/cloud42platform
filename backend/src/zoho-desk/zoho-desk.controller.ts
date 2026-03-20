@@ -29,4 +29,9 @@ export class ZohoDeskController {
 
   @Get('departments') listDepartments() { return this.service.listDepartments(); }
   @Get('departments/:id') getDepartment(@Param('id') id: string) { return this.service.getDepartment(id); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

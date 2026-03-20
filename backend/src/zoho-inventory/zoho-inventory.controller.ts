@@ -27,4 +27,9 @@ export class ZohoInventoryController {
   @Post('purchaseorders') createPurchaseOrder(@Body() body: unknown) { return this.service.createPurchaseOrder(body); }
   @Put('purchaseorders/:id') updatePurchaseOrder(@Param('id') id: string, @Body() body: unknown) { return this.service.updatePurchaseOrder(id, body); }
   @Delete('purchaseorders/:id') deletePurchaseOrder(@Param('id') id: string) { return this.service.deletePurchaseOrder(id); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

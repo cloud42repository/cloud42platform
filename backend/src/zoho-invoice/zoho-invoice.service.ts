@@ -1,6 +1,7 @@
 ﻿import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthConfigService } from '../auth-config/auth-config.service';
+import { ZohoOAuthService } from '../zoho-oauth/zoho-oauth.service';
 import { getCurrentUserEmail } from '../auth-module/user-context';
 import { ZohoInvoiceClient } from './ZohoInvoiceClient';
 import type { ZohoRegion } from '../base/types';
@@ -14,6 +15,7 @@ export class ZohoInvoiceService {
   constructor(
     private readonly config: ConfigService,
     private readonly authConfigService: AuthConfigService,
+    private readonly zohoOAuth: ZohoOAuthService,
   ) {
     this.defaultClient = new ZohoInvoiceClient({
       clientId: config.getOrThrow('ZOHO_CLIENT_ID'),
@@ -84,4 +86,17 @@ export class ZohoInvoiceService {
   async listPayments(params?: Record<string, unknown>) { return (await this.getClient()).listPayments(params as any); }
   async createPayment(data: unknown) { return (await this.getClient()).createPayment(data as any); }
   async deletePayment(id: string) { return (await this.getClient()).deletePayment(id); }
+
+  // ── OAuth lifecycle ──────────────────────────────────────────────────────
+  getAuthUrl(scope: string) { return this.zohoOAuth.buildAuthorizationUrl({ scope }); }
+  async exchangeGrantCode(code: string) {
+    const result = await this.zohoOAuth.exchangeAndStore(code);
+    const email = getCurrentUserEmail(); if (email) this.clients.delete(email);
+    return result;
+  }
+  async revokeAuth() {
+    const result = await this.zohoOAuth.revokeAndClear();
+    const email = getCurrentUserEmail(); if (email) this.clients.delete(email);
+    return result;
+  }
 }

@@ -23,4 +23,9 @@ export class ZohoMailController {
   @Get('accounts/:accountId/contacts') listContacts(@Param('accountId') aId: string) { return this.service.listContacts(aId); }
   @Post('accounts/:accountId/contacts') createContact(@Param('accountId') aId: string, @Body() body: unknown) { return this.service.createContact(aId, body); }
   @Delete('accounts/:accountId/contacts/:contactId') deleteContact(@Param('accountId') aId: string, @Param('contactId') cId: string) { return this.service.deleteContact(aId, cId); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

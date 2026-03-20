@@ -26,4 +26,9 @@ export class ZohoPayrollController {
 
   @Get('declarations') listDeclarations(@Query() q: Record<string, unknown>) { return this.service.listDeclarations(q); }
   @Get('declarations/:id') getDeclaration(@Param('id') id: string) { return this.service.getDeclaration(id); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

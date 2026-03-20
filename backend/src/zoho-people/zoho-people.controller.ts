@@ -30,4 +30,9 @@ export class ZohoPeopleController {
   @Get('forms/:formName/records') getFormRecords(@Param('formName') formName: string, @Query() q: Record<string, unknown>) { return this.service.getFormRecords(formName, q); }
   @Post('forms/:formName/records') addFormRecord(@Param('formName') formName: string, @Body() body: Record<string, unknown>) { return this.service.addFormRecord(formName, body); }
   @Post('forms/:formName/records/:id') updateFormRecord(@Param('formName') formName: string, @Param('id') id: string, @Body() body: Record<string, unknown>) { return this.service.updateFormRecord(formName, id, body); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

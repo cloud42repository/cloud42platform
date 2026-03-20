@@ -26,4 +26,9 @@ export class ZohoExpenseController {
 
   @Get('advances') listAdvances() { return this.service.listAdvances(); }
   @Get('advances/:id') getAdvance(@Param('id') id: string) { return this.service.getAdvance(id); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

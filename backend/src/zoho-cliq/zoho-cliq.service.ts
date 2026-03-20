@@ -1,6 +1,7 @@
 ﻿import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthConfigService } from '../auth-config/auth-config.service';
+import { ZohoOAuthService } from '../zoho-oauth/zoho-oauth.service';
 import { getCurrentUserEmail } from '../auth-module/user-context';
 import { ZohoCliqClient } from './ZohoCliqClient';
 
@@ -13,6 +14,7 @@ export class ZohoCliqService {
   constructor(
     private readonly config: ConfigService,
     private readonly authConfigService: AuthConfigService,
+    private readonly zohoOAuth: ZohoOAuthService,
   ) {
     this.defaultClient = new ZohoCliqClient({
       clientId: config.getOrThrow('ZOHO_CLIENT_ID'),
@@ -65,4 +67,17 @@ export class ZohoCliqService {
 
   async listBots() { return (await this.getClient()).listBots(); }
   async sendBotMessage(botUniqueName: string, data: unknown) { return (await this.getClient()).sendBotMessage(botUniqueName, data as any); }
+
+  // ── OAuth lifecycle ──────────────────────────────────────────────────────
+  getAuthUrl(scope: string) { return this.zohoOAuth.buildAuthorizationUrl({ scope }); }
+  async exchangeGrantCode(code: string) {
+    const result = await this.zohoOAuth.exchangeAndStore(code);
+    const email = getCurrentUserEmail(); if (email) this.clients.delete(email);
+    return result;
+  }
+  async revokeAuth() {
+    const result = await this.zohoOAuth.revokeAndClear();
+    const email = getCurrentUserEmail(); if (email) this.clients.delete(email);
+    return result;
+  }
 }

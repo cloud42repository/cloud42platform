@@ -31,4 +31,9 @@ export class ZohoSubscriptionsController {
   @Put('subscriptions/:id') updateSubscription(@Param('id') id: string, @Body() body: unknown) { return this.service.updateSubscription(id, body); }
   @Post('subscriptions/:id/cancel') cancelSubscription(@Param('id') id: string) { return this.service.cancelSubscription(id); }
   @Post('subscriptions/:id/reactivate') reactivateSubscription(@Param('id') id: string) { return this.service.reactivateSubscription(id); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

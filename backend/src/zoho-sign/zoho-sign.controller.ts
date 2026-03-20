@@ -21,4 +21,9 @@ export class ZohoSignController {
 
   @Get('requests/:requestId/documents/:documentId') getDocument(@Param('requestId') reqId: string, @Param('documentId') docId: string) { return this.service.getDocument(reqId, docId); }
   @Get('requests/:requestId/documents/:documentId/download') downloadDocument(@Param('requestId') reqId: string, @Param('documentId') docId: string) { return this.service.downloadDocument(reqId, docId); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

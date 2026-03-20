@@ -50,4 +50,9 @@ export class ZohoBooksController {
   @Post('items') createItem(@Body() body: unknown) { return this.service.createItem(body); }
   @Put('items/:id') updateItem(@Param('id') id: string, @Body() body: unknown) { return this.service.updateItem(id, body); }
   @Delete('items/:id') deleteItem(@Param('id') id: string) { return this.service.deleteItem(id); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

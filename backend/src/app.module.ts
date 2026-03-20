@@ -31,6 +31,7 @@ import { SchemaModule } from './schema/schema.module';
 import { UserModule } from './user/user.module';
 import { WorkflowModule } from './workflow/workflow.module';
 import { AuthConfigModule } from './auth-config/auth-config.module';
+import { ZohoOAuthModule } from './zoho-oauth/zoho-oauth.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { AuthConfigModule } from './auth-config/auth-config.module';
     UserModule,
     WorkflowModule,
     AuthConfigModule,
+    ZohoOAuthModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: UserContextInterceptor },

@@ -26,4 +26,9 @@ export class ZohoAnalyticsController {
     @Param('viewId') viewId: string,
     @Query('format') format: 'csv' | 'json' | 'xlsx',
   ) { return this.service.exportData(wsId, viewId, format); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

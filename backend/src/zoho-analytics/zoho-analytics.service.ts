@@ -1,6 +1,7 @@
 ﻿import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthConfigService } from '../auth-config/auth-config.service';
+import { ZohoOAuthService } from '../zoho-oauth/zoho-oauth.service';
 import { getCurrentUserEmail } from '../auth-module/user-context';
 import { ZohoAnalyticsClient } from './ZohoAnalyticsClient';
 
@@ -13,6 +14,7 @@ export class ZohoAnalyticsService {
   constructor(
     private readonly config: ConfigService,
     private readonly authConfigService: AuthConfigService,
+    private readonly zohoOAuth: ZohoOAuthService,
   ) {
     this.defaultClient = new ZohoAnalyticsClient({
       clientId: config.getOrThrow('ZOHO_CLIENT_ID'),
@@ -64,4 +66,17 @@ export class ZohoAnalyticsService {
 
   async importData(config: unknown, data: unknown) { return (await this.getClient()).importData(config as any, data); }
   async exportData(workspaceId: string, viewId: string, format: 'csv' | 'json' | 'xlsx' = 'json') { return (await this.getClient()).exportData(workspaceId, viewId, format); }
+
+  // ── OAuth lifecycle ──────────────────────────────────────────────────────
+  getAuthUrl(scope: string) { return this.zohoOAuth.buildAuthorizationUrl({ scope }); }
+  async exchangeGrantCode(code: string) {
+    const result = await this.zohoOAuth.exchangeAndStore(code);
+    const email = getCurrentUserEmail(); if (email) this.clients.delete(email);
+    return result;
+  }
+  async revokeAuth() {
+    const result = await this.zohoOAuth.revokeAndClear();
+    const email = getCurrentUserEmail(); if (email) this.clients.delete(email);
+    return result;
+  }
 }

@@ -84,4 +84,9 @@ export class ZohoSalesIQController {
 
   @Get(':screenName/feedback-forms')
   listFeedbackForms(@Param('screenName') screenName: string) { return this.service.listFeedbackForms(screenName); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

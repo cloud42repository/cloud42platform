@@ -72,4 +72,9 @@ export class ZohoCreatorController {
     @Param('workflowName') workflowName: string,
     @Body() data: Record<string, unknown>,
   ) { return this.service.triggerWorkflow(appLinkName, workflowName, data); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }

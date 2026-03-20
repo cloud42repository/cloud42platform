@@ -22,4 +22,9 @@ export class ZohoCampaignsController {
   @Get('campaigns/:campaignKey') getCampaign(@Param('campaignKey') key: string) { return this.service.getCampaign(key); }
   @Post('campaigns/:campaignKey/send') sendCampaign(@Param('campaignKey') key: string) { return this.service.sendCampaign(key); }
   @Post('campaigns/:campaignKey/schedule') scheduleCampaign(@Param('campaignKey') key: string, @Body() body: { scheduleTime: string }) { return this.service.scheduleCampaign(key, body.scheduleTime); }
+
+  // ── OAuth ────────────────────────────────────────────────────────────
+  @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
+  @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }
+  @Post('oauth/revoke') revokeAuth() { return this.service.revokeAuth(); }
 }
