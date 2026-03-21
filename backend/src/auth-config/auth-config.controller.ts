@@ -5,11 +5,13 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Param,
   Put,
   Req,
 } from '@nestjs/common';
 import { AuthConfigService } from './auth-config.service';
+import { ZohoOAuthService } from '../zoho-oauth/zoho-oauth.service';
 import type { SaveAuthConfigDto } from './auth-config.dto';
 import type { JwtPayload } from '../auth-module/jwt.strategy';
 import { Roles } from '../auth-module/roles.decorator';
@@ -22,7 +24,12 @@ import { Roles } from '../auth-module/roles.decorator';
  */
 @Controller('auth-configs')
 export class AuthConfigController {
-  constructor(private readonly service: AuthConfigService) {}
+  private readonly logger = new Logger(AuthConfigController.name);
+
+  constructor(
+    private readonly service: AuthConfigService,
+    private readonly zohoOAuth: ZohoOAuthService,
+  ) {}
 
   /* ── Current user routes ── */
 
@@ -43,12 +50,34 @@ export class AuthConfigController {
 
   /** PUT /api/auth-configs/:moduleId — create or update auth config */
   @Put(':moduleId')
-  save(
+  async save(
     @Req() req: { user: JwtPayload },
     @Param('moduleId') moduleId: string,
     @Body() dto: SaveAuthConfigDto,
   ) {
-    return this.service.save(req.user.sub, moduleId, dto.config);
+    const userEmail = req.user.sub;
+
+    // When saving Zoho config with an authorization code, exchange it for tokens
+    if (moduleId === '__zoho__' && dto.config) {
+      const cfg = dto.config as unknown as Record<string, unknown>;
+      const code = cfg['code'] as string | undefined;
+      if (code) {
+        this.logger.log(`Zoho auth code detected for ${userEmail} — exchanging for tokens…`);
+        await this.zohoOAuth.exchangeAndStore(code, {
+          userEmail,
+          clientId: cfg['clientId'] as string | undefined,
+          clientSecret: cfg['clientSecret'] as string | undefined,
+          redirectUri: cfg['redirectUri'] as string | undefined,
+          accountsUrl: cfg['accountsUrl'] as string | undefined,
+          organizationId: cfg['organizationId'] as string | undefined,
+          scope: cfg['scope'] as string | undefined,
+        });
+        // Return the stored config (tokens are now persisted by exchangeAndStore)
+        return this.service.findOne(userEmail, moduleId);
+      }
+    }
+
+    return this.service.save(userEmail, moduleId, dto.config);
   }
 
   /** DELETE /api/auth-configs/:moduleId — remove auth config for one module */

@@ -14,6 +14,7 @@ import { ZohoListWrapper, ZohoBulkResponse } from "../shared/shared.dto";
 export interface ZohoCRMConfig extends ZohoCredentials {
   /** Data-center region. Defaults to "com". */
   region?: ZohoRegion;
+  organizationId?: string;
   /** Override the full API base URL instead of deriving it from region. */
   apiBaseUrl?: string;
 }

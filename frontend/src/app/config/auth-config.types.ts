@@ -18,6 +18,8 @@ export interface AuthConfig {
   // Authorization code / PKCE extras
   authorizationUrl?: string;
   redirectUri?: string;
+  code?: string;
+  organizationId?: string;
   // OAuth Refresh
   refreshToken?: string;
   // Device flow
@@ -30,6 +32,10 @@ export interface AuthConfig {
   password?: string;
   // Bearer / static token
   bearerToken?: string;
+  // Stored token data (set by backend after code exchange)
+  accessToken?: string;
+  tokenExpiresAt?: string;  // ISO date
+  accountsUrl?: string;
 }
 
 export const AUTH_TYPE_LABELS: Record<AuthType, string> = {
@@ -85,6 +91,12 @@ export interface ZohoProductConfig {
   refreshToken?: string;
   accountsUrl?: string;
   apiBaseUrl?: string;
+  redirectUri?: string;
+  code?: string;
+  organizationId?: string;
+  // Token data stored by backend
+  accessToken?: string;
+  tokenExpiresAt?: string;
 }
 
 /** ChatGPT / OpenAI config */
@@ -149,11 +161,13 @@ export const SERVICE_CONFIG_GROUPS: ServiceConfigGroup[] = [
       'zoho-recruit', 'zoho-salesiq', 'zoho-sign', 'zoho-subscriptions', 'zoho-workdrive',
     ],
     fields: [
-      { key: 'clientId',     label: 'Client ID',      placeholder: 'e.g. 1000.ABC123…' },
-      { key: 'clientSecret', label: 'Client Secret',   placeholder: '••••••••', secret: true },
-      { key: 'refreshToken', label: 'Refresh Token',   placeholder: '••••••••', secret: true },
-      { key: 'accountsUrl',  label: 'Accounts URL',    placeholder: 'https://accounts.zoho.com' },
-      { key: 'apiBaseUrl',   label: 'API Base URL',    placeholder: 'https://www.zohoapis.com' },
+      { key: 'clientId',       label: 'Client ID',        placeholder: 'e.g. 1000.ABC123…' },
+      { key: 'clientSecret',   label: 'Client Secret',    placeholder: '••••••••', secret: true },
+      { key: 'redirectUri',    label: 'Redirect URI',     placeholder: 'https://yourapp.com/oauth/callback' },
+      { key: 'code',           label: 'Grant Code',       placeholder: 'Paste the authorization code from Zoho' },
+      { key: 'organizationId', label: 'Organization ID',  placeholder: 'e.g. 12345678' },
+      { key: 'accountsUrl',    label: 'Accounts URL',     placeholder: 'https://accounts.zoho.eu' },
+      { key: 'scope',          label: 'Scope',            placeholder: 'ZohoCRM.modules.ALL ZohoBooks.fullaccess.all' },
     ],
   },
   {

@@ -10,6 +10,7 @@ import {
 import { ZohoListWrapper, ZohoBulkResponse } from "../shared/shared.dto";
 
 export interface ZohoRecruitConfig extends ZohoCredentials {
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://recruit.zoho.com/recruit/v2 */
   apiBaseUrl?: string;
 }

@@ -11,6 +11,7 @@ import {
 
 export interface ZohoProjectsConfig extends ZohoCredentials {
   portalId?: string;
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://projectsapi.zoho.com/restapi */
   apiBaseUrl?: string;
 }

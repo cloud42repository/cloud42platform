@@ -10,6 +10,7 @@ import {
 } from "./zoho-workdrive.dto";
 
 export interface ZohoWorkDriveConfig extends ZohoCredentials {
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://workdrive.zoho.com/api/v1 */
   apiBaseUrl?: string;
 }

@@ -8,6 +8,7 @@ import {
 } from "./zoho-sign.dto";
 
 export interface ZohoSignConfig extends ZohoCredentials {
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://sign.zoho.com/api/v1 */
   apiBaseUrl?: string;
 }

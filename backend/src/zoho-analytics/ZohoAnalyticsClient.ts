@@ -12,6 +12,7 @@ import {
 export interface ZohoAnalyticsConfig extends ZohoCredentials {
   /** Your Zoho Analytics account owner email */
   accountOwnerEmail?: string;
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://analyticsapi.zoho.com/api/v2 */
   apiBaseUrl?: string;
 }

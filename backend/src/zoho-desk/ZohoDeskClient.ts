@@ -10,6 +10,7 @@ import {
 } from "./zoho-desk.dto";
 
 export interface ZohoDeskConfig extends ZohoCredentials {
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://desk.zoho.com/api/v1 */
   apiBaseUrl?: string;
 }

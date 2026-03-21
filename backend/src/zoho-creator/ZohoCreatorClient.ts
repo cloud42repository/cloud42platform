@@ -13,6 +13,7 @@ import {
 export interface ZohoCreatorConfig extends ZohoCredentials {
   /** Your Zoho Creator account owner login name */
   ownerName?: string;
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://creator.zoho.com/api/v2 */
   apiBaseUrl?: string;
 }

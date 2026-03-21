@@ -11,6 +11,7 @@ import {
 } from "./zoho-people.dto";
 
 export interface ZohoPeopleConfig extends ZohoCredentials {
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://people.zoho.com/people/api */
   apiBaseUrl?: string;
 }

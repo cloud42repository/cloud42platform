@@ -9,6 +9,7 @@ import {
 } from "./zoho-cliq.dto";
 
 export interface ZohoCliqConfig extends ZohoCredentials {
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://cliq.zoho.com/api/v2 */
   apiBaseUrl?: string;
 }

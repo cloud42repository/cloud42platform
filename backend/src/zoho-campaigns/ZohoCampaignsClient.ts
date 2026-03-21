@@ -9,6 +9,7 @@ import {
 } from "./zoho-campaigns.dto";
 
 export interface ZohoCampaignsConfig extends ZohoCredentials {
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://campaigns.zoho.com/api/v1.1 */
   apiBaseUrl?: string;
 }

@@ -9,6 +9,7 @@ import {
 } from "./zoho-mail.dto";
 
 export interface ZohoMailConfig extends ZohoCredentials {
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://mail.zoho.com/api */
   apiBaseUrl?: string;
 }

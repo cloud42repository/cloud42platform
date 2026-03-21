@@ -9,6 +9,7 @@ import {
 } from "./zoho-commerce.dto";
 
 export interface ZohoCommerceConfig extends ZohoCredentials {
+  organizationId?: string;
   /** Override the full API base URL. Defaults to https://commerce.zoho.com/store/api/v1 */
   apiBaseUrl?: string;
 }

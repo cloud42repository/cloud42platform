@@ -2,6 +2,7 @@
 import { ConfigService } from '@nestjs/config';
 import { AuthConfigService } from '../auth-config/auth-config.service';
 import { ZohoOAuthService } from '../zoho-oauth/zoho-oauth.service';
+import { StoredTokenAuthProvider } from '../auth/StoredTokenAuthProvider';
 import { getCurrentUserEmail } from '../auth-module/user-context';
 import { ZohoProjectsClient } from './ZohoProjectsClient';
 
@@ -38,9 +39,10 @@ export class ZohoProjectsService {
           const client = new ZohoProjectsClient({
             clientId: c['clientId'] as string,
             clientSecret: c['clientSecret'] as string,
-            refreshToken: (c['refreshToken'] as string) ?? this.config.getOrThrow('ZOHO_REFRESH_TOKEN'),
+            authProvider: new StoredTokenAuthProvider(this.zohoOAuth, email),
             accountsUrl: (c['accountsUrl'] as string) ?? this.config.get('ZOHO_ACCOUNTS_URL'),
             portalId: this.config.get('ZOHO_PORTAL_ID'),
+            organizationId: (c['organizationId'] as string) ?? this.config.get('ZOHO_ORGANIZATION_ID') ?? '',
           });
           this.clients.set(email, { client, expiresAt: Date.now() + 10 * 60_000 });
           this.logger.log(`Created per-user Zoho Projects client for ${email}`);
