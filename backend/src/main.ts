@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { ZohoApiExceptionFilter } from './shared/zoho-api-exception.filter';
 
 async function bootstrap(): Promise<void> {
   if (process.env['MOCK_MODE'] === 'true') {
@@ -37,6 +38,9 @@ async function bootstrap(): Promise<void> {
   });
 
   console.log(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
+
+  // Forward upstream API errors (Axios / Zoho) to the frontend instead of 500
+  app.useGlobalFilters(new ZohoApiExceptionFilter());
 
   const port = process.env['PORT'] ?? 3000;
   await app.listen(port);
