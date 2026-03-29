@@ -1,6 +1,6 @@
 import {
   Component, OnInit, signal, computed, inject, ViewChild, ElementRef,
-  ChangeDetectorRef,
+  ChangeDetectorRef, HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -29,6 +29,14 @@ import {
 } from '../../config/workflow.types';
 import { FormViewComponent } from '../../shared/form-view/form-view.component';
 import { TranslatePipe } from '../../i18n/translate.pipe';
+import { SchemaService, FieldSchema } from '../../services/schema.service';
+
+interface AutocompleteSuggestion {
+  label: string;       // Display label
+  insertText: string;  // Text to insert
+  detail: string;      // Category/description
+  icon: string;        // Material icon name
+}
 
 interface EndpointRef { module: ModuleDef; endpoint: EndpointDef; }
 interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; label: string; icon: string; color: string; }
@@ -567,10 +575,16 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                       </button>
                     </div>
                     @if (getParamSourceType(param) === 'hardcoded') {
-                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
-                        <mat-label>{{ 'workflow.value-for-param' | t:{param: param} }}</mat-label>
-                        <input matInput [value]="getParamValue(param)" (input)="setParamHardcoded(param, $any($event.target).value)" placeholder="e.g. my-account-id" />
-                      </mat-form-field>
+                      <div class="ac-field-wrapper">
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                          <mat-label>{{ 'workflow.value-for-param' | t:{param: param} }}</mat-label>
+                          <input matInput [value]="getParamValue(param)"
+                            (input)="onAcFieldInput($any($event.target), acSetParamHardcoded.bind(this, param))"
+                            (keydown)="onAcKeydown($event)"
+                            (blur)="closeAutocomplete()"
+                            placeholder="e.g. my-account-id … type {{ for refs" />
+                        </mat-form-field>
+                      </div>
                     }
                     @if (getParamSourceType(param) === 'from-step') {
                       <div class="from-step-row">
@@ -584,7 +598,11 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                         </mat-form-field>
                         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field-input">
                           <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
-                          <input matInput [value]="getParamFromStepField(param)" (input)="setParamFromStepField(param, $any($event.target).value)" placeholder="e.g. data.0.id" />
+                          <input matInput [value]="getParamFromStepField(param)"
+                            (input)="onAcFieldInput($any($event.target), acSetParamFromStepField.bind(this, param))"
+                            (keydown)="onAcKeydown($event)"
+                            (blur)="closeAutocomplete()"
+                            placeholder="e.g. data.0.id … type {{ for refs" />
                           <mat-hint>{{ 'workflow.dot-notation-hint' | t }}</mat-hint>
                         </mat-form-field>
                       </div>
@@ -631,10 +649,16 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                         </button>
                       </div>
                       @if (getBodySourceType(key) === 'hardcoded') {
-                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
-                          <mat-label>{{ 'workflow.value-for-key' | t:{key: key} }}</mat-label>
-                          <input matInput [value]="getBodyValue(key)" (input)="setBodyHardcoded(key, $any($event.target).value)" placeholder="Value…" />
-                        </mat-form-field>
+                        <div class="ac-field-wrapper">
+                          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                            <mat-label>{{ 'workflow.value-for-key' | t:{key: key} }}</mat-label>
+                            <input matInput [value]="getBodyValue(key)"
+                              (input)="onAcFieldInput($any($event.target), acSetBodyHardcoded.bind(this, key))"
+                              (keydown)="onAcKeydown($event)"
+                              (blur)="closeAutocomplete()"
+                              placeholder="Value… type {{ for refs" />
+                          </mat-form-field>
+                        </div>
                       }
                       @if (getBodySourceType(key) === 'from-step') {
                         <div class="from-step-row">
@@ -648,7 +672,11 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                           </mat-form-field>
                           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field-input">
                             <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
-                            <input matInput [value]="getBodyFromStepField(key)" (input)="setBodyFromStepField(key, $any($event.target).value)" placeholder="e.g. id" />
+                            <input matInput [value]="getBodyFromStepField(key)"
+                              (input)="onAcFieldInput($any($event.target), acSetBodyFromStepField.bind(this, key))"
+                              (keydown)="onAcKeydown($event)"
+                              (blur)="closeAutocomplete()"
+                              placeholder="e.g. id … type {{ for refs" />
                             <mat-hint>{{ 'workflow.dot-notation-hint' | t }}</mat-hint>
                           </mat-form-field>
                         </div>
@@ -666,15 +694,20 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                   </div>
                 }
 
-                <!-- ── TEXT MODE (raw JSON) ── -->
+                <!-- ── TEXT MODE (raw JSON with intellisense) ── -->
                 @if (getBodyMode(ep) === 'text') {
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
-                    <mat-label>{{ 'workflow.request-body-json' | t }}</mat-label>
-                    <textarea matInput rows="10" [value]="ep.rawBody ?? '{}'"
-                      (input)="setRawBody($any($event.target).value)"
-                      placeholder='{ "key": "value" }' class="raw-body-textarea"></textarea>
-                    <mat-hint>{{ 'workflow.enter-valid-json' | t }}</mat-hint>
-                  </mat-form-field>
+                  <div class="raw-body-wrapper">
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                      <mat-label>{{ 'workflow.request-body-json' | t }}</mat-label>
+                      <textarea matInput rows="10" [value]="ep.rawBody ?? '{}'"
+                        (input)="onRawBodyInput($any($event.target))"
+                        (keydown)="onAcKeydown($event)"
+                        (blur)="closeAutocomplete()"
+                        #rawBodyTextarea
+                        placeholder='{ "key": "value" }' class="raw-body-textarea"></textarea>
+                      <mat-hint>{{ 'workflow.type-hint' | t }}</mat-hint>
+                    </mat-form-field>
+                  </div>
                 }
 
                 <!-- ── FORM MODE (FormViewComponent) ── -->
@@ -805,7 +838,11 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                 </mat-form-field>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                   <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
-                  <input matInput [value]="block.loopSourceField ?? ''" (input)="mutateBlock(block.id, $any($event.target).value, 'loopSourceField')" placeholder="e.g. data" />
+                  <input matInput [value]="block.loopSourceField ?? ''"
+                    (input)="onAcFieldInput($any($event.target), acMutateBlock.bind(this, block.id, 'loopSourceField'))"
+                    (keydown)="onAcKeydown($event)"
+                    (blur)="closeAutocomplete()"
+                    placeholder="e.g. data … type {{ for refs" />
                   <mat-hint>{{ 'workflow.loop-field-hint' | t }}</mat-hint>
                 </mat-form-field>
                 <p class="loop-foreach-info">
@@ -859,7 +896,11 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
               </mat-form-field>
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                 <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
-                <input matInput [value]="block.conditionField ?? ''" (input)="mutateBlock(block.id, $any($event.target).value, 'conditionField')" placeholder="e.g. data.status" />
+                <input matInput [value]="block.conditionField ?? ''"
+                  (input)="onAcFieldInput($any($event.target), acMutateBlock.bind(this, block.id, 'conditionField'))"
+                  (keydown)="onAcKeydown($event)"
+                  (blur)="closeAutocomplete()"
+                  placeholder="e.g. data.status … type {{ for refs" />
               </mat-form-field>
               <div class="from-step-row">
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="step-select">
@@ -874,7 +915,11 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                 </mat-form-field>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field-input">
                   <mat-label>{{ 'workflow.value' | t }}</mat-label>
-                  <input matInput [value]="block.conditionValue ?? ''" (input)="mutateBlock(block.id, $any($event.target).value, 'conditionValue')" placeholder="e.g. active" />
+                  <input matInput [value]="block.conditionValue ?? ''"
+                    (input)="onAcFieldInput($any($event.target), acMutateBlock.bind(this, block.id, 'conditionValue'))"
+                    (keydown)="onAcKeydown($event)"
+                    (blur)="closeAutocomplete()"
+                    placeholder="e.g. active … type {{ for refs" />
                 </mat-form-field>
               </div>
 
@@ -947,7 +992,11 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                   </div>
                   <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                     <mat-label>{{ 'workflow.output-field' | t }}</mat-label>
-                    <input matInput [value]="m.outputField" (input)="updateMapping(block.id, idx, 'outputField', $any($event.target).value)" placeholder="e.g. contact_name" />
+                    <input matInput [value]="m.outputField"
+                      (input)="onAcFieldInput($any($event.target), acUpdateMappingOutput.bind(this, block.id, idx))"
+                      (keydown)="onAcKeydown($event)"
+                      (blur)="closeAutocomplete()"
+                      placeholder="e.g. contact_name" />
                   </mat-form-field>
                   <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                     <mat-label>{{ 'workflow.source-step' | t }}</mat-label>
@@ -959,7 +1008,11 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                   </mat-form-field>
                   <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                     <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
-                    <input matInput [value]="m.source.type === 'from-step' ? m.source.field : ''" (input)="updateMappingSource(block.id, idx, m.source.type === 'from-step' ? m.source.stepId : '', $any($event.target).value)" placeholder="e.g. data.first_name" />
+                    <input matInput [value]="m.source.type === 'from-step' ? m.source.field : ''"
+                      (input)="onAcFieldInput($any($event.target), acUpdateMappingField.bind(this, block.id, idx, m))"
+                      (keydown)="onAcKeydown($event)"
+                      (blur)="closeAutocomplete()"
+                      placeholder="e.g. data.first_name … type {{ for refs" />
                     <mat-hint>{{ 'workflow.dot-notation-hint' | t }}</mat-hint>
                   </mat-form-field>
                 </div>
@@ -975,6 +1028,21 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
             }
 
           </div>
+          <!-- Shared autocomplete overlay for all inputs in config panel -->
+          @if (acSuggestions().length > 0) {
+            <div class="ac-overlay ac-overlay--panel" [ngStyle]="acOverlayStyle()">
+              @for (s of acSuggestions(); track s.insertText; let i = $index) {
+                <div class="ac-item" [class.ac-item--active]="i === acSelectedIndex()"
+                     (mousedown)="insertSuggestion(s, $event)">
+                  <mat-icon class="ac-icon ac-icon--{{ s.icon }}">{{ s.icon }}</mat-icon>
+                  <div class="ac-text">
+                    <span class="ac-label">{{ s.label }}</span>
+                    <span class="ac-detail">{{ s.detail }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </div>
       }
     </div>
@@ -1304,6 +1372,33 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
       font-size: 14px; width: 14px; height: 14px; color: #0284c7; flex-shrink: 0; margin-top: 1px;
     }
     .raw-body-textarea { font-family: 'Fira Code', 'Consolas', monospace; font-size: 12px; line-height: 1.5; }
+    .raw-body-wrapper { position: relative; }
+    .ac-overlay {
+      position: absolute; z-index: 100; left: 12px; right: 12px;
+      top: calc(100% - 24px);
+      background: #fff; border: 1px solid #cbd5e1; border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12); max-height: 220px; overflow-y: auto;
+      padding: 4px 0;
+    }
+    .ac-item {
+      display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+      cursor: pointer; font-size: 12px; transition: background .1s;
+    }
+    .ac-item:hover, .ac-item--active { background: #eff6ff; }
+    .ac-field-wrapper { position: relative; }
+    .ac-overlay--panel {
+      position: fixed; z-index: 200;
+      width: 320px;
+      background: #fff; border: 1px solid #cbd5e1; border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12); max-height: 180px; overflow-y: auto;
+      padding: 4px 0;
+    }
+    .ac-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; }
+    .ac-icon--data_object { color: #0284c7; }
+    .ac-icon--link { color: #7c3aed; }
+    .ac-text { display: flex; flex-direction: column; min-width: 0; }
+    .ac-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-detail { font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .form-view-embed {
       border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;
       background: #fafafa; margin-top: 4px;
@@ -2122,9 +2217,234 @@ export class WorkflowBuilderComponent implements OnInit {
     this.mutateStep(id, s => ({ ...s, bodyMode: mode }));
   }
 
+  private readonly schemaService = inject(SchemaService);
+
   setRawBody(value: string) {
     const id = this.selectedStepId()!;
     this.mutateStep(id, s => ({ ...s, rawBody: value }));
+  }
+
+  // ── Autocomplete for step output references ────────────────────────────────
+  acSuggestions = signal<AutocompleteSuggestion[]>([]);
+  acSelectedIndex = signal(0);
+  acOverlayStyle = signal<{ [key: string]: string }>({});
+  private acInput: HTMLInputElement | HTMLTextAreaElement | null = null;
+  private acCallback: ((value: string) => void) | null = null;
+  /** 'json' = raw body textarea (field + value suggestions), 'ref' = any input (step ref suggestions only) */
+  private acMode: 'json' | 'ref' = 'ref';
+
+  private updateOverlayPosition() {
+    if (!this.acInput) return;
+    const rect = this.acInput.getBoundingClientRect();
+    this.acOverlayStyle.set({
+      top: rect.bottom + 4 + 'px',
+      left: rect.left + 'px',
+      width: Math.max(rect.width, 280) + 'px',
+    });
+  }
+
+  /** Build step output reference suggestions (used by all fields) */
+  private buildStepRefSuggestions(filter: string): AutocompleteSuggestion[] {
+    const suggestions: AutocompleteSuggestion[] = [];
+    const prev = this.previousSteps();
+    for (const ps of prev) {
+      const idx = this.getStepIndex(ps.id) + 1;
+      const label = ps.kind === 'endpoint'
+        ? `Step ${idx}: ${(ps as WorkflowStep).endpointLabel}`
+        : `Step ${idx}: ${this.getNodeLabel(ps)}`;
+
+      // Whole step output
+      const ref = `{{steps.${idx}}}`;
+      if (!filter || ref.toLowerCase().includes(filter.toLowerCase()) || label.toLowerCase().includes(filter.toLowerCase())) {
+        suggestions.push({ label: `steps.${idx}`, insertText: ref, detail: label, icon: 'link' });
+      }
+
+      if (ps.kind === 'endpoint') {
+        const step = ps as WorkflowStep;
+        // Schema-derived sub-paths
+        const stepFields = this.schemaService.getFields(step.moduleApiPrefix, step.endpointId);
+        for (const f of stepFields) {
+          const subRef = `{{steps.${idx}.${f.key}}}`;
+          if (!filter || subRef.toLowerCase().includes(filter.toLowerCase()) || f.key.toLowerCase().includes(filter.toLowerCase())) {
+            suggestions.push({ label: `steps.${idx}.${f.key}`, insertText: subRef, detail: `${label} → ${f.key}`, icon: 'link' });
+          }
+        }
+      }
+
+      // Common response paths
+      for (const common of ['data', 'data.id', 'data.name', 'id', 'message']) {
+        const subRef = `{{steps.${idx}.${common}}}`;
+        if (!filter || subRef.toLowerCase().includes(filter.toLowerCase()) || common.includes(filter.toLowerCase())) {
+          if (!suggestions.find(s => s.insertText === subRef)) {
+            suggestions.push({ label: `steps.${idx}.${common}`, insertText: subRef, detail: `${label} → ${common}`, icon: 'link' });
+          }
+        }
+      }
+    }
+    return suggestions.slice(0, 15);
+  }
+
+  /** Build field + step-ref suggestions for the raw JSON body textarea */
+  private buildJsonSuggestions(ep: WorkflowStep, trigger: 'field' | 'value', filter: string): AutocompleteSuggestion[] {
+    if (trigger === 'field') {
+      const suggestions: AutocompleteSuggestion[] = [];
+      const fields = this.schemaService.getFields(ep.moduleApiPrefix, ep.endpointId);
+      for (const f of fields) {
+        if (filter && !f.key.toLowerCase().includes(filter.toLowerCase())) continue;
+        suggestions.push({
+          label: f.key,
+          insertText: `"${f.key}"`,
+          detail: `${f.type}${f.required ? ' (required)' : ''}`,
+          icon: 'data_object',
+        });
+      }
+      return suggestions.slice(0, 15);
+    }
+    return this.buildStepRefSuggestions(filter);
+  }
+
+  /** Check for {{ trigger in an input value and show step ref suggestions */
+  private checkRefTrigger(input: HTMLInputElement | HTMLTextAreaElement): boolean {
+    const pos = input.selectionStart ?? 0;
+    const textBefore = input.value.substring(0, pos);
+
+    if (textBefore.endsWith('{{')) {
+      this.acSuggestions.set(this.buildStepRefSuggestions(''));
+      this.acSelectedIndex.set(0);
+      return true;
+    }
+
+    const openIdx = textBefore.lastIndexOf('{{');
+    const closeIdx = textBefore.lastIndexOf('}}');
+    if (openIdx > closeIdx && openIdx >= 0) {
+      const partial = textBefore.substring(openIdx + 2);
+      this.acSuggestions.set(this.buildStepRefSuggestions(partial));
+      this.acSelectedIndex.set(0);
+      return true;
+    }
+
+    return false;
+  }
+
+  // ── Raw body textarea (JSON mode) handlers ────────────────────────────────
+
+  /** Detect context from cursor position and show suggestions */
+  onRawBodyInput(textarea: HTMLTextAreaElement) {
+    this.acInput = textarea;
+    this.acCallback = (v: string) => this.setRawBody(v);
+    this.acMode = 'json';
+    this.setRawBody(textarea.value);
+    this.updateOverlayPosition();
+
+    // Check {{ trigger first
+    if (this.checkRefTrigger(textarea)) return;
+
+    // Check if typing a JSON key
+    const pos = textarea.selectionStart;
+    const textBefore = textarea.value.substring(0, pos);
+    const lineStart = textBefore.lastIndexOf('\n') + 1;
+    const line = textBefore.substring(lineStart).trimStart();
+    if (line.startsWith('"') && !line.includes(':')) {
+      const partial = line.substring(1);
+      const ep = this.selectedStep() as WorkflowStep | undefined;
+      if (ep?.kind === 'endpoint') {
+        this.acSuggestions.set(this.buildJsonSuggestions(ep, 'field', partial));
+        this.acSelectedIndex.set(0);
+      }
+      return;
+    }
+
+    this.acSuggestions.set([]);
+  }
+
+  // ── Generic field input handlers (path params, body values, loop, if-else, mapper) ──
+
+  onAcFieldInput(input: HTMLInputElement, callback: (value: string) => void) {
+    this.acInput = input;
+    this.acCallback = callback;
+    this.acMode = 'ref';
+    callback(input.value);
+    this.updateOverlayPosition();
+
+    if (this.previousSteps().length === 0) { this.acSuggestions.set([]); return; }
+    if (!this.checkRefTrigger(input)) {
+      this.acSuggestions.set([]);
+    }
+  }
+
+  onAcKeydown(event: KeyboardEvent) {
+    const suggestions = this.acSuggestions();
+    if (suggestions.length === 0) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.acSelectedIndex.update(i => Math.min(i + 1, suggestions.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.acSelectedIndex.update(i => Math.max(i - 1, 0));
+    } else if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault();
+      this.insertSuggestion(suggestions[this.acSelectedIndex()]);
+    } else if (event.key === 'Escape') {
+      this.acSuggestions.set([]);
+    }
+  }
+
+  insertSuggestion(suggestion: AutocompleteSuggestion, event?: MouseEvent) {
+    if (event) event.preventDefault();
+    const input = this.acInput;
+    if (!input) { this.acSuggestions.set([]); return; }
+
+    const pos = input.selectionStart ?? 0;
+    const text = input.value;
+    const before = text.substring(0, pos);
+
+    if (suggestion.icon === 'link') {
+      // Step reference — replace from {{ onwards
+      const openIdx = before.lastIndexOf('{{');
+      if (openIdx >= 0) {
+        const afterCursor = text.substring(pos);
+        const closeMatch = afterCursor.match(/^[^}]*}}/);
+        const replaceEnd = closeMatch ? pos + closeMatch[0].length : pos;
+        const newText = text.substring(0, openIdx) + suggestion.insertText + text.substring(replaceEnd);
+        input.value = newText;
+        const cursorPos = openIdx + suggestion.insertText.length;
+        input.setSelectionRange(cursorPos, cursorPos);
+      }
+    } else if (this.acMode === 'json') {
+      // Field name in JSON — replace from opening quote
+      const lineStart = before.lastIndexOf('\n') + 1;
+      const lineText = before.substring(lineStart);
+      const quoteIdx = lineText.indexOf('"');
+      if (quoteIdx >= 0) {
+        const replaceFrom = lineStart + quoteIdx;
+        const insertText = suggestion.insertText + ': ';
+        const newText = text.substring(0, replaceFrom) + insertText + text.substring(pos);
+        input.value = newText;
+        const cursorPos = replaceFrom + insertText.length;
+        input.setSelectionRange(cursorPos, cursorPos);
+      }
+    }
+
+    if (this.acCallback) this.acCallback(input.value);
+    this.acSuggestions.set([]);
+    input.focus();
+  }
+
+  closeAutocomplete() {
+    setTimeout(() => { this.acSuggestions.set([]); this.acInput = null; }, 150);
+  }
+
+  // ── AC callback wrappers for each field type ──────────────────────────────
+  acSetParamHardcoded(param: string, value: string) { this.setParamHardcoded(param, value); }
+  acSetParamFromStepField(param: string, value: string) { this.setParamFromStepField(param, value); }
+  acSetBodyHardcoded(key: string, value: string) { this.setBodyHardcoded(key, value); }
+  acSetBodyFromStepField(key: string, value: string) { this.setBodyFromStepField(key, value); }
+  acMutateBlock(blockId: string, field: string, value: string) { this.mutateBlock(blockId, value, field); }
+  acUpdateMappingOutput(blockId: string, index: number, value: string) { this.updateMapping(blockId, index, 'outputField', value); }
+  acUpdateMappingField(blockId: string, index: number, m: FieldMapping, value: string) {
+    const stepId = m.source.type === 'from-step' ? m.source.stepId : '';
+    this.updateMappingSource(blockId, index, stepId, value);
   }
 
   /** Resolve the EndpointDef from MODULES for a step so FormViewComponent can use it */

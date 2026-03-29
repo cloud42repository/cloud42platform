@@ -162,7 +162,7 @@ const ACTION_SEGMENTS = new Set([
   'list', 'search', 'send', 'approve', 'reject', 'submit', 'recall', 'remind',
   'move', 'read', 'copy', 'trigger', 'cancel', 'reactivate', 'void', 'sent',
   'schedule', 'terminate', 'export', 'import', 'download', 'usage',
-  'availability', 'messages', 'members', 'records', 'sharelinks', 'files',
+  'availability', 'messages', 'records', 'sharelinks', 'files',
   'timelogs', 'milestones', 'bugs', 'subscribers', 'topics',
 ]);
 

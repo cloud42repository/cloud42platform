@@ -323,13 +323,24 @@
       </ng-template>
 
       <div class="tab-content">
-        <!-- Partner search -->
+        <!-- Contract + Partner selector -->
         <mat-card class="filter-card">
           <div class="filter-row">
             <mat-form-field appearance="outline" class="filter-field">
-              <mat-label>{{ 'ic.partner-id' | t }}</mat-label>
-              <input matInput [(ngModel)]="membPartnerId" placeholder="Paste partner UUID here" />
-              <mat-icon matPrefix>badge</mat-icon>
+              <mat-label>{{ 'ic.select-contract' | t }}</mat-label>
+              <mat-select [(ngModel)]="membContractId" (selectionChange)="loadMembPartners()">
+                @for (c of contracts(); track c.id) {
+                  <mat-option [value]="c.id">{{ c.id }} — {{ c.currency }} ({{ formatGB(c.allocatedCapacity) }})</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>{{ 'ic.select-partner' | t }}</mat-label>
+              <mat-select [(ngModel)]="membPartnerId" [disabled]="membPartners().length === 0">
+                @for (p of membPartners(); track p.id) {
+                  <mat-option [value]="p.id">{{ p.name || p.id }}</mat-option>
+                }
+              </mat-select>
             </mat-form-field>
             <button mat-flat-button color="primary" (click)="loadMembers()" [disabled]="!membPartnerId || membLoading()">
               <mat-icon>search</mat-icon> {{ 'common.load' | t }}
@@ -442,13 +453,24 @@
       </ng-template>
 
       <div class="tab-content">
-        <!-- Partner search -->
+        <!-- Contract + Partner selector -->
         <mat-card class="filter-card">
           <div class="filter-row">
             <mat-form-field appearance="outline" class="filter-field">
-              <mat-label>{{ 'ic.partner-id' | t }}</mat-label>
-              <input matInput [(ngModel)]="psPartnerId" placeholder="Paste partner UUID here" />
-              <mat-icon matPrefix>badge</mat-icon>
+              <mat-label>{{ 'ic.select-contract' | t }}</mat-label>
+              <mat-select [(ngModel)]="psContractId" (selectionChange)="loadPsPartners()">
+                @for (c of contracts(); track c.id) {
+                  <mat-option [value]="c.id">{{ c.id }} — {{ c.currency }} ({{ formatGB(c.allocatedCapacity) }})</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>{{ 'ic.select-partner' | t }}</mat-label>
+              <mat-select [(ngModel)]="psPartnerId" [disabled]="psPartners().length === 0">
+                @for (p of psPartners(); track p.id) {
+                  <mat-option [value]="p.id">{{ p.name || p.id }}</mat-option>
+                }
+              </mat-select>
             </mat-form-field>
             <button mat-flat-button color="primary" (click)="loadPartnerStorage()" [disabled]="!psPartnerId || psLoading()">
               <mat-icon>search</mat-icon> {{ 'common.load' | t }}

@@ -131,6 +131,9 @@ export class WorkflowService {
 
   // ── Execution ────────────────────────────────────────────────────────────────
 
+  /** Top-level steps of the currently executing workflow — used for step-index → step-id mapping */
+  private executingSteps: WorkflowNode[] = [];
+
   async execute(workflowId: string): Promise<WorkflowRunLog> {
     const workflow = this.getById(workflowId);
     if (!workflow) throw new Error(`Workflow ${workflowId} not found`);
@@ -145,6 +148,7 @@ export class WorkflowService {
     };
 
     const stepResults = new Map<string, unknown>();
+    this.executingSteps = workflow.steps;
     const success = await this.executeNodes(workflow.steps, stepResults, log);
 
     log.success = success;
@@ -268,6 +272,7 @@ export class WorkflowService {
     step: WorkflowStep,
     stepResults: Map<string, unknown>,
     log: WorkflowRunLog,
+    allSteps?: WorkflowNode[],
   ): Promise<boolean> {
     const stepLog: WorkflowRunStepLog = {
       stepId: step.id,
@@ -290,9 +295,10 @@ export class WorkflowService {
       let body: Record<string, unknown> | undefined;
       const bodyMode = step.bodyMode ?? 'fields';
       if (step.hasBody && (bodyMode === 'text' || bodyMode === 'form') && step.rawBody) {
-        // Raw JSON body (from Text mode or Form mode)
+        // Raw JSON body — interpolate {{steps.N.path}} tokens first
         try {
-          body = JSON.parse(step.rawBody);
+          const interpolated = this.interpolateStepRefs(step.rawBody, allSteps ?? this.executingSteps, stepResults);
+          body = JSON.parse(interpolated);
         } catch {
           body = {};
         }
@@ -385,6 +391,32 @@ export class WorkflowService {
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Replace {{steps.N.path}} tokens in a raw body string with resolved values.
+   * N is 1-based step index. Path uses dot-notation (e.g. data.id).
+   */
+  private interpolateStepRefs(
+    raw: string,
+    allSteps: WorkflowNode[],
+    stepResults: Map<string, unknown>,
+  ): string {
+    return raw.replace(/\{\{steps\.(\d+)(?:\.([^}]+))?\}\}/g, (_match, idxStr, path) => {
+      const idx = Number(idxStr) - 1; // Convert to 0-based
+      const step = allSteps[idx];
+      if (!step) return '';
+      const result = stepResults.get(step.id);
+      if (result == null) return '';
+      if (!path) {
+        const val = typeof result === 'object' ? JSON.stringify(result) : String(result);
+        return val;
+      }
+      const resolved = this.getPathRaw(result, path);
+      if (resolved == null) return '';
+      // If inside a JSON string, return the raw value; if object/array, stringify
+      return typeof resolved === 'object' ? JSON.stringify(resolved) : String(resolved);
+    });
+  }
 
   private resolve(source: PayloadSource, stepResults: Map<string, unknown>): string {
     if (source.type === 'hardcoded') return source.value;

@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Catch, Controller, Delete, ExceptionFilter, Get, Param, Patch, Post, Put, Query, UseFilters, ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { ImpossibleCloudService } from './impossible-cloud.service';
+import { ImpossibleCloudApiError } from './ImpossibleCloudClient';
+import type { Response } from 'express';
+
+@Catch(ImpossibleCloudApiError)
+class IcApiExceptionFilter implements ExceptionFilter {
+  catch(exception: ImpossibleCloudApiError, host: ArgumentsHost) {
+    const res = host.switchToHttp().getResponse<Response>();
+    const status = exception.status >= 400 && exception.status < 600 ? exception.status : HttpStatus.BAD_GATEWAY;
+    res.status(status).json({ message: exception.message, statusCode: status, data: exception.data });
+  }
+}
 
 @Controller('impossible-cloud')
+@UseFilters(IcApiExceptionFilter)
 export class ImpossibleCloudController {
   constructor(private readonly service: ImpossibleCloudService) {}
 

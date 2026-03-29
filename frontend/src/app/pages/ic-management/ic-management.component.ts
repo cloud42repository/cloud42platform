@@ -263,14 +263,29 @@ export class IcManagementComponent implements OnInit {
 
   membLoading = signal(false);
   members     = signal<ICMember[]>([]);
+  membContractId = '';
+  membPartners = signal<ICPartner[]>([]);
   membPartnerId = '';
   membPanelMode: PanelMode = 'hidden';
   membForm: { email: string; password: string; name: string; role: string } = { email: '', password: '', name: '', role: 'viewer' };
   readonly membColumns = ['id', 'name', 'email', 'role', 'actions'];
   readonly roles = ['admin', 'staff', 'viewer'];
 
+  async loadMembPartners() {
+    if (!this.membContractId) { this.toast('Select a contract first.', true); return; }
+    this.membLoading.set(true);
+    this.membPartnerId = '';
+    this.members.set([]);
+    try {
+      const res = await firstValueFrom(this.icSvc.listContractPartners(this.membContractId));
+      this.membPartners.set(Array.isArray(res) ? res : (res as any)?.data ?? []);
+    } catch (e: any) {
+      this.toast('Failed to load partners: ' + (e?.message ?? e), true);
+    } finally { this.membLoading.set(false); }
+  }
+
   async loadMembers() {
-    if (!this.membPartnerId) { this.toast('Enter a Partner ID.', true); return; }
+    if (!this.membPartnerId) { this.toast('Select a partner first.', true); return; }
     this.membLoading.set(true);
     try {
       const res = await firstValueFrom(this.icSvc.listMembers(this.membPartnerId));
@@ -326,6 +341,8 @@ export class IcManagementComponent implements OnInit {
 
   psLoading    = signal(false);
   psAccounts   = signal<ICStorageAccount[]>([]);
+  psContractId = '';
+  psPartners   = signal<ICPartner[]>([]);
   psPartnerId  = '';
   psPanelMode: PanelMode = 'hidden';
   psEditing: ICStorageAccount | null = null;
@@ -333,8 +350,21 @@ export class IcManagementComponent implements OnInit {
   psPatch: { pendingDeletedAt: string } = { pendingDeletedAt: '' };
   readonly psColumns = ['name', 'clientAccountId', 'contactEmail', 'allocatedCapacity', 'allowOverdraft', 'status', 'actions'];
 
+  async loadPsPartners() {
+    if (!this.psContractId) { this.toast('Select a contract first.', true); return; }
+    this.psLoading.set(true);
+    this.psPartnerId = '';
+    this.psAccounts.set([]);
+    try {
+      const res = await firstValueFrom(this.icSvc.listContractPartners(this.psContractId));
+      this.psPartners.set(Array.isArray(res) ? res : (res as any)?.data ?? []);
+    } catch (e: any) {
+      this.toast('Failed to load partners: ' + (e?.message ?? e), true);
+    } finally { this.psLoading.set(false); }
+  }
+
   async loadPartnerStorage() {
-    if (!this.psPartnerId) { this.toast('Enter a Partner ID.', true); return; }
+    if (!this.psPartnerId) { this.toast('Select a partner first.', true); return; }
     this.psLoading.set(true);
     try {
       const res = await firstValueFrom(this.icSvc.listPartnerStorageAccounts(this.psPartnerId));
