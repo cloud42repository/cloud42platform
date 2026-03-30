@@ -16,6 +16,13 @@ import { EndpointDef, extractPathParams } from '../../config/endpoints';
 import { ApiService } from '../../services/api.service';
 import { SchemaService, FieldSchema } from '../../services/schema.service';
 
+export interface StepRefSuggestion {
+  label: string;
+  insertText: string;
+  detail: string;
+  typeHint?: 'array' | 'object' | 'string' | 'number' | 'boolean';
+}
+
 @Component({
   selector: 'app-form-view',
   standalone: true,
@@ -77,14 +84,20 @@ import { SchemaService, FieldSchema } from '../../services/schema.service';
                   <mat-label>{{ field.label }}{{ field.required ? ' *' : '' }}</mat-label>
                   <textarea matInput [formControlName]="'body.' + field.key"
                     [rows]="field.rows ?? 3"
-                    [placeholder]="field.placeholder ?? ''"></textarea>
+                    [placeholder]="field.placeholder ?? ''"
+                    (input)="onFieldInput($any($event.target))"
+                    (keydown)="onAcKeydown($event)"
+                    (blur)="closeAc()"></textarea>
                 </mat-form-field>
               } @else {
                 <mat-form-field appearance="outline">
                   <mat-label>{{ field.label }}{{ field.required ? ' *' : '' }}</mat-label>
                   <input matInput [formControlName]="'body.' + field.key"
                     [type]="field.type"
-                    [placeholder]="field.placeholder ?? field.label" />
+                    [placeholder]="field.placeholder ?? field.label"
+                    (input)="onFieldInput($any($event.target))"
+                    (keydown)="onAcKeydown($event)"
+                    (blur)="closeAc()" />
                 </mat-form-field>
               }
             }
@@ -93,8 +106,31 @@ import { SchemaService, FieldSchema } from '../../services/schema.service';
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Request Body (JSON)</mat-label>
               <textarea matInput formControlName="__body__"
-                rows="6" placeholder='{ "key": "value" }'></textarea>
+                rows="6" placeholder='{ "key": "value" }'
+                (input)="onFieldInput($any($event.target))"
+                (keydown)="onAcKeydown($event)"
+                (blur)="closeAc()"></textarea>
             </mat-form-field>
+          }
+
+          <!-- Autocomplete overlay for step references -->
+          @if (acSuggestions().length > 0) {
+            <div class="ac-overlay" [ngStyle]="acStyle()">
+              @for (s of acSuggestions(); track s.insertText; let i = $index) {
+                <div class="ac-item" [class.ac-item--active]="i === acIndex()"
+                     (mousedown)="insertSuggestion(s, $event)">
+                  <mat-icon class="ac-icon">link</mat-icon>
+                  <div class="ac-text">
+                    <span class="ac-label">{{ s.label }}
+                      @if (s.typeHint) {
+                        <span class="ac-type ac-type--{{ s.typeHint }}">{{ s.typeHint }}</span>
+                      }
+                    </span>
+                    <span class="ac-detail">{{ s.detail }}</span>
+                  </div>
+                </div>
+              }
+            </div>
           }
 
           <div class="submit-row">
@@ -178,6 +214,32 @@ import { SchemaService, FieldSchema } from '../../services/schema.service';
     .method-put    { background-color: #d97706 !important; color: white !important; }
     .method-patch  { background-color: #7c3aed !important; color: white !important; }
     .method-delete { background-color: #dc2626 !important; color: white !important; }
+
+    /* ── Autocomplete overlay ── */
+    .ac-overlay {
+      position: fixed; z-index: 200;
+      background: #fff; border: 1px solid #cbd5e1; border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12); max-height: 180px; overflow-y: auto;
+      padding: 4px 0; min-width: 260px;
+    }
+    .ac-item {
+      display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+      cursor: pointer; font-size: 12px; transition: background .1s;
+    }
+    .ac-item:hover, .ac-item--active { background: #eff6ff; }
+    .ac-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; color: #7c3aed; }
+    .ac-text { display: flex; flex-direction: column; min-width: 0; }
+    .ac-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+    .ac-detail { font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-type {
+      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+      padding: 1px 5px; border-radius: 4px; flex-shrink: 0;
+    }
+    .ac-type--array   { background: #dbeafe; color: #1d4ed8; }
+    .ac-type--object  { background: #fef3c7; color: #92400e; }
+    .ac-type--string  { background: #dcfce7; color: #166534; }
+    .ac-type--number  { background: #ede9fe; color: #5b21b6; }
+    .ac-type--boolean { background: #fce7f3; color: #9d174d; }
   `]
 })
 export class FormViewComponent implements OnInit, OnChanges, OnDestroy {
@@ -186,6 +248,8 @@ export class FormViewComponent implements OnInit, OnChanges, OnDestroy {
   @Input() initialValues: Record<string, string> = {};
   /** Set to false to hide submit button and response display (for embedding) */
   @Input() showSubmit = true;
+  /** Step output reference suggestions (passed from workflow builder) */
+  @Input() stepRefs: StepRefSuggestion[] = [];
   /** Emits body values (as JSON string) whenever the form changes (useful when showSubmit=false) */
   @Output() valuesChange = new EventEmitter<string>();
 
@@ -316,5 +380,80 @@ export class FormViewComponent implements OnInit, OnChanges, OnDestroy {
       },
       error: (err) => { this.error.set(err?.message ?? 'Request failed'); this.loading.set(false); }
     });
+  }
+
+  /* ── Autocomplete for step output references ({{steps.N.field}}) ── */
+  acSuggestions = signal<StepRefSuggestion[]>([]);
+  acIndex = signal(0);
+  acStyle = signal<{ [key: string]: string }>({});
+  private acInput: HTMLInputElement | HTMLTextAreaElement | null = null;
+
+  onFieldInput(input: HTMLInputElement | HTMLTextAreaElement) {
+    if (this.stepRefs.length === 0) { this.acSuggestions.set([]); return; }
+    this.acInput = input;
+    const pos = input.selectionStart ?? 0;
+    const before = input.value.substring(0, pos);
+    const openIdx = before.lastIndexOf('{{');
+    if (openIdx >= 0 && !before.substring(openIdx).includes('}}')) {
+      const partial = before.substring(openIdx + 2).toLowerCase();
+      const filtered = this.stepRefs.filter(s =>
+        s.label.toLowerCase().includes(partial) || s.insertText.toLowerCase().includes(partial)
+      ).slice(0, 12);
+      this.acSuggestions.set(filtered);
+      this.acIndex.set(0);
+      // Position overlay below the input
+      const rect = input.getBoundingClientRect();
+      this.acStyle.set({
+        top: rect.bottom + 4 + 'px',
+        left: rect.left + 'px',
+        width: Math.max(rect.width, 260) + 'px',
+      });
+    } else {
+      this.acSuggestions.set([]);
+    }
+  }
+
+  onAcKeydown(event: KeyboardEvent) {
+    const list = this.acSuggestions();
+    if (list.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.acIndex.update(i => Math.min(i + 1, list.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.acIndex.update(i => Math.max(i - 1, 0));
+    } else if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault();
+      this.insertSuggestion(list[this.acIndex()]);
+    } else if (event.key === 'Escape') {
+      this.acSuggestions.set([]);
+    }
+  }
+
+  insertSuggestion(s: StepRefSuggestion, event?: MouseEvent) {
+    if (event) event.preventDefault();
+    const input = this.acInput;
+    if (!input) { this.acSuggestions.set([]); return; }
+    const pos = input.selectionStart ?? 0;
+    const text = input.value;
+    const before = text.substring(0, pos);
+    const openIdx = before.lastIndexOf('{{');
+    if (openIdx >= 0) {
+      const afterCursor = text.substring(pos);
+      const closeMatch = afterCursor.match(/^[^}]*}}/);
+      const replaceEnd = closeMatch ? pos + closeMatch[0].length : pos;
+      const newText = text.substring(0, openIdx) + s.insertText + text.substring(replaceEnd);
+      input.value = newText;
+      const cursorPos = openIdx + s.insertText.length;
+      input.setSelectionRange(cursorPos, cursorPos);
+      // Trigger reactive form update
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    this.acSuggestions.set([]);
+    input.focus();
+  }
+
+  closeAc() {
+    setTimeout(() => { this.acSuggestions.set([]); this.acInput = null; }, 150);
   }
 }

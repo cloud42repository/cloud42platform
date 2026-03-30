@@ -143,6 +143,8 @@ export const FR: Record<TranslationKey, string> = {
   'workflow.body-form': 'corps : formulaire',
   'workflow.json': 'JSON',
   'workflow.list': 'Liste',
+  'workflow.no-array-data': 'Aucune donnée de liste trouvée dans cette réponse',
+  'workflow.no-object-data': 'Aucune donnée objet trouvée dans cette réponse',
   'workflow.value-for-param': 'Valeur pour :{{param}}',
   'workflow.value-for-key': 'Valeur pour {{key}}',
   'workflow.op-equals': '== égal',
@@ -150,6 +152,13 @@ export const FR: Record<TranslationKey, string> = {
   'workflow.op-greater-than': '> supérieur à',
   'workflow.op-less-than': '< inférieur à',
   'workflow.op-contains': 'contient',
+  'workflow.filter': 'Filtre',
+  'workflow.filter-source': 'Tableau source',
+  'workflow.filter-source-hint': 'Étape dont la réponse contient le tableau à filtrer',
+  'workflow.filter-array-hint': 'Chemin pointé vers le tableau (laisser vide si la racine est un tableau)',
+  'workflow.filter-field': 'Champ de l\'élément',
+  'workflow.filter-field-hint': 'Champ de chaque élément à comparer (ex. status)',
+  'workflow.filter-result-hint': 'Les étapes suivantes peuvent référencer le tableau filtré via "Depuis l\'étape" → ce bloc filtre',
 
   /* ── Calendar ── */
   'calendar.title': 'Calendrier de planification',

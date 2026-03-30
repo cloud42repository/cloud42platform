@@ -4,7 +4,7 @@ import { ApiService } from './api.service';
 import { UserManagementService } from './user-management.service';
 import {
   Workflow, WorkflowNode, WorkflowStep, WorkflowStatus,
-  TryCatchBlock, LoopBlock, IfElseBlock, MapperBlock,
+  TryCatchBlock, LoopBlock, IfElseBlock, MapperBlock, FilterBlock,
   WorkflowRunLog, WorkflowRunStepLog, PayloadSource,
 } from '../config/workflow.types';
 
@@ -263,6 +263,47 @@ export class WorkflowService {
           response: result,
           success: true,
         });
+
+      } else if (kind === 'filter') {
+        const block = node as FilterBlock;
+        // Resolve the source array
+        let items: unknown[] = [];
+        if (block.sourceStepId) {
+          const srcResult = stepResults.get(block.sourceStepId);
+          if (block.sourceField) {
+            const resolved = this.getPathRaw(srcResult, block.sourceField);
+            items = Array.isArray(resolved) ? resolved : [];
+          } else {
+            items = Array.isArray(srcResult) ? srcResult : [];
+          }
+        }
+        // Apply filter condition
+        const field = block.filterField ?? '';
+        const op = block.filterOperator ?? '==';
+        const expected = block.filterValue ?? '';
+        const filtered = field
+          ? items.filter(item => {
+              const actual = this.getPath(item, field);
+              switch (op) {
+                case '==': return actual === expected;
+                case '!=': return actual !== expected;
+                case '>':  return Number(actual) > Number(expected);
+                case '<':  return Number(actual) < Number(expected);
+                case 'contains': return actual.includes(expected);
+                default: return true;
+              }
+            })
+          : items;
+        stepResults.set(node.id, filtered);
+        log.steps.push({
+          stepId: node.id,
+          label: block.label || 'Filter',
+          startedAt: new Date().toISOString(),
+          finishedAt: new Date().toISOString(),
+          resolvedParams: {},
+          response: filtered,
+          success: true,
+        });
       }
     }
     return true;
@@ -287,7 +328,7 @@ export class WorkflowService {
       const pathParams: Record<string, string> = {};
       for (const paramName of step.pathParamNames) {
         const src = step.paramSources[paramName] ?? { type: 'hardcoded', value: '' };
-        pathParams[paramName] = this.resolve(src, stepResults);
+        pathParams[paramName] = this.resolve(src, stepResults, allSteps);
       }
       stepLog.resolvedParams = pathParams;
 
@@ -299,14 +340,16 @@ export class WorkflowService {
         try {
           const interpolated = this.interpolateStepRefs(step.rawBody, allSteps ?? this.executingSteps, stepResults);
           body = JSON.parse(interpolated);
-        } catch {
+        } catch (parseErr) {
+          console.warn('[Workflow] JSON parse failed after interpolation:', parseErr);
           body = {};
         }
       } else if (step.hasBody && step.bodyKeys.length > 0) {
         body = {};
         for (const key of step.bodyKeys) {
           const src = step.bodySources[key] ?? { type: 'hardcoded', value: '' };
-          body[key] = this.resolve(src, stepResults);
+          const resolved = this.resolve(src, stepResults, allSteps);
+          body[key] = resolved;
         }
       }
       stepLog.resolvedBody = body;
@@ -401,25 +444,34 @@ export class WorkflowService {
     allSteps: WorkflowNode[],
     stepResults: Map<string, unknown>,
   ): string {
-    return raw.replace(/\{\{steps\.(\d+)(?:\.([^}]+))?\}\}/g, (_match, idxStr, path) => {
+    // Match {{steps.N}}, {{steps.N.path}}, and {{steps.N[0].path}} (bracket notation)
+    return raw.replace(/\{\{steps\.(\d+)((?:[\.\[])[^}]+?)?\}\}/g, (_match, idxStr, rawPath) => {
       const idx = Number(idxStr) - 1; // Convert to 0-based
       const step = allSteps[idx];
       if (!step) return '';
       const result = stepResults.get(step.id);
       if (result == null) return '';
+      // Normalize path: convert [N] to .N FIRST, then strip any leading dot
+      const path = rawPath
+        ? rawPath.replace(/\[(\d+)\]/g, '.$1').replace(/^\./, '')
+        : '';
       if (!path) {
-        const val = typeof result === 'object' ? JSON.stringify(result) : String(result);
-        return val;
+        return typeof result === 'object' ? JSON.stringify(result) : String(result);
       }
       const resolved = this.getPathRaw(result, path);
       if (resolved == null) return '';
-      // If inside a JSON string, return the raw value; if object/array, stringify
       return typeof resolved === 'object' ? JSON.stringify(resolved) : String(resolved);
     });
   }
 
-  private resolve(source: PayloadSource, stepResults: Map<string, unknown>): string {
-    if (source.type === 'hardcoded') return source.value;
+  private resolve(source: PayloadSource, stepResults: Map<string, unknown>, allSteps?: WorkflowNode[]): string {
+    if (source.type === 'hardcoded') {
+      // Interpolate any {{steps.N.path}} tokens in the hardcoded value
+      if (source.value.includes('{{steps.')) {
+        return this.interpolateStepRefs(source.value, allSteps ?? this.executingSteps, stepResults);
+      }
+      return source.value;
+    }
     const result = stepResults.get(source.stepId);
     if (result == null) return '';
     return this.getPath(result, source.field);
@@ -427,18 +479,11 @@ export class WorkflowService {
 
   getPath(obj: unknown, path: string): string {
     if (!path) return obj != null ? String(obj) : '';
-    const parts = path.split('.');
+    const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.').filter(Boolean);
     let cur: unknown = obj;
     for (const part of parts) {
       if (cur == null || typeof cur !== 'object') return '';
-      const arrMatch = part.match(/^(\w+)\[(\d+)\]$/);
-      if (arrMatch) {
-        cur = (cur as Record<string, unknown>)[arrMatch[1]];
-        if (Array.isArray(cur)) cur = cur[Number(arrMatch[2])];
-        else return '';
-      } else {
-        cur = (cur as Record<string, unknown>)[part];
-      }
+      cur = (cur as Record<string, unknown>)[part];
     }
     return cur != null ? String(cur) : '';
   }
@@ -446,18 +491,11 @@ export class WorkflowService {
   /** Like getPath but returns the raw value (not stringified) — useful for arrays/objects */
   private getPathRaw(obj: unknown, path: string): unknown {
     if (!path) return obj;
-    const parts = path.split('.');
+    const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.').filter(Boolean);
     let cur: unknown = obj;
     for (const part of parts) {
       if (cur == null || typeof cur !== 'object') return undefined;
-      const arrMatch = part.match(/^(\w+)\[(\d+)\]$/);
-      if (arrMatch) {
-        cur = (cur as Record<string, unknown>)[arrMatch[1]];
-        if (Array.isArray(cur)) cur = cur[Number(arrMatch[2])];
-        else return undefined;
-      } else {
-        cur = (cur as Record<string, unknown>)[part];
-      }
+      cur = (cur as Record<string, unknown>)[part];
     }
     return cur;
   }

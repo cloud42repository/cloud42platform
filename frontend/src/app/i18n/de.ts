@@ -143,6 +143,8 @@ export const DE: Record<TranslationKey, string> = {
   'workflow.body-form': 'Body: Formular',
   'workflow.json': 'JSON',
   'workflow.list': 'Liste',
+  'workflow.no-array-data': 'Keine Array-Daten in dieser Antwort gefunden',
+  'workflow.no-object-data': 'Keine Objektdaten in dieser Antwort gefunden',
   'workflow.value-for-param': 'Wert für :{{param}}',
   'workflow.value-for-key': 'Wert für {{key}}',
   'workflow.op-equals': '== gleich',
@@ -150,6 +152,13 @@ export const DE: Record<TranslationKey, string> = {
   'workflow.op-greater-than': '> größer als',
   'workflow.op-less-than': '< kleiner als',
   'workflow.op-contains': 'enthält',
+  'workflow.filter': 'Filter',
+  'workflow.filter-source': 'Quell-Array',
+  'workflow.filter-source-hint': 'Schritt, dessen Antwort das zu filternde Array enthält',
+  'workflow.filter-array-hint': 'Punkt-Pfad zum Array (leer lassen, wenn Root ein Array ist)',
+  'workflow.filter-field': 'Elementfeld',
+  'workflow.filter-field-hint': 'Feld jedes Elements zum Vergleichen (z.B. status)',
+  'workflow.filter-result-hint': 'Folgeschritte können das gefilterte Array über "Aus Schritt" → diesen Filterblock referenzieren',
 
   /* ── Calendar ── */
   'calendar.title': 'Terminkalender',

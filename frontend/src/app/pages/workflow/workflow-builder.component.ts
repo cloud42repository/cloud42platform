@@ -17,7 +17,6 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { KeyValuePipe } from '@angular/common';
 import {
   CdkDragDrop, DragDropModule, moveItemInArray,
 } from '@angular/cdk/drag-drop';
@@ -25,9 +24,9 @@ import {
 import { MODULES, ModuleDef, EndpointDef, extractPathParams } from '../../config/endpoints';
 import { WorkflowService } from '../../services/workflow.service';
 import {
-  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FieldMapping, PayloadSource, StepKind, BodyMode,
+  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FilterBlock, FieldMapping, PayloadSource, StepKind, BodyMode,
 } from '../../config/workflow.types';
-import { FormViewComponent } from '../../shared/form-view/form-view.component';
+import { FormViewComponent, StepRefSuggestion } from '../../shared/form-view/form-view.component';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { SchemaService, FieldSchema } from '../../services/schema.service';
 
@@ -36,10 +35,11 @@ interface AutocompleteSuggestion {
   insertText: string;  // Text to insert
   detail: string;      // Category/description
   icon: string;        // Material icon name
+  typeHint?: 'array' | 'object' | 'string' | 'number' | 'boolean';  // Resolved type from last run
 }
 
 interface EndpointRef { module: ModuleDef; endpoint: EndpointDef; }
-interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; label: string; icon: string; color: string; }
+interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter'; label: string; icon: string; color: string; }
 
 @Component({
   selector: 'app-workflow-builder',
@@ -49,7 +49,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
     MatButtonModule, MatIconModule, MatInputModule, MatFormFieldModule,
     MatSelectModule, MatTooltipModule, MatChipsModule,
     MatProgressSpinnerModule, MatSnackBarModule, MatDividerModule, MatRadioModule,
-    DragDropModule, FormViewComponent, MatButtonToggleModule, KeyValuePipe,
+    DragDropModule, FormViewComponent, MatButtonToggleModule,
     TranslatePipe,
   ],
   template: `
@@ -510,6 +510,27 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                   </div>
                 }
 
+                <!-- ── FILTER BLOCK ── -->
+                @if (node.kind === 'filter') {
+                  @let block = asFilter(node);
+                  <div class="block-card block-card--filter" (click)="selectStep(node.id)">
+                    <div class="block-header">
+                      <mat-icon class="block-icon">filter_list</mat-icon>
+                      <span class="block-title">{{ block.label || ('workflow.filter' | t) }}</span>
+                      <span class="block-badge">{{ block.filterField ? block.filterField + ' ' + (block.filterOperator ?? '==') + ' ' + (block.filterValue ?? '') : 'filter' }}</span>
+                      <div class="step-card-actions" (click)="$event.stopPropagation()">
+                        <button mat-icon-button (click)="selectStep(node.id)" matTooltip="{{ 'workflow.configure-step' | t }}">
+                          <mat-icon>settings</mat-icon>
+                        </button>
+                        <button mat-icon-button (click)="removeStep(node.id)" color="warn" matTooltip="{{ 'workflow.remove-step' | t }}">
+                          <mat-icon>delete_outline</mat-icon>
+                        </button>
+                        <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
+                      </div>
+                    </div>
+                  </div>
+                }
+
                 <!-- DnD extras -->
                 <div *cdkDragPlaceholder class="drag-placeholder-canvas"></div>
 
@@ -548,6 +569,9 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
             } @else if (selectedStep()!.kind === 'mapper') {
               <mat-icon style="color:#059669">swap_horiz</mat-icon>
               <span class="config-title">{{ asMapper(selectedStep()!).label || ('workflow.mapper' | t) }}</span>
+            } @else if (selectedStep()!.kind === 'filter') {
+              <mat-icon style="color:#dc2626">filter_list</mat-icon>
+              <span class="config-title">{{ asFilter(selectedStep()!).label || ('workflow.filter' | t) }}</span>
             }
             <button mat-icon-button (click)="selectedStepId.set(null)" style="margin-left:auto">
               <mat-icon>close</mat-icon>
@@ -719,6 +743,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                         [apiPrefix]="ep.moduleApiPrefix"
                         [showSubmit]="false"
                         [initialValues]="getFormInitialValues(ep)"
+                        [stepRefs]="getStepRefSuggestions()"
                         (valuesChange)="setRawBody($event)"
                       />
                     </div>
@@ -1027,6 +1052,73 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
               </button>
             }
 
+            <!-- ── FILTER CONFIG ──────────────────────────────────────────── -->
+            @if (selectedStep()!.kind === 'filter') {
+              @let block = asFilter(selectedStep()!);
+              <div class="config-section-label">{{ 'workflow.label' | t }}</div>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'workflow.block-label' | t }}</mat-label>
+                <input matInput [value]="block.label ?? ''" (input)="mutateBlock(block.id, $any($event.target).value, 'label')" placeholder="e.g. Active contacts only" />
+              </mat-form-field>
+
+              <mat-divider class="section-divider" />
+              <div class="config-section-label">{{ 'workflow.filter-source' | t }}</div>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'workflow.source-step' | t }}</mat-label>
+                <mat-select [value]="block.sourceStepId ?? ''" (selectionChange)="mutateBlock(block.id, $event.value, 'sourceStepId')">
+                  @for (ps of previousSteps(); track ps.id) {
+                    <mat-option [value]="ps.id">{{ getStepIndex(ps.id) + 1 }}. {{ getNodeLabel(ps) }}</mat-option>
+                  }
+                </mat-select>
+                <mat-hint>{{ 'workflow.filter-source-hint' | t }}</mat-hint>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
+                <input matInput [value]="block.sourceField ?? ''"
+                  (input)="onAcFieldInput($any($event.target), acMutateBlock.bind(this, block.id, 'sourceField'))"
+                  (keydown)="onAcKeydown($event)"
+                  (blur)="closeAutocomplete()"
+                  placeholder="e.g. data … type {{ for refs" />
+                <mat-hint>{{ 'workflow.filter-array-hint' | t }}</mat-hint>
+              </mat-form-field>
+
+              <mat-divider class="section-divider" />
+              <div class="config-section-label">{{ 'workflow.condition' | t }}</div>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'workflow.filter-field' | t }}</mat-label>
+                <input matInput [value]="block.filterField ?? ''"
+                  (input)="onAcFieldInput($any($event.target), acMutateBlock.bind(this, block.id, 'filterField'))"
+                  (keydown)="onAcKeydown($event)"
+                  (blur)="closeAutocomplete()"
+                  placeholder="e.g. status" />
+                <mat-hint>{{ 'workflow.filter-field-hint' | t }}</mat-hint>
+              </mat-form-field>
+              <div class="from-step-row">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="step-select">
+                  <mat-label>{{ 'workflow.operator' | t }}</mat-label>
+                  <mat-select [value]="block.filterOperator ?? '=='" (selectionChange)="mutateBlock(block.id, $event.value, 'filterOperator')">
+                    <mat-option value="==">{{ 'workflow.op-equals' | t }}</mat-option>
+                    <mat-option value="!=">{{ 'workflow.op-not-equals' | t }}</mat-option>
+                    <mat-option value=">">{{ 'workflow.op-greater-than' | t }}</mat-option>
+                    <mat-option value="<">{{ 'workflow.op-less-than' | t }}</mat-option>
+                    <mat-option value="contains">{{ 'workflow.op-contains' | t }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field-input">
+                  <mat-label>{{ 'workflow.value' | t }}</mat-label>
+                  <input matInput [value]="block.filterValue ?? ''"
+                    (input)="onAcFieldInput($any($event.target), acMutateBlock.bind(this, block.id, 'filterValue'))"
+                    (keydown)="onAcKeydown($event)"
+                    (blur)="closeAutocomplete()"
+                    placeholder="e.g. active … type {{ for refs" />
+                </mat-form-field>
+              </div>
+              <p class="loop-foreach-info">
+                <mat-icon>info</mat-icon>
+                {{ 'workflow.filter-result-hint' | t }}
+              </p>
+            }
+
           </div>
           <!-- Shared autocomplete overlay for all inputs in config panel -->
           @if (acSuggestions().length > 0) {
@@ -1036,7 +1128,11 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                      (mousedown)="insertSuggestion(s, $event)">
                   <mat-icon class="ac-icon ac-icon--{{ s.icon }}">{{ s.icon }}</mat-icon>
                   <div class="ac-text">
-                    <span class="ac-label">{{ s.label }}</span>
+                    <span class="ac-label">{{ s.label }}
+                      @if (s.typeHint) {
+                        <span class="ac-type ac-type--{{ s.typeHint }}">{{ s.typeHint }}</span>
+                      }
+                    </span>
                     <span class="ac-detail">{{ s.detail }}</span>
                   </div>
                 </div>
@@ -1075,17 +1171,27 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                   <span>{{ sl.error }}</span>
                 </div>
               }
-              @if (sl.response) {
+              @if (sl.response !== undefined && sl.response !== null) {
                 <div class="result-view-toggle">
                   <mat-button-toggle-group [value]="getViewMode(sl.stepId)" (change)="setViewMode(sl.stepId, $event.value)" hideSingleSelectionIndicator>
                     <mat-button-toggle value="json"><mat-icon>code</mat-icon> {{ 'workflow.json' | t }}</mat-button-toggle>
-                    @if (isArray(sl.response)) {
-                      <mat-button-toggle value="list"><mat-icon>table_rows</mat-icon> {{ 'workflow.list' | t }}</mat-button-toggle>
-                    }
-                    @if (isObject(sl.response) && !isArray(sl.response)) {
-                      <mat-button-toggle value="form"><mat-icon>list_alt</mat-icon> {{ 'workflow.form' | t }}</mat-button-toggle>
-                    }
+                    <mat-button-toggle value="list"><mat-icon>table_rows</mat-icon> {{ 'workflow.list' | t }}</mat-button-toggle>
+                    <mat-button-toggle value="form"><mat-icon>list_alt</mat-icon> {{ 'workflow.form' | t }}</mat-button-toggle>
                   </mat-button-toggle-group>
+
+                  <!-- When response is an object with multiple array properties, let user pick -->
+                  @if (getViewMode(sl.stepId) === 'list' && getArrayPaths(sl.response).length > 1) {
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="list-path-select">
+                      <mat-select [value]="getListPath(sl.stepId)" (selectionChange)="setListPath(sl.stepId, $event.value)">
+                        @if (isArray(sl.response)) {
+                          <mat-option value="">(root array)</mat-option>
+                        }
+                        @for (p of getArrayPaths(sl.response); track p) {
+                          <mat-option [value]="p">{{ p }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  }
                 </div>
 
                 @switch (getViewMode(sl.stepId)) {
@@ -1094,8 +1200,17 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                   }
                   @case ('list') {
                     <div class="result-list-view">
-                      @if (asArray(sl.response); as rows) {
+                      @if (getListRows(sl.stepId, sl.response); as rows) {
+                        @if (rows.length === 0) {
+                          <p class="result-empty-hint">{{ 'workflow.no-array-data' | t }}</p>
+                        }
                         @if (rows.length > 0 && isObject(rows[0])) {
+                          <div class="result-table-info">
+                            <mat-icon>info</mat-icon>
+                            <span>{{ rows.length }} {{ rows.length === 1 ? 'item' : 'items' }}
+                              @if (getListPath(sl.stepId); as lp) { &middot; {{ lp }} }
+                            </span>
+                          </div>
                           <table class="result-table">
                             <thead>
                               <tr>
@@ -1108,13 +1223,14 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                               @for (row of rows; track $index) {
                                 <tr>
                                   @for (col of objectKeys(rows[0]); track col) {
-                                    <td>{{ asRecord(row)[col] }}</td>
+                                    <td [title]="cellText(asRecord(row)[col])">{{ cellText(asRecord(row)[col]) }}</td>
                                   }
                                 </tr>
                               }
                             </tbody>
                           </table>
-                        } @else {
+                        }
+                        @if (rows.length > 0 && !isObject(rows[0])) {
                           <ul class="result-simple-list">
                             @for (item of rows; track $index) {
                               <li>{{ item }}</li>
@@ -1126,11 +1242,28 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
                   }
                   @case ('form') {
                     <div class="result-form-view">
-                      @for (entry of sl.response | keyvalue; track entry.key) {
-                        <div class="form-row">
-                          <span class="form-label">{{ entry.key }}</span>
-                          <span class="form-value">{{ isObject(entry.value) ? (entry.value | json) : entry.value }}</span>
-                        </div>
+                      @if (getFormEntries(sl.response); as entries) {
+                        @if (entries.length === 0) {
+                          <p class="result-empty-hint">{{ 'workflow.no-object-data' | t }}</p>
+                        }
+                        @for (entry of entries; track entry.key) {
+                          <div class="form-row">
+                            <span class="form-label">{{ entry.key }}</span>
+                            @if (isArray(entry.value)) {
+                              <span class="form-value form-value--array">
+                                <mat-icon class="form-type-icon">data_array</mat-icon>
+                                Array[{{ asArray(entry.value).length }}]
+                              </span>
+                            } @else if (isObject(entry.value) && entry.value !== null) {
+                              <span class="form-value form-value--obj">
+                                <mat-icon class="form-type-icon">data_object</mat-icon>
+                                {{ entry.value | json }}
+                              </span>
+                            } @else {
+                              <span class="form-value">{{ entry.value }}</span>
+                            }
+                          </div>
+                        }
                       }
                     </div>
                   }
@@ -1397,8 +1530,17 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
     .ac-icon--data_object { color: #0284c7; }
     .ac-icon--link { color: #7c3aed; }
     .ac-text { display: flex; flex-direction: column; min-width: 0; }
-    .ac-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
     .ac-detail { font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-type {
+      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+      padding: 1px 5px; border-radius: 4px; flex-shrink: 0;
+    }
+    .ac-type--array   { background: #dbeafe; color: #1d4ed8; }
+    .ac-type--object  { background: #fef3c7; color: #92400e; }
+    .ac-type--string  { background: #dcfce7; color: #166534; }
+    .ac-type--number  { background: #ede9fe; color: #5b21b6; }
+    .ac-type--boolean { background: #fce7f3; color: #9d174d; }
     .form-view-embed {
       border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;
       background: #fafafa; margin-top: 4px;
@@ -1523,6 +1665,23 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
     }
     .result-view-toggle mat-button-toggle { font-size: 11px; }
     .result-view-toggle mat-icon { font-size: 14px; width: 14px; height: 14px; margin-right: 4px; }
+    .list-path-select {
+      margin-left: 8px;
+    }
+    .list-path-select .mat-mdc-select { font-size: 11px; }
+    .result-table-info {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 10px; font-size: 11px; color: #64748b;
+    }
+    .result-table-info mat-icon { font-size: 14px; width: 14px; height: 14px; color: #94a3b8; }
+    .result-empty-hint {
+      padding: 12px; font-size: 12px; color: #94a3b8; font-style: italic; text-align: center; margin: 0;
+    }
+    .form-value--array, .form-value--obj {
+      display: flex; align-items: center; gap: 4px; color: #64748b; font-size: 11px;
+      max-height: 60px; overflow: hidden; text-overflow: ellipsis;
+    }
+    .form-type-icon { font-size: 14px; width: 14px; height: 14px; color: #94a3b8; flex-shrink: 0; }
 
     /* ── List / Table view ── */
     .result-list-view { padding: 0; overflow: auto; }
@@ -1598,6 +1757,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper'; la
     .block-card--loop { border-left: 3px solid #8b5cf6 !important; }
     .block-card--ifelse { border-left: 3px solid #0284c7 !important; }
     .block-card--mapper { border-left: 3px solid #059669 !important; }
+    .block-card--filter { border-left: 3px solid #dc2626 !important; }
 
     .block-header {
       display: flex; align-items: center; gap: 8px; padding: 8px 12px;
@@ -1757,6 +1917,7 @@ export class WorkflowBuilderComponent implements OnInit {
     { kind: 'loop',      label: 'Loop',        icon: 'loop',       color: '#8b5cf6' },
     { kind: 'if-else',   label: 'If / Else',   icon: 'call_split', color: '#0284c7' },
     { kind: 'mapper',    label: 'Mapper',       icon: 'swap_horiz', color: '#059669' },
+    { kind: 'filter',    label: 'Filter',       icon: 'filter_list', color: '#dc2626' },
   ];
 
   // ── Browser state ─────────────────────────────────────────────────────────
@@ -1882,6 +2043,8 @@ export class WorkflowBuilderComponent implements OnInit {
       return { id, kind: 'loop', loopCount: 1, bodySteps: [] } as LoopBlock;
     } else if (ref.kind === 'mapper') {
       return { id, kind: 'mapper', mappings: [] } as MapperBlock;
+    } else if (ref.kind === 'filter') {
+      return { id, kind: 'filter', filterOperator: '==' } as FilterBlock;
     } else {
       return { id, kind: 'if-else', conditionOperator: '==', thenSteps: [], elseSteps: [] } as IfElseBlock;
     }
@@ -1978,6 +2141,7 @@ export class WorkflowBuilderComponent implements OnInit {
   asLoop(node: WorkflowNode): LoopBlock         { return node as LoopBlock; }
   asIfElse(node: WorkflowNode): IfElseBlock     { return node as IfElseBlock; }
   asMapper(node: WorkflowNode): MapperBlock     { return node as MapperBlock; }
+  asFilter(node: WorkflowNode): FilterBlock     { return node as FilterBlock; }
 
   getNodeLabel(node: WorkflowNode): string {
     if (node.kind === 'endpoint') return (node as WorkflowStep).endpointLabel;
@@ -1985,6 +2149,7 @@ export class WorkflowBuilderComponent implements OnInit {
     if (node.kind === 'loop') return (node as LoopBlock).label || 'Loop';
     if (node.kind === 'if-else') return (node as IfElseBlock).label || 'If / Else';
     if (node.kind === 'mapper') return (node as MapperBlock).label || 'Mapper';
+    if (node.kind === 'filter') return (node as FilterBlock).label || 'Filter';
     return 'Step';
   }
 
@@ -2247,16 +2412,21 @@ export class WorkflowBuilderComponent implements OnInit {
   private buildStepRefSuggestions(filter: string): AutocompleteSuggestion[] {
     const suggestions: AutocompleteSuggestion[] = [];
     const prev = this.previousSteps();
+    const log = this.runLog();
     for (const ps of prev) {
       const idx = this.getStepIndex(ps.id) + 1;
       const label = ps.kind === 'endpoint'
         ? `Step ${idx}: ${(ps as WorkflowStep).endpointLabel}`
         : `Step ${idx}: ${this.getNodeLabel(ps)}`;
 
+      // Look up last-run response for this step
+      const stepLog = log?.steps.find(sl => sl.stepId === ps.id);
+      const resp = stepLog?.response;
+
       // Whole step output
       const ref = `{{steps.${idx}}}`;
       if (!filter || ref.toLowerCase().includes(filter.toLowerCase()) || label.toLowerCase().includes(filter.toLowerCase())) {
-        suggestions.push({ label: `steps.${idx}`, insertText: ref, detail: label, icon: 'link' });
+        suggestions.push({ label: `steps.${idx}`, insertText: ref, detail: label + this.typePreview(resp), icon: 'link', typeHint: this.detectType(resp) });
       }
 
       if (ps.kind === 'endpoint') {
@@ -2266,7 +2436,8 @@ export class WorkflowBuilderComponent implements OnInit {
         for (const f of stepFields) {
           const subRef = `{{steps.${idx}.${f.key}}}`;
           if (!filter || subRef.toLowerCase().includes(filter.toLowerCase()) || f.key.toLowerCase().includes(filter.toLowerCase())) {
-            suggestions.push({ label: `steps.${idx}.${f.key}`, insertText: subRef, detail: `${label} → ${f.key}`, icon: 'link' });
+            const subVal = resp != null ? this.resolvePath(resp, f.key) : undefined;
+            suggestions.push({ label: `steps.${idx}.${f.key}`, insertText: subRef, detail: `${label} → ${f.key}${this.typePreview(subVal)}`, icon: 'link', typeHint: this.detectType(subVal) });
           }
         }
       }
@@ -2276,12 +2447,44 @@ export class WorkflowBuilderComponent implements OnInit {
         const subRef = `{{steps.${idx}.${common}}}`;
         if (!filter || subRef.toLowerCase().includes(filter.toLowerCase()) || common.includes(filter.toLowerCase())) {
           if (!suggestions.find(s => s.insertText === subRef)) {
-            suggestions.push({ label: `steps.${idx}.${common}`, insertText: subRef, detail: `${label} → ${common}`, icon: 'link' });
+            const subVal = resp != null ? this.resolvePath(resp, common) : undefined;
+            suggestions.push({ label: `steps.${idx}.${common}`, insertText: subRef, detail: `${label} → ${common}${this.typePreview(subVal)}`, icon: 'link', typeHint: this.detectType(subVal) });
           }
         }
       }
     }
     return suggestions.slice(0, 15);
+  }
+
+  /** Traverse dot-notation path on an object to get the raw value */
+  private resolvePath(obj: unknown, path: string): unknown {
+    const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.').filter(Boolean);
+    let cur: unknown = obj;
+    for (const part of parts) {
+      if (cur == null || typeof cur !== 'object') return undefined;
+      cur = (cur as Record<string, unknown>)[part];
+    }
+    return cur;
+  }
+
+  /** Detect the runtime type of a value */
+  private detectType(v: unknown): 'array' | 'object' | 'string' | 'number' | 'boolean' | undefined {
+    if (v === undefined || v === null) return undefined;
+    if (Array.isArray(v)) return 'array';
+    if (typeof v === 'object') return 'object';
+    if (typeof v === 'number') return 'number';
+    if (typeof v === 'boolean') return 'boolean';
+    if (typeof v === 'string') return 'string';
+    return undefined;
+  }
+
+  /** Build a short type preview for the detail text */
+  private typePreview(v: unknown): string {
+    if (v === undefined || v === null) return '';
+    if (Array.isArray(v)) return ` — Array[${v.length}]`;
+    if (typeof v === 'object') return ` — {${Object.keys(v).slice(0, 3).join(', ')}${Object.keys(v).length > 3 ? ', …' : ''}}`;
+    if (typeof v === 'string') return v.length <= 30 ? ` — "${v}"` : ` — "${v.substring(0, 27)}…"`;
+    return ` — ${v}`;
   }
 
   /** Build field + step-ref suggestions for the raw JSON body textarea */
@@ -2468,6 +2671,16 @@ export class WorkflowBuilderComponent implements OnInit {
     }
   }
 
+  /** Build step ref suggestions for the FormViewComponent autocomplete */
+  getStepRefSuggestions(): StepRefSuggestion[] {
+    return this.buildStepRefSuggestions('').map(s => ({
+      label: s.label,
+      insertText: s.insertText,
+      detail: s.detail,
+      typeHint: s.typeHint,
+    }));
+  }
+
   // ── Summary chip helper ───────────────────────────────────────────────────
   getSourceSummary(step: WorkflowStep, key: string, area: 'param' | 'body'): string {
     const src = area === 'param' ? step.paramSources[key] : step.bodySources[key];
@@ -2527,12 +2740,81 @@ export class WorkflowBuilderComponent implements OnInit {
   asArray(v: unknown): unknown[] { return Array.isArray(v) ? v : []; }
   asRecord(v: unknown): Record<string, unknown> { return (v && typeof v === 'object' ? v : {}) as Record<string, unknown>; }
 
+  /** Render any cell value as text (handles nested objects/arrays gracefully) */
+  cellText(v: unknown): string {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+  }
+
+  /** Find top-level keys whose value is an array (for the list path selector) */
+  getArrayPaths(response: unknown): string[] {
+    if (Array.isArray(response)) return [];
+    if (!response || typeof response !== 'object') return [];
+    return Object.entries(response as Record<string, unknown>)
+      .filter(([, v]) => Array.isArray(v))
+      .map(([k]) => k);
+  }
+
+  private stepListPaths: Record<string, string> = {};
+
+  getListPath(stepId: string): string {
+    if (this.stepListPaths[stepId]) return this.stepListPaths[stepId];
+    // auto-detect first array prop
+    const step = this.runLog()?.steps.find(s => s.stepId === stepId);
+    if (step?.response) {
+      if (Array.isArray(step.response)) return '';
+      const paths = this.getArrayPaths(step.response);
+      return paths[0] ?? '';
+    }
+    return '';
+  }
+
+  setListPath(stepId: string, path: string) { this.stepListPaths[stepId] = path; }
+
+  /** Resolve the rows to show in list mode (handles both direct arrays and object-wrapped arrays) */
+  getListRows(stepId: string, response: unknown): unknown[] {
+    if (Array.isArray(response)) return response;
+    if (!response || typeof response !== 'object') return [];
+    const path = this.getListPath(stepId);
+    if (!path) {
+      // auto-detect: pick first array property
+      const entry = Object.values(response as Record<string, unknown>).find(v => Array.isArray(v));
+      return Array.isArray(entry) ? entry : [];
+    }
+    const val = (response as Record<string, unknown>)[path];
+    return Array.isArray(val) ? val : [];
+  }
+
+  /** Resolve entries for form view (handles both objects and first-element-of-array) */
+  getFormEntries(response: unknown): { key: string; value: unknown }[] {
+    let obj: Record<string, unknown>;
+    if (Array.isArray(response)) {
+      if (response.length === 0) return [];
+      const first = response[0];
+      if (first && typeof first === 'object' && !Array.isArray(first)) {
+        obj = first as Record<string, unknown>;
+      } else {
+        return [{ key: '0', value: first }];
+      }
+    } else if (response && typeof response === 'object') {
+      obj = response as Record<string, unknown>;
+    } else {
+      return [];
+    }
+    return Object.entries(obj).map(([key, value]) => ({ key, value }));
+  }
+
   getViewMode(stepId: string): string {
     if (this.stepViewModes[stepId]) return this.stepViewModes[stepId];
     const step = this.runLog()?.steps.find(s => s.stepId === stepId);
-    if (step?.response) {
+    if (step?.response !== undefined && step.response !== null) {
       if (Array.isArray(step.response)) return 'list';
-      if (typeof step.response === 'object' && step.response !== null) return 'form';
+      if (typeof step.response === 'object') {
+        // If the object contains arrays, default to list; otherwise form
+        const hasArray = Object.values(step.response as Record<string, unknown>).some(v => Array.isArray(v));
+        return hasArray ? 'list' : 'form';
+      }
     }
     return 'json';
   }

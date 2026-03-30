@@ -141,6 +141,8 @@ export const EN = {
   'workflow.body-form': 'body: form',
   'workflow.json': 'JSON',
   'workflow.list': 'List',
+  'workflow.no-array-data': 'No array data found in this response',
+  'workflow.no-object-data': 'No object data found in this response',
   'workflow.value-for-param': 'Value for :{{param}}',
   'workflow.value-for-key': 'Value for {{key}}',
   'workflow.op-equals': '== equals',
@@ -148,6 +150,13 @@ export const EN = {
   'workflow.op-greater-than': '> greater than',
   'workflow.op-less-than': '< less than',
   'workflow.op-contains': 'contains',
+  'workflow.filter': 'Filter',
+  'workflow.filter-source': 'Source Array',
+  'workflow.filter-source-hint': 'Step whose response contains the array to filter',
+  'workflow.filter-array-hint': 'Dot-notation path to the array (leave empty if root is array)',
+  'workflow.filter-field': 'Element field',
+  'workflow.filter-field-hint': 'Field on each element to compare (e.g. status)',
+  'workflow.filter-result-hint': 'Later steps can reference the filtered array via "From step" → this filter block',
 
   /* ── Calendar ── */
   'calendar.title': 'Schedule Calendar',

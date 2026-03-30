@@ -7,7 +7,7 @@ export type PayloadSource =
   | { type: 'from-step'; stepId: string; field: string };
 
 /** Discriminator for workflow canvas nodes */
-export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else' | 'mapper';
+export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter';
 
 /** How the request body is configured for a POST / PUT / PATCH step */
 export type BodyMode = 'fields' | 'text' | 'form';
@@ -102,8 +102,29 @@ export interface MapperBlock {
   mappings: FieldMapping[];
 }
 
+/**
+ * Filter block — takes an array from a previous step's response,
+ * evaluates a condition on each element's field, and stores the
+ * matching elements as the block result.
+ */
+export interface FilterBlock {
+  id: string;
+  kind: 'filter';
+  label?: string;
+  /** Step whose response contains the source array */
+  sourceStepId?: string;
+  /** Dot-notation path to the array inside the response (empty = root) */
+  sourceField?: string;
+  /** Field on each element to test */
+  filterField?: string;
+  /** Comparison operator */
+  filterOperator?: '==' | '!=' | '>' | '<' | 'contains';
+  /** Value to compare against */
+  filterValue?: string;
+}
+
 /** Any top-level canvas node (endpoint step or control-flow block) */
-export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock | MapperBlock;
+export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock | MapperBlock | FilterBlock;
 
 export type WorkflowStatus = 'draft' | 'scheduled' | 'running' | 'completed' | 'failed';
 
