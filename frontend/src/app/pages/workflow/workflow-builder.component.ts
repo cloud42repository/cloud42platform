@@ -777,10 +777,10 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
               <div class="config-section-label">{{ 'workflow.try-steps' | t }}</div>
               <div class="branch-step-list">
                 @for (s of block.trySteps; track s.id) {
-                  <div class="branch-step-item">
+                  <div class="branch-step-item" (click)="selectStep(s.id)">
                     <mat-icon class="branch-step-kind">{{ s.kind === 'endpoint' ? 'api' : 'device_hub' }}</mat-icon>
                     <span>{{ getNodeLabel(s) }}</span>
-                    <button mat-icon-button (click)="removeFromBranch(block.id, 'trySteps', s.id)" matTooltip="{{ 'workflow.remove-step' | t }}"><mat-icon>remove_circle_outline</mat-icon></button>
+                    <button mat-icon-button (click)="$event.stopPropagation(); removeFromBranch(block.id, 'trySteps', s.id)" matTooltip="{{ 'workflow.remove-step' | t }}"><mat-icon>remove_circle_outline</mat-icon></button>
                   </div>
                 }
                 @if (block.trySteps.length === 0) { <p class="branch-empty">{{ 'workflow.no-steps-drag' | t }}</p> }
@@ -800,10 +800,10 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
               <div class="config-section-label">{{ 'workflow.catch-steps' | t }}</div>
               <div class="branch-step-list">
                 @for (s of block.catchSteps; track s.id) {
-                  <div class="branch-step-item">
+                  <div class="branch-step-item" (click)="selectStep(s.id)">
                     <mat-icon class="branch-step-kind">{{ s.kind === 'endpoint' ? 'api' : 'device_hub' }}</mat-icon>
                     <span>{{ getNodeLabel(s) }}</span>
-                    <button mat-icon-button (click)="removeFromBranch(block.id, 'catchSteps', s.id)" matTooltip="{{ 'workflow.remove-step' | t }}"><mat-icon>remove_circle_outline</mat-icon></button>
+                    <button mat-icon-button (click)="$event.stopPropagation(); removeFromBranch(block.id, 'catchSteps', s.id)" matTooltip="{{ 'workflow.remove-step' | t }}"><mat-icon>remove_circle_outline</mat-icon></button>
                   </div>
                 }
                 @if (block.catchSteps.length === 0) { <p class="branch-empty">{{ 'workflow.no-steps-add' | t }}</p> }
@@ -880,10 +880,10 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
               <div class="config-section-label">{{ 'workflow.body-steps' | t }}</div>
               <div class="branch-step-list">
                 @for (s of block.bodySteps; track s.id) {
-                  <div class="branch-step-item">
+                  <div class="branch-step-item" (click)="selectStep(s.id)">
                     <mat-icon class="branch-step-kind">{{ s.kind === 'endpoint' ? 'api' : 'device_hub' }}</mat-icon>
                     <span>{{ getNodeLabel(s) }}</span>
-                    <button mat-icon-button (click)="removeFromBranch(block.id, 'bodySteps', s.id)" matTooltip="{{ 'workflow.remove-step' | t }}"><mat-icon>remove_circle_outline</mat-icon></button>
+                    <button mat-icon-button (click)="$event.stopPropagation(); removeFromBranch(block.id, 'bodySteps', s.id)" matTooltip="{{ 'workflow.remove-step' | t }}"><mat-icon>remove_circle_outline</mat-icon></button>
                   </div>
                 }
                 @if (block.bodySteps.length === 0) { <p class="branch-empty">{{ 'workflow.no-steps-add' | t }}</p> }
@@ -952,10 +952,10 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
               <div class="config-section-label">{{ 'workflow.then-steps' | t }}</div>
               <div class="branch-step-list">
                 @for (s of block.thenSteps; track s.id) {
-                  <div class="branch-step-item">
+                  <div class="branch-step-item" (click)="selectStep(s.id)">
                     <mat-icon class="branch-step-kind">{{ s.kind === 'endpoint' ? 'api' : 'device_hub' }}</mat-icon>
                     <span>{{ getNodeLabel(s) }}</span>
-                    <button mat-icon-button (click)="removeFromBranch(block.id, 'thenSteps', s.id)" matTooltip="{{ 'workflow.remove-step' | t }}"><mat-icon>remove_circle_outline</mat-icon></button>
+                    <button mat-icon-button (click)="$event.stopPropagation(); removeFromBranch(block.id, 'thenSteps', s.id)" matTooltip="{{ 'workflow.remove-step' | t }}"><mat-icon>remove_circle_outline</mat-icon></button>
                   </div>
                 }
                 @if (block.thenSteps.length === 0) { <p class="branch-empty">{{ 'workflow.no-steps-add' | t }}</p> }
@@ -975,10 +975,10 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
               <div class="config-section-label">{{ 'workflow.else-steps' | t }}</div>
               <div class="branch-step-list">
                 @for (s of block.elseSteps; track s.id) {
-                  <div class="branch-step-item">
+                  <div class="branch-step-item" (click)="selectStep(s.id)">
                     <mat-icon class="branch-step-kind">{{ s.kind === 'endpoint' ? 'api' : 'device_hub' }}</mat-icon>
                     <span>{{ getNodeLabel(s) }}</span>
-                    <button mat-icon-button (click)="removeFromBranch(block.id, 'elseSteps', s.id)" matTooltip="{{ 'workflow.remove-step' | t }}"><mat-icon>remove_circle_outline</mat-icon></button>
+                    <button mat-icon-button (click)="$event.stopPropagation(); removeFromBranch(block.id, 'elseSteps', s.id)" matTooltip="{{ 'workflow.remove-step' | t }}"><mat-icon>remove_circle_outline</mat-icon></button>
                   </div>
                 }
                 @if (block.elseSteps.length === 0) { <p class="branch-empty">{{ 'workflow.no-steps-add' | t }}</p> }
@@ -1790,8 +1790,10 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
     .branch-step-item {
       display: flex; align-items: center; gap: 6px;
       padding: 4px 8px; background: #f8fafc; border-radius: 6px;
-      border: 1px solid #e2e8f0; font-size: 11px;
+      border: 1px solid #e2e8f0; font-size: 11px; cursor: pointer;
+      transition: border-color .15s, background .15s;
     }
+    .branch-step-item:hover { border-color: #a78bfa; background: #f5f3ff; }
     .branch-step-item span { flex: 1; }
     .branch-step-kind { font-size: 14px; width: 14px; height: 14px; color: #0284c7; }
     .branch-empty { font-size: 11px; color: #94a3b8; margin: 0; padding: 8px 0; }
@@ -1909,7 +1911,7 @@ export class WorkflowBuilderComponent implements OnInit {
 
   readonly steps = signal<WorkflowNode[]>([]);
   readonly selectedStepId = signal<string | null>(null);
-  readonly selectedStep = computed<WorkflowNode | null>(() => this.steps().find(s => s.id === this.selectedStepId()) ?? null);
+  readonly selectedStep = computed<WorkflowNode | null>(() => this.findNodeById(this.steps(), this.selectedStepId()));
 
   // ── Control flow panel items ───────────────────────────────────────────────
   readonly controlFlowItems: ControlFlowRef[] = [
@@ -1941,8 +1943,18 @@ export class WorkflowBuilderComponent implements OnInit {
   readonly previousSteps = computed(() => {
     const selId = this.selectedStepId();
     if (!selId) return [];
-    const idx = this.steps().findIndex(s => s.id === selId);
-    return this.steps().slice(0, idx);
+    // Top-level steps before the selected one (or its parent block)
+    const topIdx = this.steps().findIndex(s => s.id === selId);
+    if (topIdx >= 0) return this.steps().slice(0, topIdx);
+    // Selected step is nested inside a block — include all top-level steps
+    // up to and including the parent block
+    const loop = this.parentLoop();
+    if (loop) {
+      const loopIdx = this.steps().findIndex(s => s.id === loop.id);
+      return this.steps().slice(0, loopIdx + 1);
+    }
+    // Fallback: include all top-level steps
+    return this.steps();
   });
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -2131,6 +2143,55 @@ export class WorkflowBuilderComponent implements OnInit {
     this.newBodyKey = '';
   }
 
+  /** Recursively find a node by ID across all nested branches. */
+  private findNodeById(nodes: WorkflowNode[], id: string | null): WorkflowNode | null {
+    if (!id) return null;
+    for (const node of nodes) {
+      if (node.id === id) return node;
+      if (node.kind === 'try-catch') {
+        const b = node as TryCatchBlock;
+        const found = this.findNodeById(b.trySteps, id) ?? this.findNodeById(b.catchSteps, id);
+        if (found) return found;
+      } else if (node.kind === 'loop') {
+        const found = this.findNodeById((node as LoopBlock).bodySteps, id);
+        if (found) return found;
+      } else if (node.kind === 'if-else') {
+        const b = node as IfElseBlock;
+        const found = this.findNodeById(b.thenSteps, id) ?? this.findNodeById(b.elseSteps, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  /** Find the enclosing for-each loop block for a given step ID, if any. */
+  private findParentLoop(nodes: WorkflowNode[], targetId: string): LoopBlock | null {
+    for (const node of nodes) {
+      if (node.kind === 'loop') {
+        const loop = node as LoopBlock;
+        if (loop.bodySteps.some(s => s.id === targetId)) return loop;
+        const deeper = this.findParentLoop(loop.bodySteps, targetId);
+        if (deeper) return deeper;
+      } else if (node.kind === 'try-catch') {
+        const b = node as TryCatchBlock;
+        const found = this.findParentLoop(b.trySteps, targetId) ?? this.findParentLoop(b.catchSteps, targetId);
+        if (found) return found;
+      } else if (node.kind === 'if-else') {
+        const b = node as IfElseBlock;
+        const found = this.findParentLoop(b.thenSteps, targetId) ?? this.findParentLoop(b.elseSteps, targetId);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  /** The parent for-each loop of the currently selected step (if any). */
+  readonly parentLoop = computed<LoopBlock | null>(() => {
+    const selId = this.selectedStepId();
+    if (!selId) return null;
+    return this.findParentLoop(this.steps(), selId);
+  });
+
   getStepIndex(stepId: string): number {
     return this.steps().findIndex(s => s.id === stepId);
   }
@@ -2173,61 +2234,70 @@ export class WorkflowBuilderComponent implements OnInit {
   });
 
   // ── Block mutation helpers ────────────────────────────────────────────────
+
+  /** Recursively update a node by ID anywhere in the tree. */
+  private updateNodeDeep(nodes: WorkflowNode[], id: string, fn: (n: WorkflowNode) => WorkflowNode): WorkflowNode[] {
+    return nodes.map(n => {
+      if (n.id === id) return fn(n);
+      if (n.kind === 'try-catch') {
+        const b = n as TryCatchBlock;
+        return { ...b, trySteps: this.updateNodeDeep(b.trySteps, id, fn), catchSteps: this.updateNodeDeep(b.catchSteps, id, fn) };
+      } else if (n.kind === 'loop') {
+        const b = n as LoopBlock;
+        return { ...b, bodySteps: this.updateNodeDeep(b.bodySteps, id, fn) };
+      } else if (n.kind === 'if-else') {
+        const b = n as IfElseBlock;
+        return { ...b, thenSteps: this.updateNodeDeep(b.thenSteps, id, fn), elseSteps: this.updateNodeDeep(b.elseSteps, id, fn) };
+      }
+      return n;
+    });
+  }
+
   mutateBlock(id: string, value: unknown, field: string) {
-    this.steps.update(ss => ss.map(s =>
-      s.id === id ? { ...s, [field]: value } : s
-    ));
+    this.steps.update(ss => this.updateNodeDeep(ss, id, n => ({ ...n, [field]: value })));
   }
 
   /** Switch loop mode between 'count' and 'for-each' */
   setLoopMode(blockId: string, mode: LoopMode) {
-    this.steps.update(ss => ss.map(s => {
-      if (s.id !== blockId || s.kind !== 'loop') return s;
-      return { ...s, loopMode: mode };
-    }));
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => ({ ...n, loopMode: mode })));
   }
 
   addToBranch(blockId: string, branch: string, ref: EndpointRef) {
     const newStep = this.makeStep(ref);
-    this.steps.update(ss => ss.map(s => {
-      if (s.id !== blockId) return s;
-      const block = s as unknown as Record<string, unknown>;
-      const existing = (block[branch] as WorkflowNode[]) ?? [];
-      return { ...s, [branch]: [...existing, newStep] };
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const blk = n as unknown as Record<string, unknown>;
+      const existing = (blk[branch] as WorkflowNode[]) ?? [];
+      return { ...n, [branch]: [...existing, newStep] };
     }));
   }
 
   removeFromBranch(blockId: string, branch: string, stepId: string) {
-    this.steps.update(ss => ss.map(s => {
-      if (s.id !== blockId) return s;
-      const block = s as unknown as Record<string, unknown>;
-      const existing = (block[branch] as WorkflowNode[]) ?? [];
-      return { ...s, [branch]: existing.filter(n => n.id !== stepId) };
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const blk = n as unknown as Record<string, unknown>;
+      const existing = (blk[branch] as WorkflowNode[]) ?? [];
+      return { ...n, [branch]: existing.filter(c => (c as WorkflowNode).id !== stepId) };
     }));
   }
 
   // ── Mapper mapping helpers ────────────────────────────────────────────────
   addMapping(blockId: string) {
-    this.steps.update(ss => ss.map(s => {
-      if (s.id !== blockId || s.kind !== 'mapper') return s;
-      const block = s as MapperBlock;
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const block = n as MapperBlock;
       const newMapping: FieldMapping = { outputField: '', source: { type: 'from-step', stepId: '', field: '' } };
       return { ...block, mappings: [...block.mappings, newMapping] };
     }));
   }
 
   removeMapping(blockId: string, index: number) {
-    this.steps.update(ss => ss.map(s => {
-      if (s.id !== blockId || s.kind !== 'mapper') return s;
-      const block = s as MapperBlock;
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const block = n as MapperBlock;
       return { ...block, mappings: block.mappings.filter((_, i) => i !== index) };
     }));
   }
 
   updateMapping(blockId: string, index: number, field: string, value: string) {
-    this.steps.update(ss => ss.map(s => {
-      if (s.id !== blockId || s.kind !== 'mapper') return s;
-      const block = s as MapperBlock;
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const block = n as MapperBlock;
       const mappings = block.mappings.map((m, i) =>
         i === index ? { ...m, [field]: value } : m
       );
@@ -2236,9 +2306,8 @@ export class WorkflowBuilderComponent implements OnInit {
   }
 
   updateMappingSource(blockId: string, index: number, stepId: string, field: string) {
-    this.steps.update(ss => ss.map(s => {
-      if (s.id !== blockId || s.kind !== 'mapper') return s;
-      const block = s as MapperBlock;
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const block = n as MapperBlock;
       const mappings = block.mappings.map((m, i) =>
         i === index ? { ...m, source: { type: 'from-step' as const, stepId, field } } : m
       );
@@ -2248,7 +2317,7 @@ export class WorkflowBuilderComponent implements OnInit {
 
   // ── Step config helpers ───────────────────────────────────────────────────
   private mutateStep(id: string, fn: (s: WorkflowStep) => WorkflowStep) {
-    this.steps.update(ss => ss.map(s => s.id === id ? fn({ ...(s as WorkflowStep) }) : s));
+    this.steps.update(ss => this.updateNodeDeep(ss, id, n => fn({ ...(n as WorkflowStep) })));
   }
 
   // Param sources
@@ -2453,7 +2522,44 @@ export class WorkflowBuilderComponent implements OnInit {
         }
       }
     }
-    return suggestions.slice(0, 15);
+
+    // ── Loop current-item suggestions ──────────────────────────────────────
+    const loop = this.parentLoop();
+    if (loop && loop.loopMode === 'for-each') {
+      const loopIdx = this.getStepIndex(loop.id) + 1;
+      const loopLabel = loop.label || `Step ${loopIdx}: Loop`;
+      const loopLog = log?.steps.find(sl => sl.stepId === loop.id);
+
+      // Resolve a sample item from the last-run array (first element)
+      let sampleItem: unknown;
+      if (loopLog?.response) {
+        const arr = Array.isArray(loopLog.response) ? loopLog.response : [];
+        sampleItem = arr[0];
+      }
+
+      // Whole current item
+      const itemRef = `{{steps.${loopIdx}}}`;
+      const itemLabel = `🔄 ${loopLabel} — current item`;
+      if (!suggestions.find(s => s.insertText === itemRef)) {
+        if (!filter || itemRef.toLowerCase().includes(filter.toLowerCase()) || 'current item'.includes(filter.toLowerCase())) {
+          suggestions.unshift({ label: `loop item`, insertText: itemRef, detail: itemLabel + this.typePreview(sampleItem), icon: 'loop', typeHint: this.detectType(sampleItem) });
+        }
+      }
+
+      // If sample item is an object, suggest its fields
+      if (sampleItem && typeof sampleItem === 'object' && !Array.isArray(sampleItem)) {
+        const keys = Object.keys(sampleItem as Record<string, unknown>);
+        for (const key of keys.slice(0, 12)) {
+          const fieldRef = `{{steps.${loopIdx}.${key}}}`;
+          if (suggestions.find(s => s.insertText === fieldRef)) continue;
+          if (filter && !fieldRef.toLowerCase().includes(filter.toLowerCase()) && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+          const fieldVal = (sampleItem as Record<string, unknown>)[key];
+          suggestions.splice(1, 0, { label: `loop.${key}`, insertText: fieldRef, detail: `${itemLabel} → ${key}${this.typePreview(fieldVal)}`, icon: 'loop', typeHint: this.detectType(fieldVal) });
+        }
+      }
+    }
+
+    return suggestions.slice(0, 20);
   }
 
   /** Traverse dot-notation path on an object to get the raw value */
@@ -2569,7 +2675,7 @@ export class WorkflowBuilderComponent implements OnInit {
     callback(input.value);
     this.updateOverlayPosition();
 
-    if (this.previousSteps().length === 0) { this.acSuggestions.set([]); return; }
+    if (this.previousSteps().length === 0 && !this.parentLoop()) { this.acSuggestions.set([]); return; }
     if (!this.checkRefTrigger(input)) {
       this.acSuggestions.set([]);
     }

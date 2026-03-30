@@ -202,13 +202,18 @@ export class WorkflowService {
         if (mode === 'for-each' && block.loopSourceStepId) {
           // Resolve the source array from a previous step's response
           const srcResult = stepResults.get(block.loopSourceStepId);
-          let items: unknown[];
-          if (block.loopSourceField) {
-            const resolved = this.getPathRaw(srcResult, block.loopSourceField);
-            items = Array.isArray(resolved) ? resolved : [];
-          } else {
-            items = Array.isArray(srcResult) ? srcResult : [];
-          }
+          const items = this.resolveArray(srcResult, block.loopSourceField);
+
+          // Log the loop block itself so the user can see how many items were resolved
+          log.steps.push({
+            stepId: block.id,
+            label: block.label || 'Loop (for-each)',
+            startedAt: new Date().toISOString(),
+            finishedAt: new Date().toISOString(),
+            resolvedParams: { sourceStepId: block.loopSourceStepId, sourceField: block.loopSourceField ?? '(root)', itemCount: String(items.length) },
+            response: items,
+            success: true,
+          });
 
           for (let i = 0; i < items.length; i++) {
             // Store current element so body steps can reference it via "from-step" → this loop block's id
@@ -270,12 +275,7 @@ export class WorkflowService {
         let items: unknown[] = [];
         if (block.sourceStepId) {
           const srcResult = stepResults.get(block.sourceStepId);
-          if (block.sourceField) {
-            const resolved = this.getPathRaw(srcResult, block.sourceField);
-            items = Array.isArray(resolved) ? resolved : [];
-          } else {
-            items = Array.isArray(srcResult) ? srcResult : [];
-          }
+          items = this.resolveArray(srcResult, block.sourceField);
         }
         // Apply filter condition
         const field = block.filterField ?? '';
@@ -503,5 +503,28 @@ export class WorkflowService {
   /** Generate a simple unique ID */
   static newId(): string {
     return `wf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  }
+
+  /**
+   * Extract an array from a step result.
+   * If `field` is provided, resolve that path.
+   * Otherwise, if the result is already an array, use it directly.
+   * If it's an object, auto-detect common wrapper patterns (e.g. { data: [...] }).
+   */
+  private resolveArray(srcResult: unknown, field?: string): unknown[] {
+    if (field) {
+      const resolved = this.getPathRaw(srcResult, field);
+      return Array.isArray(resolved) ? resolved : [];
+    }
+    if (Array.isArray(srcResult)) return srcResult;
+    // Auto-detect: object with an array property (try 'data', then first array value)
+    if (srcResult && typeof srcResult === 'object') {
+      const obj = srcResult as Record<string, unknown>;
+      if (Array.isArray(obj['data'])) return obj['data'] as unknown[];
+      for (const val of Object.values(obj)) {
+        if (Array.isArray(val)) return val;
+      }
+    }
+    return [];
   }
 }
