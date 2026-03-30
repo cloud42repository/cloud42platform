@@ -85,6 +85,7 @@ export const FR: Record<TranslationKey, string> = {
   'workflow.body-label': 'CORPS',
   'workflow.drop-here': 'Déposer ici',
   'workflow.endpoints': 'Endpoints',
+  'workflow.blocks': 'Blocs',
   'workflow.workflow-steps': 'Étapes du workflow',
   'workflow.back-to-workflows': 'Retour aux workflows',
   'workflow.clear-schedule': 'Effacer la planification',

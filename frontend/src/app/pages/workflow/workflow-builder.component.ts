@@ -789,9 +789,16 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="add-key-input">
                   <mat-label>{{ 'workflow.add-endpoint-try' | t }}</mat-label>
                   <mat-select (selectionChange)="addToBranch(block.id, 'trySteps', $event.value); $event.source.writeValue(null)">
-                    @for (ref of allEndpointRefs(); track ref.endpoint.id) {
-                      <mat-option [value]="ref">{{ ref.module.label }} › {{ ref.endpoint.label }}</mat-option>
-                    }
+                    <mat-optgroup label="{{ 'workflow.endpoints' | t }}">
+                      @for (ref of allEndpointRefs(); track ref.endpoint.id) {
+                        <mat-option [value]="ref">{{ ref.module.label }} › {{ ref.endpoint.label }}</mat-option>
+                      }
+                    </mat-optgroup>
+                    <mat-optgroup label="{{ 'workflow.blocks' | t }}">
+                      @for (cf of controlFlowItems; track cf.kind) {
+                        <mat-option [value]="cf"><mat-icon class="block-opt-icon">{{ cf.icon }}</mat-icon> {{ cf.label }}</mat-option>
+                      }
+                    </mat-optgroup>
                   </mat-select>
                 </mat-form-field>
               </div>
@@ -812,9 +819,16 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="add-key-input">
                   <mat-label>{{ 'workflow.add-endpoint-catch' | t }}</mat-label>
                   <mat-select (selectionChange)="addToBranch(block.id, 'catchSteps', $event.value); $event.source.writeValue(null)">
-                    @for (ref of allEndpointRefs(); track ref.endpoint.id) {
-                      <mat-option [value]="ref">{{ ref.module.label }} › {{ ref.endpoint.label }}</mat-option>
-                    }
+                    <mat-optgroup label="{{ 'workflow.endpoints' | t }}">
+                      @for (ref of allEndpointRefs(); track ref.endpoint.id) {
+                        <mat-option [value]="ref">{{ ref.module.label }} › {{ ref.endpoint.label }}</mat-option>
+                      }
+                    </mat-optgroup>
+                    <mat-optgroup label="{{ 'workflow.blocks' | t }}">
+                      @for (cf of controlFlowItems; track cf.kind) {
+                        <mat-option [value]="cf"><mat-icon class="block-opt-icon">{{ cf.icon }}</mat-icon> {{ cf.label }}</mat-option>
+                      }
+                    </mat-optgroup>
                   </mat-select>
                 </mat-form-field>
               </div>
@@ -892,9 +906,16 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="add-key-input">
                   <mat-label>{{ 'workflow.add-endpoint-body' | t }}</mat-label>
                   <mat-select (selectionChange)="addToBranch(block.id, 'bodySteps', $event.value); $event.source.writeValue(null)">
-                    @for (ref of allEndpointRefs(); track ref.endpoint.id) {
-                      <mat-option [value]="ref">{{ ref.module.label }} › {{ ref.endpoint.label }}</mat-option>
-                    }
+                    <mat-optgroup label="{{ 'workflow.endpoints' | t }}">
+                      @for (ref of allEndpointRefs(); track ref.endpoint.id) {
+                        <mat-option [value]="ref">{{ ref.module.label }} › {{ ref.endpoint.label }}</mat-option>
+                      }
+                    </mat-optgroup>
+                    <mat-optgroup label="{{ 'workflow.blocks' | t }}">
+                      @for (cf of controlFlowItems; track cf.kind) {
+                        <mat-option [value]="cf"><mat-icon class="block-opt-icon">{{ cf.icon }}</mat-icon> {{ cf.label }}</mat-option>
+                      }
+                    </mat-optgroup>
                   </mat-select>
                 </mat-form-field>
               </div>
@@ -964,9 +985,16 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="add-key-input">
                   <mat-label>{{ 'workflow.add-endpoint-then' | t }}</mat-label>
                   <mat-select (selectionChange)="addToBranch(block.id, 'thenSteps', $event.value); $event.source.writeValue(null)">
-                    @for (ref of allEndpointRefs(); track ref.endpoint.id) {
-                      <mat-option [value]="ref">{{ ref.module.label }} › {{ ref.endpoint.label }}</mat-option>
-                    }
+                    <mat-optgroup label="{{ 'workflow.endpoints' | t }}">
+                      @for (ref of allEndpointRefs(); track ref.endpoint.id) {
+                        <mat-option [value]="ref">{{ ref.module.label }} › {{ ref.endpoint.label }}</mat-option>
+                      }
+                    </mat-optgroup>
+                    <mat-optgroup label="{{ 'workflow.blocks' | t }}">
+                      @for (cf of controlFlowItems; track cf.kind) {
+                        <mat-option [value]="cf"><mat-icon class="block-opt-icon">{{ cf.icon }}</mat-icon> {{ cf.label }}</mat-option>
+                      }
+                    </mat-optgroup>
                   </mat-select>
                 </mat-form-field>
               </div>
@@ -987,9 +1015,16 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="add-key-input">
                   <mat-label>{{ 'workflow.add-endpoint-else' | t }}</mat-label>
                   <mat-select (selectionChange)="addToBranch(block.id, 'elseSteps', $event.value); $event.source.writeValue(null)">
-                    @for (ref of allEndpointRefs(); track ref.endpoint.id) {
-                      <mat-option [value]="ref">{{ ref.module.label }} › {{ ref.endpoint.label }}</mat-option>
-                    }
+                    <mat-optgroup label="{{ 'workflow.endpoints' | t }}">
+                      @for (ref of allEndpointRefs(); track ref.endpoint.id) {
+                        <mat-option [value]="ref">{{ ref.module.label }} › {{ ref.endpoint.label }}</mat-option>
+                      }
+                    </mat-optgroup>
+                    <mat-optgroup label="{{ 'workflow.blocks' | t }}">
+                      @for (cf of controlFlowItems; track cf.kind) {
+                        <mat-option [value]="cf"><mat-icon class="block-opt-icon">{{ cf.icon }}</mat-icon> {{ cf.label }}</mat-option>
+                      }
+                    </mat-optgroup>
                   </mat-select>
                 </mat-form-field>
               </div>
@@ -1799,6 +1834,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
     .branch-empty { font-size: 11px; color: #94a3b8; margin: 0; padding: 8px 0; }
     .add-inner-step-row { margin-top: 4px; }
     .add-inner-step-row mat-form-field { width: 100%; }
+    .block-opt-icon { font-size: 18px; width: 18px; height: 18px; vertical-align: middle; margin-right: 4px; }
 
     /* ── Mapper preview on canvas card ── */
     .mapper-preview { padding: 4px 12px 8px; border-top: 1px solid #e2e8f0; }
@@ -2066,23 +2102,21 @@ export class WorkflowBuilderComponent implements OnInit {
   onBranchDrop(event: CdkDragDrop<WorkflowNode[]>, blockId: string, branch: string) {
     if (event.previousContainer === event.container) {
       // Reorder within the same branch
-      this.steps.update(ss => ss.map(s => {
-        if (s.id !== blockId) return s;
-        const blk = s as unknown as Record<string, unknown>;
+      this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+        const blk = n as unknown as Record<string, unknown>;
         const arr = [...(blk[branch] as WorkflowNode[])];
         moveItemInArray(arr, event.previousIndex, event.currentIndex);
-        return { ...s, [branch]: arr };
+        return { ...n, [branch]: arr };
       }));
     } else if (this.isWorkflowNode(event.item.data)) {
       // Moved from canvas or another branch (cdkDropListGroup cross-container)
       const node = event.item.data as WorkflowNode;
       this.removeNodeFromContainer(event.previousContainer.id, node.id);
-      this.steps.update(ss => ss.map(s => {
-        if (s.id !== blockId) return s;
-        const blk = s as unknown as Record<string, unknown>;
+      this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+        const blk = n as unknown as Record<string, unknown>;
         const existing = [...((blk[branch] as WorkflowNode[]) ?? [])];
         existing.splice(event.currentIndex, 0, node);
-        return { ...s, [branch]: existing };
+        return { ...n, [branch]: existing };
       }));
     } else {
       // From browser — EndpointRef or ControlFlowRef
@@ -2093,12 +2127,11 @@ export class WorkflowBuilderComponent implements OnInit {
       } else {
         newStep = this.makeStep(data as EndpointRef);
       }
-      this.steps.update(ss => ss.map(s => {
-        if (s.id !== blockId) return s;
-        const blk = s as unknown as Record<string, unknown>;
+      this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+        const blk = n as unknown as Record<string, unknown>;
         const existing = [...((blk[branch] as WorkflowNode[]) ?? [])];
         existing.splice(event.currentIndex, 0, newStep);
-        return { ...s, [branch]: existing };
+        return { ...n, [branch]: existing };
       }));
     }
   }
@@ -2125,10 +2158,9 @@ export class WorkflowBuilderComponent implements OnInit {
       };
       const branchKey = branchMap[suffix];
       if (!branchKey) return;
-      this.steps.update(ss => ss.map(s => {
-        if (s.id !== blockId) return s;
-        const blk = s as unknown as Record<string, unknown>;
-        return { ...s, [branchKey]: (blk[branchKey] as WorkflowNode[]).filter(n => n.id !== nodeId) };
+      this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+        const blk = n as unknown as Record<string, unknown>;
+        return { ...n, [branchKey]: (blk[branchKey] as WorkflowNode[]).filter(nd => nd.id !== nodeId) };
       }));
     }
   }
@@ -2219,17 +2251,27 @@ export class WorkflowBuilderComponent implements OnInit {
   );
 
   /** All cdkDropList IDs that the browser panel can drop into (canvas + every branch zone). */
+  /** Collect all branch drop-list IDs recursively so drag-drop works for nested blocks. */
   readonly allBranchDropIds = computed<string[]>(() => {
     const ids: string[] = ['workflowCanvas'];
-    for (const node of this.steps()) {
-      if (node.kind === 'try-catch') {
-        ids.push(`block-${node.id}-try`, `block-${node.id}-catch`);
-      } else if (node.kind === 'loop') {
-        ids.push(`block-${node.id}-body`);
-      } else if (node.kind === 'if-else') {
-        ids.push(`block-${node.id}-then`, `block-${node.id}-else`);
+    const collect = (nodes: WorkflowNode[]) => {
+      for (const node of nodes) {
+        if (node.kind === 'try-catch') {
+          const b = node as TryCatchBlock;
+          ids.push(`block-${node.id}-try`, `block-${node.id}-catch`);
+          collect(b.trySteps); collect(b.catchSteps);
+        } else if (node.kind === 'loop') {
+          const b = node as LoopBlock;
+          ids.push(`block-${node.id}-body`);
+          collect(b.bodySteps);
+        } else if (node.kind === 'if-else') {
+          const b = node as IfElseBlock;
+          ids.push(`block-${node.id}-then`, `block-${node.id}-else`);
+          collect(b.thenSteps); collect(b.elseSteps);
+        }
       }
-    }
+    };
+    collect(this.steps());
     return ids;
   });
 
@@ -2262,12 +2304,14 @@ export class WorkflowBuilderComponent implements OnInit {
     this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => ({ ...n, loopMode: mode })));
   }
 
-  addToBranch(blockId: string, branch: string, ref: EndpointRef) {
-    const newStep = this.makeStep(ref);
+  addToBranch(blockId: string, branch: string, ref: EndpointRef | ControlFlowRef) {
+    const newNode = ('kind' in ref && !('endpoint' in ref))
+      ? this.makeBlock(ref as ControlFlowRef)
+      : this.makeStep(ref as EndpointRef);
     this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
       const blk = n as unknown as Record<string, unknown>;
       const existing = (blk[branch] as WorkflowNode[]) ?? [];
-      return { ...n, [branch]: [...existing, newStep] };
+      return { ...n, [branch]: [...existing, newNode] };
     }));
   }
 

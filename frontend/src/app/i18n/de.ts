@@ -85,6 +85,7 @@ export const DE: Record<TranslationKey, string> = {
   'workflow.body-label': 'BODY',
   'workflow.drop-here': 'Hier ablegen',
   'workflow.endpoints': 'Endpunkte',
+  'workflow.blocks': 'Blöcke',
   'workflow.workflow-steps': 'Workflow-Schritte',
   'workflow.back-to-workflows': 'Zurück zu Workflows',
   'workflow.clear-schedule': 'Zeitplan löschen',

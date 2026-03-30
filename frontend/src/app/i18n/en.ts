@@ -83,6 +83,7 @@ export const EN = {
   'workflow.body-label': 'BODY',
   'workflow.drop-here': 'Drop here',
   'workflow.endpoints': 'Endpoints',
+  'workflow.blocks': 'Blocks',
   'workflow.workflow-steps': 'Workflow Steps',
   'workflow.back-to-workflows': 'Back to workflows',
   'workflow.clear-schedule': 'Clear schedule',
