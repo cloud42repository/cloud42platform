@@ -17,6 +17,8 @@ import { AnalyticsManagementComponent } from './pages/analytics-management/analy
 import { CampaignsDashboardComponent } from './pages/campaigns-dashboard/campaigns-dashboard.component';
 import { CampaignsManagementComponent } from './pages/campaigns-management/campaigns-management.component';
 import { InvoiceManagementComponent } from './pages/invoice-management/invoice-management.component';
+import { DashboardListComponent } from './pages/dashboard/dashboard-list.component';
+import { DashboardBuilderComponent } from './pages/dashboard/dashboard-builder.component';
 import { authGuard } from './guards/auth.guard';
 import { MODULES } from './config/endpoints';
 
@@ -30,6 +32,14 @@ export const routes: Routes = [
       { path: 'calendar', component: WorkflowCalendarComponent, canActivate: [authGuard], title: 'Schedule Calendar' },
       { path: 'new', component: WorkflowBuilderComponent, canActivate: [authGuard], title: 'New Workflow' },
       { path: ':id/edit', component: WorkflowBuilderComponent, canActivate: [authGuard], title: 'Edit Workflow' },
+    ],
+  },
+  {
+    path: 'dashboards',
+    children: [
+      { path: '', component: DashboardListComponent, canActivate: [authGuard], title: 'Dashboards' },
+      { path: 'new', component: DashboardBuilderComponent, canActivate: [authGuard], title: 'New Dashboard' },
+      { path: ':id/edit', component: DashboardBuilderComponent, canActivate: [authGuard], title: 'Edit Dashboard' },
     ],
   },
   { path: 'settings', component: SettingsComponent, canActivate: [authGuard], title: 'Settings' },

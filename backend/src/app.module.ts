@@ -30,6 +30,7 @@ import { ChatGPTModule } from './chatgpt/chatgpt.module';
 import { SchemaModule } from './schema/schema.module';
 import { UserModule } from './user/user.module';
 import { WorkflowModule } from './workflow/workflow.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { AuthConfigModule } from './auth-config/auth-config.module';
 import { ZohoOAuthModule } from './zoho-oauth/zoho-oauth.module';
 
@@ -63,6 +64,7 @@ import { ZohoOAuthModule } from './zoho-oauth/zoho-oauth.module';
     SchemaModule,
     UserModule,
     WorkflowModule,
+    DashboardModule,
     AuthConfigModule,
     ZohoOAuthModule,
   ],

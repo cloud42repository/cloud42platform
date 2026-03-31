@@ -1,0 +1,64 @@
+/** Widget kind — the visual representation of a data widget */
+export type WidgetKind = 'line-chart' | 'pie-chart' | 'data-table';
+
+/** How to resolve the data source for a widget */
+export interface WidgetDataSource {
+  /** Module API prefix, e.g. '/zoho-crm' */
+  moduleApiPrefix: string;
+  /** Module label for display */
+  moduleLabel: string;
+  /** Endpoint path template, e.g. '/contacts' */
+  pathTemplate: string;
+  /** Endpoint label for display */
+  endpointLabel: string;
+  /** HTTP method */
+  method: string;
+  /** Path parameter values — may contain {{token}} expressions */
+  pathParams: Record<string, string>;
+  /** Query parameter values — may contain {{token}} expressions */
+  queryParams: Record<string, string>;
+}
+
+/** A single widget on the dashboard canvas */
+export interface DashboardWidget {
+  id: string;
+  kind: WidgetKind;
+  label: string;
+  /** Grid position & size */
+  x: number;
+  y: number;
+  width: number;   // grid columns (1–12)
+  height: number;  // grid rows
+
+  /** Where to fetch the data from */
+  dataSource?: WidgetDataSource;
+
+  /**
+   * Data binding expressions ({{token}} syntax, same as workflow).
+   * Keys vary per widget kind:
+   *
+   * line-chart:  labelField, valueField
+   * pie-chart:   labelField, valueField
+   * data-table:  columns  (comma-separated field paths)
+   */
+  bindings: Record<string, string>;
+
+  /** Dot-notation path into the response to reach the array of items */
+  dataPath?: string;
+
+  /** Last fetched data (transient, not persisted) */
+  lastData?: unknown;
+}
+
+export type DashboardStatus = 'draft' | 'published';
+
+/** A full dashboard definition */
+export interface Dashboard {
+  id: string;
+  name: string;
+  description?: string;
+  widgets: DashboardWidget[];
+  status: DashboardStatus;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -6,6 +6,7 @@ import { WorkflowService } from './workflow.service';
 import { ConfigModule } from '@nestjs/config/dist/config.module';
 import { ConfigService } from '@nestjs/config/dist/config.service';
 import { UserEntity } from '../user/user.entity';
+import { DashboardEntity } from '../dashboard/dashboard.entity';
 
 @Module({
   //imports: [TypeOrmModule.forFeature([WorkflowEntity])],
@@ -21,7 +22,7 @@ import { UserEntity } from '../user/user.entity';
           username: config.get<string>('AZURE_POSTGRESQL_USER', 'postgres'),
           password: config.get<string>('AZURE_POSTGRESQL_PASSWORD', 'Password1'),
           database: config.get<string>('AZURE_POSTGRESQL_DATABASE', 'postgres'),
-          entities: [UserEntity, WorkflowEntity],
+          entities: [UserEntity, WorkflowEntity, DashboardEntity],
           synchronize: config.get<string>('AZURE_POSTGRESQL_SYNC', 'true') === 'true', // auto-create tables (dev only)
           ssl: config.get<string>('AZURE_POSTGRESQL_SSL', 'false') === 'true'
             ? { rejectUnauthorized: false }
