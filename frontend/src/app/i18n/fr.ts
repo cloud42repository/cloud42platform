@@ -578,4 +578,5 @@ export const FR: Record<TranslationKey, string> = {
   'dashboard.badge-field-hint': 'Champ numérique à agréger (ex. montant)',
   'dashboard.badge-suffix': 'Suffixe',
   'dashboard.badge-suffix-hint': 'ex. EUR, %, éléments',
+  'dashboard.export-pdf': 'Exporter PDF',
 };

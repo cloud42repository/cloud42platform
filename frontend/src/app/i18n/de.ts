@@ -578,4 +578,5 @@ export const DE: Record<TranslationKey, string> = {
   'dashboard.badge-field-hint': 'Numerisches Feld zum Aggregieren (z.B. betrag)',
   'dashboard.badge-suffix': 'Suffix',
   'dashboard.badge-suffix-hint': 'z.B. EUR, %, Einträge',
+  'dashboard.export-pdf': 'PDF exportieren',
 };

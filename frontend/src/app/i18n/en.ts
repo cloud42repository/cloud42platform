@@ -576,6 +576,7 @@ export const EN = {
   'dashboard.badge-field-hint': 'Numeric field to aggregate (e.g. amount)',
   'dashboard.badge-suffix': 'Suffix',
   'dashboard.badge-suffix-hint': 'e.g. USD, %, items',
+  'dashboard.export-pdf': 'Export PDF',
 } as const;
 
 export type TranslationKey = keyof typeof EN;

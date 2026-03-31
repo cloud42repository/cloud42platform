@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -122,6 +122,10 @@ interface EndpointRef {
           </button>
           <button mat-stroked-button (click)="preview()" [disabled]="widgets().length === 0">
             <mat-icon>visibility</mat-icon> {{ 'dashboard.preview' | t }}
+          </button>
+          <button mat-stroked-button (click)="exportPdf()" [disabled]="widgets().length === 0 || exporting()">
+            @if (exporting()) { <mat-spinner diameter="16" /> }
+            <mat-icon>picture_as_pdf</mat-icon> {{ 'dashboard.export-pdf' | t }}
           </button>
         </div>
 
@@ -1263,5 +1267,52 @@ export class DashboardBuilderComponent implements OnInit {
       .filter(w => w.dataSource)
       .map(w => this.fetchWidgetData(w));
     await Promise.all(promises);
+  }
+
+  // ── Export PDF ───────────────────────────────────────────────────────────
+
+  private readonly el = inject(ElementRef);
+  readonly exporting = signal(false);
+
+  async exportPdf() {
+    const canvasArea = (this.el.nativeElement as HTMLElement).querySelector('.canvas-area') as HTMLElement;
+    if (!canvasArea) return;
+
+    // Ensure data is loaded first
+    if (!this.previewMode()) {
+      await this.preview();
+    }
+
+    this.exporting.set(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const canvas = await html2canvas(canvasArea, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#f8fafc',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+
+      // A4 landscape for dashboards
+      const pdf = new jsPDF({
+        orientation: imgWidth > imgHeight ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [imgWidth / 2, imgHeight / 2 + 40],
+      });
+
+      // Title
+      pdf.setFontSize(16);
+      pdf.text(this.dashboardName() || 'Dashboard', 20, 25);
+
+      pdf.addImage(imgData, 'PNG', 0, 35, imgWidth / 2, imgHeight / 2);
+      pdf.save((this.dashboardName() || 'dashboard') + '.pdf');
+    } finally {
+      this.exporting.set(false);
+    }
   }
 }
