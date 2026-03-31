@@ -25,6 +25,7 @@ import {
   DashboardWidget,
   WidgetKind,
   WidgetDataSource,
+  AggregateFunction,
 } from '../../config/dashboard.types';
 import { MODULES, ModuleDef, EndpointDef } from '../../config/endpoints';
 import { TranslatePipe } from '../../i18n/translate.pipe';
@@ -145,6 +146,7 @@ interface EndpointRef {
                 <mat-icon class="widget-type-icon">
                   @if (widget.kind === 'line-chart') { show_chart }
                   @else if (widget.kind === 'pie-chart') { pie_chart }
+                  @else if (widget.kind === 'badge') { tag }
                   @else { table_chart }
                 </mat-icon>
                 <span class="widget-title">{{ widget.label || kindLabel(widget.kind) }}</span>
@@ -182,6 +184,14 @@ interface EndpointRef {
                   @if (widget.kind === 'data-table' && widget.bindings['columns']) {
                     <div class="binding-preview">
                       <span class="binding-tag">Columns: {{ widget.bindings['columns'] }}</span>
+                    </div>
+                  }
+                  @if (widget.kind === 'badge') {
+                    <div class="binding-preview">
+                      <span class="binding-tag">{{ (widget.bindings['aggregation'] || 'count') | uppercase }}</span>
+                      @if (widget.bindings['valueField']) {
+                        <span class="binding-tag">{{ widget.bindings['valueField'] }}</span>
+                      }
                     </div>
                   }
                 }
@@ -260,9 +270,31 @@ interface EndpointRef {
                       <div class="table-footer">{{ getTableRows(widget).length }} {{ 'dashboard.rows' | t }}</div>
                     </div>
                   }
+
+                  <!-- BADGE -->
+                  @if (widget.kind === 'badge') {
+                    <div class="badge-visualization">
+                      <div class="badge-value">{{ getBadgeValue(widget) }}</div>
+                      <div class="badge-label">{{ (widget.bindings['aggregation'] || 'count') | uppercase }}@if (widget.bindings['valueField']) { &middot; {{ widget.bindings['valueField'] }} }</div>
+                      @if (widget.bindings['suffix']) {
+                        <div class="badge-suffix">{{ widget.bindings['suffix'] }}</div>
+                      }
+                    </div>
+                  }
                 }
 
-                @if (widget.lastData && !isArray(widget.lastData)) {
+                <!-- Badge also works with non-array data (single object) -->
+                @if (widget.lastData && !isArray(widget.lastData) && widget.kind === 'badge') {
+                  <div class="badge-visualization">
+                    <div class="badge-value">{{ getBadgeValue(widget) }}</div>
+                    <div class="badge-label">{{ (widget.bindings['aggregation'] || 'count') | uppercase }}@if (widget.bindings['valueField']) { &middot; {{ widget.bindings['valueField'] }} }</div>
+                    @if (widget.bindings['suffix']) {
+                      <div class="badge-suffix">{{ widget.bindings['suffix'] }}</div>
+                    }
+                  </div>
+                }
+
+                @if (widget.lastData && !isArray(widget.lastData) && widget.kind !== 'badge') {
                   <div class="data-error">
                     <mat-icon style="font-size:14px;width:14px;height:14px;color:#d97706">warning</mat-icon>
                     <span>{{ 'dashboard.data-not-array' | t }}</span>
@@ -395,6 +427,32 @@ interface EndpointRef {
                 <input matInput [value]="widget.bindings['columns'] || ''"
                        (input)="updateBinding(widget.id, 'columns', $any($event.target).value)"
                        placeholder="{{ 'dashboard.columns-hint' | t }}" />
+              </mat-form-field>
+            }
+
+            @if (widget.kind === 'badge') {
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'dashboard.aggregation' | t }}</mat-label>
+                <mat-select [value]="widget.bindings['aggregation'] || 'count'"
+                            (selectionChange)="updateBinding(widget.id, 'aggregation', $event.value)">
+                  @for (agg of aggregationOptions; track agg.value) {
+                    <mat-option [value]="agg.value">{{ agg.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              @if (widget.bindings['aggregation'] !== 'count') {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                  <mat-label>{{ 'dashboard.value-field' | t }}</mat-label>
+                  <input matInput [value]="widget.bindings['valueField'] || ''"
+                         (input)="updateBinding(widget.id, 'valueField', $any($event.target).value)"
+                         placeholder="{{ 'dashboard.badge-field-hint' | t }}" />
+                </mat-form-field>
+              }
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'dashboard.badge-suffix' | t }}</mat-label>
+                <input matInput [value]="widget.bindings['suffix'] || ''"
+                       (input)="updateBinding(widget.id, 'suffix', $any($event.target).value)"
+                       placeholder="{{ 'dashboard.badge-suffix-hint' | t }}" />
               </mat-form-field>
             }
 
@@ -535,6 +593,22 @@ interface EndpointRef {
     .widget-card--line-chart { border-left: 4px solid #2563eb; }
     .widget-card--pie-chart  { border-left: 4px solid #d97706; }
     .widget-card--data-table { border-left: 4px solid #16a34a; }
+    .widget-card--badge      { border-left: 4px solid #7c3aed; }
+
+    /* Badge visualization */
+    .badge-visualization {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      flex: 1; padding: 16px 8px; text-align: center;
+    }
+    .badge-value {
+      font-size: 2.8rem; font-weight: 700; line-height: 1.1; color: #1e293b;
+    }
+    .badge-label {
+      font-size: .75rem; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .badge-suffix {
+      font-size: .85rem; color: #94a3b8; margin-top: 2px;
+    }
 
     .widget-header {
       display: flex; align-items: center; gap: 8px;
@@ -665,6 +739,15 @@ export class DashboardBuilderComponent implements OnInit {
     { kind: 'line-chart',  label: 'Line Chart',  icon: 'show_chart',  color: '#2563eb' },
     { kind: 'pie-chart',   label: 'Pie Chart',   icon: 'pie_chart',   color: '#d97706' },
     { kind: 'data-table',  label: 'Data Table',  icon: 'table_chart', color: '#16a34a' },
+    { kind: 'badge',        label: 'Badge',        icon: 'tag',         color: '#7c3aed' },
+  ];
+
+  readonly aggregationOptions: { value: AggregateFunction; label: string }[] = [
+    { value: 'count', label: 'Count' },
+    { value: 'sum',   label: 'Sum' },
+    { value: 'avg',   label: 'Average' },
+    { value: 'max',   label: 'Max' },
+    { value: 'min',   label: 'Min' },
   ];
 
   // ── State ─────────────────────────────────────────────────────────────────
@@ -752,8 +835,8 @@ export class DashboardBuilderComponent implements OnInit {
         label: '',
         x: 0,
         y: 0,
-        width: data.kind === 'data-table' ? 12 : 6,
-        height: data.kind === 'data-table' ? 4 : 3,
+        width: data.kind === 'data-table' ? 12 : data.kind === 'badge' ? 3 : 6,
+        height: data.kind === 'badge' ? 2 : data.kind === 'data-table' ? 4 : 3,
         bindings: {},
       };
       this.widgets.update(ws => {
@@ -1055,6 +1138,41 @@ export class DashboardBuilderComponent implements OnInit {
       }
       return row;
     });
+  }
+
+  // ── BADGE helpers ────────────────────────────────────────────────────
+
+  getBadgeValue(widget: DashboardWidget): string {
+    const agg = (widget.bindings['aggregation'] || 'count') as AggregateFunction;
+    const field = widget.bindings['valueField'];
+    const data = widget.lastData;
+
+    // Handle single object (non-array)
+    if (data && !Array.isArray(data)) {
+      if (agg === 'count') return '1';
+      if (field) {
+        const v = this.extractField(data, field);
+        return v != null ? this.formatNum(Number(v)) : '–';
+      }
+      return '–';
+    }
+
+    const items = this.getItems(widget);
+    if (items.length === 0) return '–';
+
+    if (agg === 'count') return String(items.length);
+
+    if (!field) return '–';
+    const nums = items.map(it => Number(this.extractField(it, field))).filter(n => !isNaN(n));
+    if (nums.length === 0) return '–';
+
+    switch (agg) {
+      case 'sum': return this.formatNum(nums.reduce((a, b) => a + b, 0));
+      case 'avg': return this.formatNum(nums.reduce((a, b) => a + b, 0) / nums.length);
+      case 'max': return this.formatNum(Math.max(...nums));
+      case 'min': return this.formatNum(Math.min(...nums));
+      default: return '–';
+    }
   }
 
   // ── Formatting helpers ──────────────────────────────────────────────────

@@ -574,4 +574,8 @@ export const FR: Record<TranslationKey, string> = {
   'dashboard.fetched-data': 'Données récupérées',
   'dashboard.rows': 'lignes',
   'dashboard.data-not-array': 'Les données ne sont pas un tableau — vérifiez le chemin des données',
+  'dashboard.aggregation': 'Agrégation',
+  'dashboard.badge-field-hint': 'Champ numérique à agréger (ex. montant)',
+  'dashboard.badge-suffix': 'Suffixe',
+  'dashboard.badge-suffix-hint': 'ex. EUR, %, éléments',
 };

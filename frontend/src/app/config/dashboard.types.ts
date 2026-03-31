@@ -1,5 +1,8 @@
 /** Widget kind — the visual representation of a data widget */
-export type WidgetKind = 'line-chart' | 'pie-chart' | 'data-table';
+export type WidgetKind = 'line-chart' | 'pie-chart' | 'data-table' | 'badge';
+
+/** Aggregate function for badge widgets */
+export type AggregateFunction = 'count' | 'sum' | 'avg' | 'max' | 'min';
 
 /** How to resolve the data source for a widget */
 export interface WidgetDataSource {
@@ -40,6 +43,7 @@ export interface DashboardWidget {
    * line-chart:  labelField, valueField
    * pie-chart:   labelField, valueField
    * data-table:  columns  (comma-separated field paths)
+   * badge:       valueField, aggregation (count|sum|avg|max|min)
    */
   bindings: Record<string, string>;
 

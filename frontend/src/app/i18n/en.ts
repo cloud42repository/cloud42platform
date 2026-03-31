@@ -572,6 +572,10 @@ export const EN = {
   'dashboard.fetched-data': 'Fetched Data',
   'dashboard.rows': 'rows',
   'dashboard.data-not-array': 'Data is not an array — check your data path',
+  'dashboard.aggregation': 'Aggregation',
+  'dashboard.badge-field-hint': 'Numeric field to aggregate (e.g. amount)',
+  'dashboard.badge-suffix': 'Suffix',
+  'dashboard.badge-suffix-hint': 'e.g. USD, %, items',
 } as const;
 
 export type TranslationKey = keyof typeof EN;

@@ -155,6 +155,7 @@ import { TranslateService } from '../../services/translate.service';
     .kind-line-chart  { background: #dbeafe; color: #1d4ed8; }
     .kind-pie-chart   { background: #fef3c7; color: #d97706; }
     .kind-data-table  { background: #dcfce7; color: #15803d; }
+    .kind-badge       { background: #ede9fe; color: #6d28d9; }
     .more             { background: #f1f5f9; color: #64748b; }
 
     .db-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
