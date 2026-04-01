@@ -189,20 +189,31 @@ interface FieldTypeRef {
               <div class="field-preview">
                 @if (field.kind === 'text') {
                   <div class="preview-input">
-                    <span class="preview-placeholder">{{ field.placeholder || field.label || 'Text input' }}</span>
+                    <input type="text" class="preview-text-input"
+                           [placeholder]="field.placeholder || field.label || 'Text input'"
+                           [value]="getFieldValue(field.id)"
+                           (input)="setFieldValue(field.id, $any($event.target).value)"
+                           (click)="$event.stopPropagation(); selectField(field.id)" />
                   </div>
                 }
                 @if (field.kind === 'date') {
                   <div class="preview-input preview-date">
-                    <span class="preview-placeholder">{{ field.placeholder || 'dd/mm/yyyy' }}</span>
-                    <mat-icon class="preview-date-icon">calendar_today</mat-icon>
+                    <input type="date" class="preview-text-input"
+                           [value]="getFieldValue(field.id)"
+                           (input)="setFieldValue(field.id, $any($event.target).value)"
+                           (click)="$event.stopPropagation(); selectField(field.id)" />
                   </div>
                 }
                 @if (field.kind === 'select') {
-                  <div class="preview-input preview-select">
-                    <span class="preview-placeholder">{{ field.placeholder || 'Select…' }}</span>
-                    <mat-icon class="preview-arrow">arrow_drop_down</mat-icon>
-                  </div>
+                  <select class="preview-select-input"
+                          [value]="getFieldValue(field.id)"
+                          (change)="setFieldValue(field.id, $any($event.target).value)"
+                          (click)="$event.stopPropagation()">
+                    <option value="" disabled selected>{{ field.placeholder || 'Select…' }}</option>
+                    @for (opt of getSelectOptions(field); track $index) {
+                      <option [value]="opt.value">{{ opt.display }}</option>
+                    }
+                  </select>
                   @if (field.dataSource) {
                     <span class="data-source-tag">
                       <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
@@ -279,13 +290,42 @@ interface FieldTypeRef {
           @if (submitActions().length > 0) {
             <div class="submit-row" [style.grid-column]="'1 / -1'">
               @for (action of submitActions(); track action.id) {
-                <button mat-flat-button [color]="action.color"
-                        [class.selected-action]="selectedActionId() === action.id"
-                        (click)="selectAction(action.id)">
-                  <mat-icon>send</mat-icon>
-                  {{ action.label || action.method }}
-                </button>
+                <div class="action-btn-group" [class.selected-action]="selectedActionId() === action.id">
+                  <button mat-flat-button [color]="action.color"
+                          (click)="executeAction(action)"
+                          [disabled]="executing()"
+                          class="action-run-btn">
+                    @if (executing() && lastResponse()?.actionId === action.id) {
+                      <mat-spinner diameter="16" />
+                    } @else {
+                      <mat-icon>send</mat-icon>
+                    }
+                    {{ action.label || action.method }}
+                  </button>
+                  <button mat-icon-button class="action-config-btn"
+                          (click)="selectAction(action.id)"
+                          matTooltip="{{ 'form.configure-action' | t }}">
+                    <mat-icon>settings</mat-icon>
+                  </button>
+                </div>
               }
+            </div>
+          }
+
+          <!-- Response panel -->
+          @if (lastResponse(); as resp) {
+            <div class="response-panel" [style.grid-column]="'1 / -1'"
+                 [class.response-success]="resp.status === 'success'"
+                 [class.response-error]="resp.status === 'error'">
+              <div class="response-header">
+                <mat-icon>{{ resp.status === 'success' ? 'check_circle' : 'error' }}</mat-icon>
+                <span>{{ resp.status === 'success' ? ('form.response-success' | t) : ('form.response-error' | t) }}</span>
+                <span class="spacer"></span>
+                <button mat-icon-button (click)="lastResponse.set(null)">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+              <pre class="response-body">{{ formatJson(resp.data) }}</pre>
             </div>
           }
         </div>
@@ -759,6 +799,11 @@ interface FieldTypeRef {
       background: #f8fafc; display: flex; align-items: center;
     }
     .preview-placeholder { color: #94a3b8; font-size: 12px; flex: 1; }
+    .preview-text-input {
+      border: none; outline: none; background: transparent;
+      color: #1e293b; font-size: 12px; width: 100%; cursor: text;
+    }
+    .preview-text-input::placeholder { color: #94a3b8; }
     .preview-date { position: relative; }
     .preview-date-icon { font-size: 16px; width: 16px; height: 16px; color: #94a3b8; }
     .preview-select { cursor: default; }
@@ -835,7 +880,50 @@ interface FieldTypeRef {
       display: flex; gap: 12px; padding: 12px 0; justify-content: flex-end;
     }
     .submit-row button { min-width: 100px; }
-    .selected-action { outline: 2px solid #0891b2; outline-offset: 2px; }
+    .action-btn-group {
+      display: flex; align-items: center; gap: 0;
+      border-radius: 8px; transition: outline .15s;
+    }
+    .action-btn-group.selected-action { outline: 2px solid #0891b2; outline-offset: 2px; }
+    .action-run-btn { border-radius: 8px 0 0 8px !important; min-width: 100px; }
+    .action-config-btn {
+      border-radius: 0 8px 8px 0 !important;
+      border: 1px solid #e2e8f0; border-left: none;
+      background: white; width: 36px; height: 36px;
+    }
+    .action-config-btn mat-icon { font-size: 18px; width: 18px; height: 18px; color: #64748b; }
+    .action-config-btn:hover { background: #f1f5f9; }
+    .action-config-btn:hover mat-icon { color: #0891b2; }
+
+    /* ── Select input ── */
+    .preview-select-input {
+      width: 100%; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 8px 12px; background: #f8fafc; font-size: 12px;
+      color: #1e293b; cursor: pointer; outline: none;
+      appearance: auto;
+    }
+    .preview-select-input:focus { border-color: #0891b2; }
+
+    /* ── Response panel ── */
+    .response-panel {
+      border-radius: 12px; padding: 0; overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+    .response-success { border-color: #22c55e; }
+    .response-error { border-color: #ef4444; }
+    .response-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; font-weight: 700; font-size: 13px;
+    }
+    .response-success .response-header { background: #f0fdf4; color: #15803d; }
+    .response-error .response-header { background: #fef2f2; color: #dc2626; }
+    .response-body {
+      padding: 12px 16px; font-size: 11px; margin: 0;
+      max-height: 300px; overflow: auto;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      background: #fafbfc; line-height: 1.5;
+      white-space: pre-wrap; word-break: break-all;
+    }
 
     /* ── Config Panel ── */
     .config-panel {
@@ -843,7 +931,7 @@ interface FieldTypeRef {
       border-left: 1px solid #e2e8f0; transition: width .2s;
       display: flex; flex-direction: column;
     }
-    .config-panel.open { width: 360px; min-width: 360px; }
+    .config-panel.open { width: 360px; min-width: 360px; overflow-y: auto; }
     .config-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px 16px; font-weight: 700; font-size: 13px;
@@ -952,6 +1040,10 @@ export class FormBuilderComponent implements OnInit {
   readonly selectedActionId = signal<string | null>(null);
   readonly saving = signal(false);
   readonly fetching = signal(false);
+  readonly executing = signal(false);
+  readonly lastResponse = signal<{ actionId: string; status: 'success' | 'error'; data: unknown } | null>(null);
+  /** Runtime values entered in the form fields */
+  readonly fieldValues = signal<Record<string, unknown>>({});
 
   readonly selectedField = computed<FormField | null>(() => {
     const id = this.selectedFieldId();
@@ -1057,7 +1149,7 @@ export class FormBuilderComponent implements OnInit {
 
   selectField(id: string) {
     this.selectedActionId.set(null);
-    this.selectedFieldId.set(this.selectedFieldId() === id ? null : id);
+    this.selectedFieldId.set(id);
   }
 
   selectAction(id: string) {
@@ -1469,5 +1561,107 @@ export class FormBuilderComponent implements OnInit {
     this.previewMode.set(true);
     this.selectedFieldId.set(null);
     this.selectedActionId.set(null);
+  }
+
+  // ── Field values (runtime) ─────────────────────────────────────────────
+
+  getFieldValue(fieldId: string): string {
+    return String(this.fieldValues()[fieldId] ?? '');
+  }
+
+  setFieldValue(fieldId: string, value: unknown) {
+    this.fieldValues.update(v => ({ ...v, [fieldId]: value }));
+  }
+
+  // ── Execute submit action ──────────────────────────────────────────────
+
+  async executeAction(action: FormSubmitAction) {
+    if (!action.moduleApiPrefix || !action.pathTemplate) {
+      this.selectAction(action.id);
+      return;
+    }
+
+    this.executing.set(true);
+    this.lastResponse.set({ actionId: action.id, status: 'success', data: null });
+
+    try {
+      const body = this.buildRequestBody(action);
+      const method = action.method.toLowerCase();
+      let res: unknown;
+
+      if (method === 'delete') {
+        res = await firstValueFrom(
+          this.api.delete(action.moduleApiPrefix, action.pathTemplate, action.pathParams)
+        );
+      } else {
+        const apiCall = method === 'put' ? this.api.put
+          : method === 'patch' ? this.api.patch
+          : this.api.post;
+        res = await firstValueFrom(
+          apiCall.call(this.api, action.moduleApiPrefix, action.pathTemplate, action.pathParams, body)
+        );
+      }
+
+      this.lastResponse.set({ actionId: action.id, status: 'success', data: res });
+    } catch (err: unknown) {
+      const errorData = (err && typeof err === 'object' && 'error' in err)
+        ? (err as { error: unknown }).error
+        : err;
+      this.lastResponse.set({ actionId: action.id, status: 'error', data: errorData });
+    } finally {
+      this.executing.set(false);
+    }
+  }
+
+  private buildRequestBody(action: FormSubmitAction): unknown {
+    const mode = this.getBodyMode(action);
+    const values = this.fieldValues();
+
+    if (mode === 'fields') {
+      const body: Record<string, unknown> = {};
+      for (const key of action.bodyKeys) {
+        const src = action.bodySources[key];
+        if (!src || src.type === 'hardcoded') {
+          const raw = src?.type === 'hardcoded' ? src.value : '';
+          body[key] = this.resolveFieldRefs(raw, values);
+        } else {
+          body[key] = values[src.fieldId] ?? '';
+        }
+      }
+      return body;
+    }
+
+    if (mode === 'text') {
+      try {
+        return JSON.parse(action.rawBody ?? '{}');
+      } catch {
+        return action.rawBody ?? '{}';
+      }
+    }
+
+    // form mode — replace {{field.xxx}} references
+    const raw = action.rawBody ?? '{}';
+    const resolved = this.resolveFieldRefs(raw, values);
+    try {
+      return JSON.parse(resolved);
+    } catch {
+      return resolved;
+    }
+  }
+
+  private resolveFieldRefs(template: string, values: Record<string, unknown>): string {
+    return template.replace(/\{\{field\.([^}]+)\}\}/g, (_match, fieldId) => {
+      return String(values[fieldId] ?? '');
+    });
+  }
+
+  formatJson(data: unknown): string {
+    if (data == null) return '';
+    if (typeof data === 'string') return data;
+    try {
+      return JSON.stringify(data, null, 2);
+    } catch {
+      return String(data);
+    }
   }
 }

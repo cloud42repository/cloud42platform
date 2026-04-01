@@ -578,6 +578,8 @@ export const EN = {
   'dashboard.badge-suffix': 'Suffix',
   'dashboard.badge-suffix-hint': 'e.g. USD, %, items',
   'dashboard.export-pdf': 'Export PDF',
+  'dashboard.search-placeholder': 'Search all data…',
+  'dashboard.search-text-hint': 'This widget adds a search bar that filters all fetched data across all widgets using a contains (%text%) match.',
 
   /* ── Form Builder ── */
   'form.list-title': 'Forms',
@@ -648,6 +650,9 @@ export const EN = {
   'form.json-hint': 'Write valid JSON',
   'form.form-mode-hint': 'Use {{field.fieldId}} to reference form field values',
   'form.form-ref-hint': 'Use {{field.fieldId}} to inject form field values',
+  'form.run-action-hint': 'Click to execute, right-click to configure',
+  'form.response-success': 'Success',
+  'form.response-error': 'Error',
 } as const;
 
 export type TranslationKey = keyof typeof EN;

@@ -150,7 +150,8 @@ interface EndpointRef {
                  (click)="selectWidget(widget.id)">
               <div class="widget-header">
                 <mat-icon class="widget-type-icon">
-                  @if (widget.kind === 'line-chart') { show_chart }
+                  @if (widget.kind === 'search-text') { search }
+                  @else if (widget.kind === 'line-chart') { show_chart }
                   @else if (widget.kind === 'bar-chart') { bar_chart }
                   @else if (widget.kind === 'pie-chart') { pie_chart }
                   @else if (widget.kind === 'badge') { tag }
@@ -169,6 +170,22 @@ interface EndpointRef {
                 </div>
               </div>
               <div class="widget-preview">
+                <!-- SEARCH TEXT widget -->
+                @if (widget.kind === 'search-text') {
+                  <div class="search-text-preview">
+                    <mat-icon class="search-input-icon">search</mat-icon>
+                    <input class="search-input" type="text"
+                           [value]="searchFilter()"
+                           (input)="searchFilter.set($any($event.target).value)"
+                           (click)="$event.stopPropagation()"
+                           placeholder="{{ widget.label || ('dashboard.search-placeholder' | t) }}" />
+                    @if (searchFilter()) {
+                      <button class="search-clear" (click)="searchFilter.set(''); $event.stopPropagation()">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    }
+                  </div>
+                }
                 @if (widget.dataSource) {
                   <span class="data-source-tag">
                     <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
@@ -358,6 +375,12 @@ interface EndpointRef {
               <input matInput [value]="widget.label" (input)="updateWidget(widget.id, 'label', $any($event.target).value)" />
             </mat-form-field>
 
+            @if (widget.kind === 'search-text') {
+              <p class="config-hint">{{ 'dashboard.search-text-hint' | t }}</p>
+            }
+
+            @if (widget.kind !== 'search-text') {
+
             <mat-divider class="section-divider" />
 
             <!-- Data Source -->
@@ -524,6 +547,8 @@ interface EndpointRef {
               <div class="config-section-label" style="margin-top:12px">{{ 'dashboard.fetched-data' | t }}</div>
               <pre class="data-preview">{{ widget.lastData | json }}</pre>
             }
+
+            } <!-- end: not search-text -->
           </div>
         }
       </div>
@@ -635,8 +660,29 @@ interface EndpointRef {
     .widget-card--pie-chart  { border-left: 4px solid #d97706; }
     .widget-card--data-table { border-left: 4px solid #16a34a; }
     .widget-card--badge      { border-left: 4px solid #7c3aed; }
+    .widget-card--search-text { border-left: 4px solid #0f172a; }
 
     .bar-chart-svg { width: 100%; height: auto; }
+
+    /* Search text widget */
+    .search-text-preview {
+      display: flex; align-items: center; gap: 8px;
+      border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px;
+      background: #f8fafc; transition: border-color .15s;
+    }
+    .search-text-preview:focus-within { border-color: #0f172a; background: white; }
+    .search-input-icon { font-size: 20px; width: 20px; height: 20px; color: #94a3b8; flex-shrink: 0; }
+    .search-input {
+      border: none; outline: none; background: transparent;
+      flex: 1; font-size: 13px; color: #1e293b; font-family: inherit;
+    }
+    .search-input::placeholder { color: #94a3b8; }
+    .search-clear {
+      border: none; background: none; cursor: pointer; padding: 0;
+      display: flex; align-items: center;
+    }
+    .search-clear mat-icon { font-size: 18px; width: 18px; height: 18px; color: #94a3b8; }
+    .search-clear:hover mat-icon { color: #475569; }
 
     /* Badge visualization */
     .badge-visualization {
@@ -813,12 +859,16 @@ export class DashboardBuilderComponent implements OnInit {
   readonly heightOptions = [1, 2, 3, 4, 5, 6];
 
   readonly widgetTypes: WidgetTypeRef[] = [
+    { kind: 'search-text', label: 'Search Text', icon: 'search',        color: '#0f172a' },
     { kind: 'line-chart',  label: 'Line Chart',  icon: 'show_chart',    color: '#2563eb' },
     { kind: 'bar-chart',   label: 'Bar Chart',   icon: 'bar_chart',    color: '#0891b2' },
     { kind: 'pie-chart',   label: 'Pie Chart',   icon: 'pie_chart',    color: '#d97706' },
     { kind: 'data-table',  label: 'Data Table',  icon: 'table_chart',  color: '#16a34a' },
     { kind: 'badge',        label: 'Badge',        icon: 'tag',           color: '#7c3aed' },
   ];
+
+  /** Global search text signal — drives filtering of all widget data */
+  readonly searchFilter = signal<string>('');
 
   readonly aggregationOptions: { value: AggregateFunction; label: string }[] = [
     { value: 'count', label: 'Count' },
@@ -923,8 +973,8 @@ export class DashboardBuilderComponent implements OnInit {
         label: '',
         x: 0,
         y: 0,
-        width: data.kind === 'data-table' ? 12 : data.kind === 'badge' ? 3 : 6,
-        height: data.kind === 'badge' ? 2 : data.kind === 'data-table' ? 4 : data.kind === 'bar-chart' ? 4 : 3,
+        width: data.kind === 'data-table' ? 12 : data.kind === 'badge' ? 3 : data.kind === 'search-text' ? 12 : 6,
+        height: data.kind === 'search-text' ? 1 : data.kind === 'badge' ? 2 : data.kind === 'data-table' ? 4 : data.kind === 'bar-chart' ? 4 : 3,
         bindings: {},
       };
       this.widgets.update(ws => {
@@ -1090,10 +1140,17 @@ export class DashboardBuilderComponent implements OnInit {
     return this.svc.getPath(item, field);
   }
 
-  /** Get array items from widget lastData */
+  /** Get array items from widget lastData, filtered by global search text */
   private getItems(widget: DashboardWidget): Record<string, unknown>[] {
     if (!Array.isArray(widget.lastData)) return [];
-    return widget.lastData as Record<string, unknown>[];
+    const items = widget.lastData as Record<string, unknown>[];
+    const q = this.searchFilter().toLowerCase().trim();
+    if (!q) return items;
+    return items.filter(item =>
+      Object.values(item).some(v =>
+        v != null && String(v).toLowerCase().includes(q)
+      )
+    );
   }
 
   // ── LINE CHART helpers ──────────────────────────────────────────────────

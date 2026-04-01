@@ -60,7 +60,8 @@ import { TranslateService } from '../../services/translate.service';
             <div class="widget-pills">
               @for (w of db.widgets.slice(0, 6); track w.id) {
                 <span class="widget-pill kind-{{ w.kind }}">
-                  @if (w.kind === 'line-chart') { <mat-icon style="font-size:10px;width:10px;height:10px">show_chart</mat-icon> }
+                  @if (w.kind === 'search-text') { <mat-icon style="font-size:10px;width:10px;height:10px">search</mat-icon> }
+                  @else if (w.kind === 'line-chart') { <mat-icon style="font-size:10px;width:10px;height:10px">show_chart</mat-icon> }
                   @else if (w.kind === 'pie-chart') { <mat-icon style="font-size:10px;width:10px;height:10px">pie_chart</mat-icon> }
                   @else if (w.kind === 'data-table') { <mat-icon style="font-size:10px;width:10px;height:10px">table_chart</mat-icon> }
                   {{ w.label || w.kind }}

@@ -1,5 +1,5 @@
 /** Widget kind — the visual representation of a data widget */
-export type WidgetKind = 'line-chart' | 'bar-chart' | 'pie-chart' | 'data-table' | 'badge';
+export type WidgetKind = 'line-chart' | 'bar-chart' | 'pie-chart' | 'data-table' | 'badge' | 'search-text';
 
 /** Aggregate function for badge widgets */
 export type AggregateFunction = 'count' | 'sum' | 'avg' | 'max' | 'min';

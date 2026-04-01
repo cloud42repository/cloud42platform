@@ -580,6 +580,8 @@ export const FR: Record<TranslationKey, string> = {
   'dashboard.badge-suffix': 'Suffixe',
   'dashboard.badge-suffix-hint': 'ex. EUR, %, éléments',
   'dashboard.export-pdf': 'Exporter PDF',
+  'dashboard.search-placeholder': 'Rechercher dans toutes les données…',
+  'dashboard.search-text-hint': 'Ce widget ajoute une barre de recherche qui filtre toutes les données récupérées de tous les widgets avec une correspondance contient (%text%).',
 
   /* ── Form Builder ── */
   'form.list-title': 'Formulaires',
@@ -650,4 +652,7 @@ export const FR: Record<TranslationKey, string> = {
   'form.json-hint': 'Écrire du JSON valide',
   'form.form-mode-hint': 'Utiliser {{field.fieldId}} pour référencer les valeurs des champs',
   'form.form-ref-hint': 'Utiliser {{field.fieldId}} pour injecter les valeurs des champs',
+  'form.run-action-hint': 'Cliquer pour exécuter, clic droit pour configurer',
+  'form.response-success': 'Succès',
+  'form.response-error': 'Erreur',
 };
