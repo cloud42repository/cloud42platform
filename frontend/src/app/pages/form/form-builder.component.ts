@@ -599,7 +599,9 @@ interface FieldTypeRef {
                     <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                       <mat-label>{{ 'form.value' | t }}</mat-label>
                       <input matInput [value]="getBodyHardcodedValue(action, key)"
-                             (input)="setBodyHardcoded(action.id, key, $any($event.target).value)"
+                             (input)="onAcInput($any($event.target), acSetHardcoded.bind(this, action.id, key))"
+                             (keydown)="onAcKeydown($event)"
+                             (blur)="closeAc()"
                              [placeholder]="fieldRefPlaceholder" />
                     </mat-form-field>
                   }
@@ -633,7 +635,9 @@ interface FieldTypeRef {
                 <mat-label>{{ 'form.raw-body-json' | t }}</mat-label>
                 <textarea matInput rows="10"
                           [value]="action.rawBody ?? '{}'"
-                          (input)="setRawBody(action.id, $any($event.target).value)"
+                          (input)="onAcTextareaInput($any($event.target), action.id)"
+                          (keydown)="onAcKeydown($event)"
+                          (blur)="closeAc()"
                           placeholder='{ "key": "value" }'
                           class="raw-body-textarea"></textarea>
                 <mat-hint>{{ 'form.json-hint' | t }}</mat-hint>
@@ -647,7 +651,9 @@ interface FieldTypeRef {
                 <mat-label>{{ 'form.raw-body-json' | t }}</mat-label>
                 <textarea matInput rows="10"
                           [value]="action.rawBody ?? '{}'"
-                          (input)="setRawBody(action.id, $any($event.target).value)"
+                          (input)="onAcTextareaInput($any($event.target), action.id)"
+                          (keydown)="onAcKeydown($event)"
+                          (blur)="closeAc()"
                           [placeholder]="formModePlaceholder"
                           class="raw-body-textarea"></textarea>
                 <mat-hint>{{ 'form.form-ref-hint' | t }}</mat-hint>
@@ -655,6 +661,22 @@ interface FieldTypeRef {
             }
             } @else {
               <p class="config-hint" style="font-style:italic">{{ 'form.no-body' | t }}</p>
+            }
+          </div>
+        }
+
+        <!-- Autocomplete overlay for {{field.xxx}} refs -->
+        @if (acSuggestions().length > 0) {
+          <div class="ac-overlay" [ngStyle]="acStyle()">
+            @for (s of acSuggestions(); track s.insertText; let i = $index) {
+              <div class="ac-item" [class.ac-active]="i === acIndex()"
+                   (mousedown)="insertAcSuggestion(s, $event)">
+                <mat-icon class="ac-icon">{{ s.icon }}</mat-icon>
+                <div class="ac-text">
+                  <span class="ac-label">{{ s.label }}</span>
+                  <span class="ac-detail">{{ s.detail }}</span>
+                </div>
+              </div>
             }
           </div>
         }
@@ -990,6 +1012,23 @@ interface FieldTypeRef {
 
     .add-field-row { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
     .add-key-input { flex: 1; }
+
+    /* ── Autocomplete overlay ── */
+    .ac-overlay {
+      position: fixed; z-index: 1000;
+      background: white; border: 1px solid #e2e8f0;
+      border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.12);
+      max-height: 240px; overflow-y: auto;
+    }
+    .ac-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 12px; cursor: pointer; font-size: 12px;
+    }
+    .ac-item:hover, .ac-active { background: #f0fdfa; }
+    .ac-icon { font-size: 16px; width: 16px; height: 16px; color: #0891b2; }
+    .ac-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+    .ac-label { font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-detail { font-size: 10px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .raw-body-textarea {
       font-family: 'Cascadia Code', 'Fira Code', monospace;
@@ -1587,7 +1626,15 @@ export class FormBuilderComponent implements OnInit {
   // ── Execute submit action ──────────────────────────────────────────────
 
   async executeAction(action: FormSubmitAction) {
+    console.log('[FormBuilder] executeAction called:', {
+      moduleApiPrefix: action.moduleApiPrefix,
+      pathTemplate: action.pathTemplate,
+      method: action.method,
+      bodyMode: action.bodyMode,
+      pathParams: action.pathParams,
+    });
     if (!action.moduleApiPrefix || !action.pathTemplate) {
+      console.warn('[FormBuilder] Missing moduleApiPrefix or pathTemplate — opening config instead');
       this.selectAction(action.id);
       return;
     }
@@ -1629,10 +1676,20 @@ export class FormBuilderComponent implements OnInit {
     const mode = this.getBodyMode(action);
     const values = this.fieldValues();
 
-    if (mode === 'fields') {
+    console.log('[FormBuilder] buildRequestBody:', {
+      mode,
+      rawBody: action.rawBody,
+      bodyKeys: action.bodyKeys,
+      fieldValues: values,
+      fields: this.fields().map(f => ({ id: f.id, label: f.label, kind: f.kind })),
+    });
+
+    const isEmptyDefault = (action.rawBody ?? '{}').trim() === '{}' && action.bodyKeys.length === 0;
+
+    if (mode === 'fields' || isEmptyDefault) {
+      // Fields mode OR text/form mode with default empty body → auto-build from fields
       const body: Record<string, unknown> = {};
       if (action.bodyKeys.length > 0) {
-        // Explicit body key mapping
         for (const key of action.bodyKeys) {
           const src = action.bodySources[key];
           if (!src || src.type === 'hardcoded') {
@@ -1643,7 +1700,6 @@ export class FormBuilderComponent implements OnInit {
           }
         }
       } else {
-        // Auto-build from all form fields that have a value
         for (const field of this.fields()) {
           const val = values[field.id];
           if (val !== undefined && val !== '') {
@@ -1659,8 +1715,13 @@ export class FormBuilderComponent implements OnInit {
       try {
         return JSON.parse(action.rawBody ?? '{}');
       } catch {
-        console.warn('[FormBuilder] Invalid JSON in text body, wrapping as raw:', action.rawBody);
-        return {};
+        try {
+          const fixed = (action.rawBody ?? '{}').replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
+          return JSON.parse(fixed);
+        } catch {
+          console.warn('[FormBuilder] Invalid JSON in text body:', action.rawBody);
+          return {};
+        }
       }
     }
 
@@ -1670,8 +1731,14 @@ export class FormBuilderComponent implements OnInit {
     try {
       return JSON.parse(resolved);
     } catch {
-      console.warn('[FormBuilder] Invalid JSON in form body after resolving refs:', resolved);
-      return {};
+      // Try fixing unquoted keys: {key: "val"} → {"key": "val"}
+      try {
+        const fixed = resolved.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
+        return JSON.parse(fixed);
+      } catch {
+        console.warn('[FormBuilder] Invalid JSON in form body after resolving refs:', resolved);
+        return {};
+      }
     }
   }
 
@@ -1689,5 +1756,135 @@ export class FormBuilderComponent implements OnInit {
     } catch {
       return String(data);
     }
+  }
+
+  // ── Autocomplete for {{field.xxx}} references ─────────────────────────────
+
+  readonly acSuggestions = signal<{ label: string; insertText: string; detail: string; icon: string }[]>([]);
+  readonly acIndex = signal(0);
+  readonly acStyle = signal<Record<string, string>>({});
+  private acInput: HTMLInputElement | HTMLTextAreaElement | null = null;
+  private acCallback: ((value: string) => void) | null = null;
+
+  private buildFieldSuggestions(filter: string): { label: string; insertText: string; detail: string; icon: string }[] {
+    const suggestions: { label: string; insertText: string; detail: string; icon: string }[] = [];
+    const values = this.fieldValues();
+    for (const f of this.fields()) {
+      const ref = `{{field.${f.id}}}`;
+      const label = f.label || f.kind;
+      const val = values[f.id];
+      const preview = val !== undefined && val !== '' ? ` = "${String(val).slice(0, 30)}"` : '';
+      if (!filter || ref.toLowerCase().includes(filter) || label.toLowerCase().includes(filter) || f.id.toLowerCase().includes(filter)) {
+        suggestions.push({
+          label: `field.${f.id}`,
+          insertText: ref,
+          detail: `${label} (${f.kind})${preview}`,
+          icon: f.kind === 'text' ? 'text_fields' : f.kind === 'date' ? 'calendar_today' : f.kind === 'select' ? 'arrow_drop_down_circle' : 'table_chart',
+        });
+      }
+    }
+    return suggestions;
+  }
+
+  private checkFieldRefTrigger(input: HTMLInputElement | HTMLTextAreaElement): boolean {
+    const pos = input.selectionStart ?? 0;
+    const before = input.value.substring(0, pos);
+
+    if (before.endsWith('{{')) {
+      this.acSuggestions.set(this.buildFieldSuggestions(''));
+      this.acIndex.set(0);
+      return true;
+    }
+
+    const openIdx = before.lastIndexOf('{{');
+    const closeIdx = before.lastIndexOf('}}');
+    if (openIdx > closeIdx && openIdx >= 0) {
+      const partial = before.substring(openIdx + 2).toLowerCase();
+      this.acSuggestions.set(this.buildFieldSuggestions(partial));
+      this.acIndex.set(0);
+      return true;
+    }
+
+    return false;
+  }
+
+  private updateAcPosition() {
+    if (!this.acInput) return;
+    const rect = this.acInput.getBoundingClientRect();
+    this.acStyle.set({
+      top: rect.bottom + 4 + 'px',
+      left: rect.left + 'px',
+      width: Math.max(rect.width, 260) + 'px',
+    });
+  }
+
+  onAcInput(input: HTMLInputElement, callback: (value: string) => void) {
+    this.acInput = input;
+    this.acCallback = callback;
+    callback(input.value);
+    this.updateAcPosition();
+    if (!this.checkFieldRefTrigger(input)) {
+      this.acSuggestions.set([]);
+    }
+  }
+
+  onAcTextareaInput(textarea: HTMLTextAreaElement, actionId: string) {
+    this.acInput = textarea;
+    this.acCallback = (v: string) => this.setRawBody(actionId, v);
+    this.setRawBody(actionId, textarea.value);
+    this.updateAcPosition();
+    if (!this.checkFieldRefTrigger(textarea)) {
+      this.acSuggestions.set([]);
+    }
+  }
+
+  onAcKeydown(event: KeyboardEvent) {
+    const list = this.acSuggestions();
+    if (list.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.acIndex.update(i => Math.min(i + 1, list.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.acIndex.update(i => Math.max(i - 1, 0));
+    } else if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault();
+      this.insertAcSuggestion(list[this.acIndex()]);
+    } else if (event.key === 'Escape') {
+      this.acSuggestions.set([]);
+    }
+  }
+
+  insertAcSuggestion(suggestion: { insertText: string }, event?: MouseEvent) {
+    if (event) event.preventDefault();
+    const input = this.acInput;
+    if (!input) { this.acSuggestions.set([]); return; }
+
+    const pos = input.selectionStart ?? 0;
+    const text = input.value;
+    const before = text.substring(0, pos);
+    const openIdx = before.lastIndexOf('{{');
+
+    if (openIdx >= 0) {
+      const after = text.substring(pos);
+      const closeMatch = after.match(/^[^}]*}}/);
+      const replaceEnd = closeMatch ? pos + closeMatch[0].length : pos;
+      const newText = text.substring(0, openIdx) + suggestion.insertText + text.substring(replaceEnd);
+      input.value = newText;
+      const cursorPos = openIdx + suggestion.insertText.length;
+      input.setSelectionRange(cursorPos, cursorPos);
+    }
+
+    if (this.acCallback) this.acCallback(input.value);
+    this.acSuggestions.set([]);
+    input.focus();
+  }
+
+  closeAc() {
+    setTimeout(() => { this.acSuggestions.set([]); this.acInput = null; }, 150);
+  }
+
+  acSetHardcoded(actionId: string, key: string, value: string) {
+    this.setBodyHardcoded(actionId, key, value);
   }
 }
