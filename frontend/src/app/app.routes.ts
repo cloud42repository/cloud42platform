@@ -19,6 +19,8 @@ import { CampaignsManagementComponent } from './pages/campaigns-management/campa
 import { InvoiceManagementComponent } from './pages/invoice-management/invoice-management.component';
 import { DashboardListComponent } from './pages/dashboard/dashboard-list.component';
 import { DashboardBuilderComponent } from './pages/dashboard/dashboard-builder.component';
+import { FormListComponent } from './pages/form/form-list.component';
+import { FormBuilderComponent } from './pages/form/form-builder.component';
 import { authGuard } from './guards/auth.guard';
 import { MODULES } from './config/endpoints';
 
@@ -40,6 +42,14 @@ export const routes: Routes = [
       { path: '', component: DashboardListComponent, canActivate: [authGuard], title: 'Dashboards' },
       { path: 'new', component: DashboardBuilderComponent, canActivate: [authGuard], title: 'New Dashboard' },
       { path: ':id/edit', component: DashboardBuilderComponent, canActivate: [authGuard], title: 'Edit Dashboard' },
+    ],
+  },
+  {
+    path: 'forms',
+    children: [
+      { path: '', component: FormListComponent, canActivate: [authGuard], title: 'Forms' },
+      { path: 'new', component: FormBuilderComponent, canActivate: [authGuard], title: 'New Form' },
+      { path: ':id/edit', component: FormBuilderComponent, canActivate: [authGuard], title: 'Edit Form' },
     ],
   },
   { path: 'settings', component: SettingsComponent, canActivate: [authGuard], title: 'Settings' },
