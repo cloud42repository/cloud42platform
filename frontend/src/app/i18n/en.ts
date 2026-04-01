@@ -13,6 +13,7 @@ export const EN = {
   'nav.api-modules': 'API Modules',
   'nav.dashboard': 'Dashboard',
   'nav.forms': 'Forms',
+  'nav.api-tester': 'API Tester',
   'nav.management': 'Management',
   'nav.api-explorer': 'API Explorer',
   'nav.users': 'Users',
@@ -654,6 +655,25 @@ export const EN = {
   'form.response-success': 'Success',
   'form.response-error': 'Error',
   'form.no-body': 'This endpoint does not require a request body (GET/DELETE).',
+
+  /* ── API Tester page ── */
+  'api-tester.history': 'History',
+  'api-tester.clear': 'Clear history',
+  'api-tester.no-history': 'Send a request to get started',
+  'api-tester.module': 'Module',
+  'api-tester.endpoint': 'Endpoint',
+  'api-tester.send': 'Send',
+  'api-tester.path-params': 'Path Params',
+  'api-tester.no-path-params': 'No path parameters for this endpoint',
+  'api-tester.query-params': 'Query Params',
+  'api-tester.add-param': 'Add Parameter',
+  'api-tester.body': 'Body',
+  'api-tester.headers': 'Headers',
+  'api-tester.headers-hint': 'Authorization is handled automatically. Add extra headers here.',
+  'api-tester.add-header': 'Add Header',
+  'api-tester.response': 'Response',
+  'api-tester.no-response': 'No response yet — select an endpoint and click Send',
+  'api-tester.copy': 'Copy response',
 } as const;
 
 export type TranslationKey = keyof typeof EN;
