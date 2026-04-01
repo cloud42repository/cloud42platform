@@ -153,6 +153,7 @@ import { TranslateService } from '../../services/translate.service';
       display: flex; align-items: center; gap: 3px;
     }
     .kind-line-chart  { background: #dbeafe; color: #1d4ed8; }
+    .kind-bar-chart   { background: #cffafe; color: #0e7490; }
     .kind-pie-chart   { background: #fef3c7; color: #d97706; }
     .kind-data-table  { background: #dcfce7; color: #15803d; }
     .kind-badge       { background: #ede9fe; color: #6d28d9; }

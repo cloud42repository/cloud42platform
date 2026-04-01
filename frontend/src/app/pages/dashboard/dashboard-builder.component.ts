@@ -145,10 +145,13 @@ interface EndpointRef {
             <div class="widget-card widget-card--{{ widget.kind }}"
                  cdkDrag [cdkDragData]="widget"
                  [class.selected]="selectedWidgetId() === widget.id"
+                 [style.grid-column]="'span ' + widget.width"
+                 [style.grid-row]="'span ' + widget.height"
                  (click)="selectWidget(widget.id)">
               <div class="widget-header">
                 <mat-icon class="widget-type-icon">
                   @if (widget.kind === 'line-chart') { show_chart }
+                  @else if (widget.kind === 'bar-chart') { bar_chart }
                   @else if (widget.kind === 'pie-chart') { pie_chart }
                   @else if (widget.kind === 'badge') { tag }
                   @else { table_chart }
@@ -175,7 +178,7 @@ interface EndpointRef {
                   <span class="no-source">{{ 'dashboard.no-data-source' | t }}</span>
                 }
                 @if (!widget.lastData) {
-                  @if (widget.kind === 'line-chart' || widget.kind === 'pie-chart') {
+                  @if (widget.kind === 'line-chart' || widget.kind === 'bar-chart' || widget.kind === 'pie-chart') {
                     <div class="binding-preview">
                       @if (widget.bindings['labelField']) {
                         <span class="binding-tag">Label: {{ widget.bindings['labelField'] }}</span>
@@ -225,6 +228,29 @@ interface EndpointRef {
                         <!-- X-axis labels -->
                         @for (lbl of getLineChartLabels(widget); track $index) {
                           <text [attr.x]="lbl.x" y="186" text-anchor="middle" class="chart-axis-label">{{ lbl.text }}</text>
+                        }
+                      </svg>
+                    </div>
+                  }
+
+                  <!-- BAR CHART -->
+                  @if (widget.kind === 'bar-chart') {
+                    <div class="chart-container">
+                      <svg [attr.viewBox]="'0 0 400 220'" class="bar-chart-svg" preserveAspectRatio="xMidYMid meet">
+                        <!-- Grid lines -->
+                        <line x1="40" y1="10" x2="40" y2="180" stroke="#e2e8f0" stroke-width="1" />
+                        <line x1="40" y1="180" x2="390" y2="180" stroke="#e2e8f0" stroke-width="1" />
+                        @for (gl of [0.25, 0.5, 0.75]; track gl) {
+                          <line [attr.x1]="40" [attr.y1]="180 - 170 * gl" [attr.x2]="390" [attr.y2]="180 - 170 * gl" stroke="#f1f5f9" stroke-width="1" />
+                        }
+                        <!-- Bars -->
+                        @for (bar of getBarChartBars(widget); track $index) {
+                          <rect [attr.x]="bar.x" [attr.y]="bar.y" [attr.width]="bar.width" [attr.height]="bar.height" [attr.fill]="bar.color" rx="3" />
+                          <text [attr.x]="bar.x + bar.width / 2" [attr.y]="bar.y - 5" text-anchor="middle" class="chart-dot-label">{{ bar.val }}</text>
+                        }
+                        <!-- X-axis labels -->
+                        @for (lbl of getBarChartLabels(widget); track $index) {
+                          <text [attr.x]="lbl.x" y="196" text-anchor="middle" class="chart-axis-label">{{ lbl.text }}</text>
                         }
                       </svg>
                     </div>
@@ -306,6 +332,9 @@ interface EndpointRef {
                 }
               </div>
               <div *cdkDragPlaceholder class="widget-drag-placeholder"></div>
+              <div class="widget-resize-handle resize-e" (mousedown)="onWidgetResizeStart($event, widget, 'e')" (click)="$event.stopPropagation()"></div>
+              <div class="widget-resize-handle resize-s" (mousedown)="onWidgetResizeStart($event, widget, 's')" (click)="$event.stopPropagation()"></div>
+              <div class="widget-resize-handle resize-se" (mousedown)="onWidgetResizeStart($event, widget, 'se')" (click)="$event.stopPropagation()"></div>
             </div>
           }
         </div>
@@ -410,7 +439,7 @@ interface EndpointRef {
             <!-- Binding fields (depends on widget kind) -->
             <div class="config-section-label">{{ 'dashboard.data-bindings' | t }}</div>
 
-            @if (widget.kind === 'line-chart' || widget.kind === 'pie-chart') {
+            @if (widget.kind === 'line-chart' || widget.kind === 'bar-chart' || widget.kind === 'pie-chart') {
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                 <mat-label>{{ 'dashboard.label-field' | t }}</mat-label>
                 <input matInput [value]="widget.bindings['labelField'] || ''"
@@ -576,12 +605,17 @@ interface EndpointRef {
 
     .canvas-area {
       flex: 1; padding: 20px;
-      display: flex; flex-direction: column; gap: 12px;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-auto-rows: 80px;
+      gap: 12px;
       min-height: 200px;
+      align-content: start;
     }
     .canvas-empty {
+      grid-column: 1 / -1;
       display: flex; flex-direction: column; align-items: center;
-      justify-content: center; flex: 1; color: #94a3b8; gap: 8px;
+      justify-content: center; min-height: 200px; color: #94a3b8; gap: 8px;
     }
     .canvas-empty mat-icon { font-size: 48px; width: 48px; height: 48px; }
     .canvas-empty p { font-size: 13px; }
@@ -590,14 +624,19 @@ interface EndpointRef {
     .widget-card {
       border: 1px solid #e2e8f0; border-radius: 12px;
       background: white; padding: 12px 16px;
-      cursor: pointer; transition: all .15s;
+      cursor: pointer; transition: border-color .15s, box-shadow .15s;
+      position: relative;
+      display: flex; flex-direction: column;
     }
     .widget-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
     .widget-card.selected { border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,.2); }
     .widget-card--line-chart { border-left: 4px solid #2563eb; }
+    .widget-card--bar-chart  { border-left: 4px solid #0891b2; }
     .widget-card--pie-chart  { border-left: 4px solid #d97706; }
     .widget-card--data-table { border-left: 4px solid #16a34a; }
     .widget-card--badge      { border-left: 4px solid #7c3aed; }
+
+    .bar-chart-svg { width: 100%; height: auto; }
 
     /* Badge visualization */
     .badge-visualization {
@@ -628,7 +667,7 @@ interface EndpointRef {
     .widget-actions mat-icon { font-size: 16px; width: 16px; height: 16px; }
     .drag-handle { cursor: grab; color: #94a3b8; font-size: 18px; width: 18px; height: 18px; }
 
-    .widget-preview { margin-top: 8px; }
+    .widget-preview { margin-top: 8px; flex: 1; overflow: auto; }
     .data-source-tag {
       display: inline-flex; align-items: center; gap: 4px;
       font-size: 11px; color: #0284c7; background: #f0f9ff;
@@ -644,6 +683,40 @@ interface EndpointRef {
     .widget-drag-placeholder {
       background: #ede9fe; border: 2px dashed #a78bfa;
       border-radius: 12px; min-height: 60px;
+    }
+
+    /* ── Resize Handles ── */
+    .widget-resize-handle { position: absolute; z-index: 2; }
+    .widget-resize-handle.resize-e {
+      top: 8px; right: 0; bottom: 8px; width: 6px;
+      cursor: ew-resize; border-radius: 0 6px 6px 0;
+    }
+    .widget-resize-handle.resize-s {
+      left: 8px; right: 8px; bottom: 0; height: 6px;
+      cursor: ns-resize; border-radius: 0 0 6px 6px;
+    }
+    .widget-resize-handle.resize-se {
+      bottom: 0; right: 0; width: 16px; height: 16px;
+      cursor: nwse-resize;
+    }
+    .widget-resize-handle.resize-se::after {
+      content: '';
+      position: absolute; bottom: 4px; right: 4px;
+      width: 8px; height: 8px;
+      border-right: 2px solid #cbd5e1;
+      border-bottom: 2px solid #cbd5e1;
+      transition: border-color .15s;
+    }
+    .widget-card:hover .widget-resize-handle.resize-e,
+    .widget-card:hover .widget-resize-handle.resize-s {
+      background: rgba(124, 58, 237, 0.08);
+    }
+    .widget-card:hover .widget-resize-handle.resize-se::after {
+      border-color: #7c3aed;
+    }
+    .widget-resize-handle.resize-e:hover,
+    .widget-resize-handle.resize-s:hover {
+      background: rgba(124, 58, 237, 0.18) !important;
     }
 
     /* ── Config Panel ── */
@@ -740,10 +813,11 @@ export class DashboardBuilderComponent implements OnInit {
   readonly heightOptions = [1, 2, 3, 4, 5, 6];
 
   readonly widgetTypes: WidgetTypeRef[] = [
-    { kind: 'line-chart',  label: 'Line Chart',  icon: 'show_chart',  color: '#2563eb' },
-    { kind: 'pie-chart',   label: 'Pie Chart',   icon: 'pie_chart',   color: '#d97706' },
-    { kind: 'data-table',  label: 'Data Table',  icon: 'table_chart', color: '#16a34a' },
-    { kind: 'badge',        label: 'Badge',        icon: 'tag',         color: '#7c3aed' },
+    { kind: 'line-chart',  label: 'Line Chart',  icon: 'show_chart',    color: '#2563eb' },
+    { kind: 'bar-chart',   label: 'Bar Chart',   icon: 'bar_chart',    color: '#0891b2' },
+    { kind: 'pie-chart',   label: 'Pie Chart',   icon: 'pie_chart',    color: '#d97706' },
+    { kind: 'data-table',  label: 'Data Table',  icon: 'table_chart',  color: '#16a34a' },
+    { kind: 'badge',        label: 'Badge',        icon: 'tag',           color: '#7c3aed' },
   ];
 
   readonly aggregationOptions: { value: AggregateFunction; label: string }[] = [
@@ -762,6 +836,16 @@ export class DashboardBuilderComponent implements OnInit {
   readonly selectedWidgetId = signal<string | null>(null);
   readonly saving = signal(false);
   readonly fetching = signal(false);
+
+  // ── Resize state ──
+  private resizingWidgetId: string | null = null;
+  private resizeStartX = 0;
+  private resizeStartY = 0;
+  private resizeStartWidth = 0;
+  private resizeStartHeight = 0;
+  private gridColWidth = 0;
+  private readonly GRID_ROW_HEIGHT = 80;
+  private readonly GRID_GAP = 12;
 
   readonly selectedWidget = computed<DashboardWidget | null>(() => {
     const id = this.selectedWidgetId();
@@ -840,7 +924,7 @@ export class DashboardBuilderComponent implements OnInit {
         x: 0,
         y: 0,
         width: data.kind === 'data-table' ? 12 : data.kind === 'badge' ? 3 : 6,
-        height: data.kind === 'badge' ? 2 : data.kind === 'data-table' ? 4 : 3,
+        height: data.kind === 'badge' ? 2 : data.kind === 'data-table' ? 4 : data.kind === 'bar-chart' ? 4 : 3,
         bindings: {},
       };
       this.widgets.update(ws => {
@@ -1064,6 +1148,62 @@ export class DashboardBuilderComponent implements OnInit {
       .filter((_, i) => i % skip === 0 || i === items.length - 1);
   }
 
+  // ── BAR CHART helpers ──────────────────────────────────────────────────
+
+  private readonly BAR_COLORS = [
+    '#0891b2', '#0e7490', '#155e75', '#164e63', '#083344',
+    '#06b6d4', '#22d3ee', '#67e8f9', '#a5f3fc', '#cffafe',
+  ];
+
+  getBarChartBars(widget: DashboardWidget): { x: number; y: number; width: number; height: number; color: string; val: string }[] {
+    const items = this.getItems(widget);
+    const valueField = widget.bindings['valueField'];
+    if (!valueField || items.length === 0) return [];
+    const values = items.map(item => Number(this.extractField(item, valueField)) || 0);
+    const max = Math.max(...values, 1);
+    const count = values.length;
+    const chartWidth = 350;
+    const gap = Math.max(2, Math.min(6, 60 / count));
+    const barWidth = Math.max(4, (chartWidth - gap * count) / count);
+    const totalWidth = count * barWidth + (count - 1) * gap;
+    const offsetX = 40 + (chartWidth - totalWidth) / 2;
+    // Limit to 30 bars to avoid clutter
+    const skip = Math.max(1, Math.ceil(count / 30));
+    return values
+      .map((v, i) => {
+        const h = (v / max) * 170;
+        return {
+          x: offsetX + i * (barWidth + gap),
+          y: 180 - h,
+          width: barWidth,
+          height: h,
+          color: this.BAR_COLORS[i % this.BAR_COLORS.length],
+          val: this.formatNum(v),
+        };
+      })
+      .filter((_, i) => i % skip === 0);
+  }
+
+  getBarChartLabels(widget: DashboardWidget): { x: number; text: string }[] {
+    const items = this.getItems(widget);
+    const labelField = widget.bindings['labelField'];
+    const valueField = widget.bindings['valueField'];
+    if (!labelField || !valueField || items.length === 0) return [];
+    const count = items.length;
+    const chartWidth = 350;
+    const gap = Math.max(2, Math.min(6, 60 / count));
+    const barWidth = Math.max(4, (chartWidth - gap * count) / count);
+    const totalWidth = count * barWidth + (count - 1) * gap;
+    const offsetX = 40 + (chartWidth - totalWidth) / 2;
+    const skip = Math.max(1, Math.ceil(count / 10));
+    return items
+      .map((item, i) => ({
+        x: offsetX + i * (barWidth + gap) + barWidth / 2,
+        text: this.truncate(String(this.extractField(item, labelField) ?? ''), 8),
+      }))
+      .filter((_, i) => i % skip === 0);
+  }
+
   // ── PIE CHART helpers ──────────────────────────────────────────────────
 
   private readonly PIE_COLORS = [
@@ -1189,6 +1329,59 @@ export class DashboardBuilderComponent implements OnInit {
 
   private truncate(s: string, max: number): string {
     return s.length > max ? s.slice(0, max - 1) + '…' : s;
+  }
+
+  // ── Widget resize ─────────────────────────────────────────────────────────
+
+  onWidgetResizeStart(event: MouseEvent, widget: DashboardWidget, direction: 'e' | 's' | 'se') {
+    event.preventDefault();
+    event.stopPropagation();
+
+    this.resizingWidgetId = widget.id;
+    this.resizeStartX = event.clientX;
+    this.resizeStartY = event.clientY;
+    this.resizeStartWidth = widget.width;
+    this.resizeStartHeight = widget.height;
+
+    const canvasEl = (this.el.nativeElement as HTMLElement).querySelector('.canvas-area');
+    if (canvasEl) {
+      const contentWidth = canvasEl.clientWidth - 40; // 20px padding each side
+      this.gridColWidth = (contentWidth - this.GRID_GAP * 11) / 12;
+    }
+
+    const onMove = (ev: MouseEvent) => {
+      if (!this.resizingWidgetId) return;
+      const deltaX = ev.clientX - this.resizeStartX;
+      const deltaY = ev.clientY - this.resizeStartY;
+
+      let newWidth = this.resizeStartWidth;
+      let newHeight = this.resizeStartHeight;
+
+      if (direction === 'e' || direction === 'se') {
+        newWidth = Math.max(1, Math.min(12, this.resizeStartWidth + Math.round(deltaX / (this.gridColWidth + this.GRID_GAP))));
+      }
+      if (direction === 's' || direction === 'se') {
+        newHeight = Math.max(1, Math.min(6, this.resizeStartHeight + Math.round(deltaY / (this.GRID_ROW_HEIGHT + this.GRID_GAP))));
+      }
+
+      this.widgets.update(ws => ws.map(w =>
+        w.id === this.resizingWidgetId ? { ...w, width: newWidth, height: newHeight } : w
+      ));
+    };
+
+    const onUp = () => {
+      this.resizingWidgetId = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    const cursorMap: Record<string, string> = { e: 'ew-resize', s: 'ns-resize', se: 'nwse-resize' };
+    document.body.style.cursor = cursorMap[direction];
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   }
 
   // ── Fetch widget data (test) ──────────────────────────────────────────────
