@@ -653,6 +653,7 @@ export const EN = {
   'form.run-action-hint': 'Click to execute, right-click to configure',
   'form.response-success': 'Success',
   'form.response-error': 'Error',
+  'form.no-body': 'This endpoint does not require a request body (GET/DELETE).',
 } as const;
 
 export type TranslationKey = keyof typeof EN;

@@ -545,7 +545,8 @@ interface FieldTypeRef {
 
             <mat-divider class="section-divider" />
 
-            <!-- Body mapping -->
+            <!-- Body mapping (only for POST/PUT/PATCH) -->
+            @if (action.method === 'POST' || action.method === 'PUT' || action.method === 'PATCH') {
             <div class="config-section-label">{{ 'form.body-mapping' | t }}</div>
 
             <!-- Body mode toggle -->
@@ -651,6 +652,9 @@ interface FieldTypeRef {
                           class="raw-body-textarea"></textarea>
                 <mat-hint>{{ 'form.form-ref-hint' | t }}</mat-hint>
               </mat-form-field>
+            }
+            } @else {
+              <p class="config-hint" style="font-style:italic">{{ 'form.no-body' | t }}</p>
             }
           </div>
         }
@@ -889,9 +893,10 @@ interface FieldTypeRef {
     .action-config-btn {
       border-radius: 0 8px 8px 0 !important;
       border: 1px solid #e2e8f0; border-left: none;
-      background: white; width: 36px; height: 36px;
+      background: white; width: 100px; height: 40px; line-height: 22px;
+      padding: 0;
     }
-    .action-config-btn mat-icon { font-size: 18px; width: 18px; height: 18px; color: #64748b; }
+    .action-config-btn mat-icon { font-size: 12px; width: 12px; height: 12px; color: #64748b; }
     .action-config-btn:hover { background: #f1f5f9; }
     .action-config-btn:hover mat-icon { color: #0891b2; }
 
@@ -1302,13 +1307,19 @@ export class FormBuilderComponent implements OnInit {
     const mod = MODULES.find(m => m.apiPrefix === action.moduleApiPrefix);
     const ep = mod?.endpoints.find(e => e.pathTemplate === pathTemplate);
     if (!ep) return;
+    const hasBody = ep.hasBody ?? ['POST', 'PUT', 'PATCH'].includes(ep.method);
     this.submitActions.update(as => as.map(a => {
       if (a.id !== actionId) return a;
       return {
         ...a,
+        method: ep.method as FormSubmitAction['method'],
         pathTemplate: ep.pathTemplate,
         endpointLabel: ep.label,
         pathParams: {},
+        bodyMode: 'fields',
+        rawBody: hasBody ? '{}' : '',
+        bodyKeys: hasBody ? a.bodyKeys : [],
+        bodySources: hasBody ? a.bodySources : {},
       };
     }));
   }
@@ -1587,6 +1598,7 @@ export class FormBuilderComponent implements OnInit {
     try {
       const body = this.buildRequestBody(action);
       const method = action.method.toLowerCase();
+      console.log('[FormBuilder] Executing action:', method.toUpperCase(), action.moduleApiPrefix + action.pathTemplate, 'Body:', body);
       let res: unknown;
 
       if (method === 'delete') {
@@ -1619,13 +1631,25 @@ export class FormBuilderComponent implements OnInit {
 
     if (mode === 'fields') {
       const body: Record<string, unknown> = {};
-      for (const key of action.bodyKeys) {
-        const src = action.bodySources[key];
-        if (!src || src.type === 'hardcoded') {
-          const raw = src?.type === 'hardcoded' ? src.value : '';
-          body[key] = this.resolveFieldRefs(raw, values);
-        } else {
-          body[key] = values[src.fieldId] ?? '';
+      if (action.bodyKeys.length > 0) {
+        // Explicit body key mapping
+        for (const key of action.bodyKeys) {
+          const src = action.bodySources[key];
+          if (!src || src.type === 'hardcoded') {
+            const raw = src?.type === 'hardcoded' ? src.value : '';
+            body[key] = this.resolveFieldRefs(raw, values);
+          } else {
+            body[key] = values[src.fieldId] ?? '';
+          }
+        }
+      } else {
+        // Auto-build from all form fields that have a value
+        for (const field of this.fields()) {
+          const val = values[field.id];
+          if (val !== undefined && val !== '') {
+            const key = field.label || field.id;
+            body[key] = val;
+          }
         }
       }
       return body;
@@ -1635,7 +1659,8 @@ export class FormBuilderComponent implements OnInit {
       try {
         return JSON.parse(action.rawBody ?? '{}');
       } catch {
-        return action.rawBody ?? '{}';
+        console.warn('[FormBuilder] Invalid JSON in text body, wrapping as raw:', action.rawBody);
+        return {};
       }
     }
 
@@ -1645,7 +1670,8 @@ export class FormBuilderComponent implements OnInit {
     try {
       return JSON.parse(resolved);
     } catch {
-      return resolved;
+      console.warn('[FormBuilder] Invalid JSON in form body after resolving refs:', resolved);
+      return {};
     }
   }
 

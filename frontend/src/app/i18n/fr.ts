@@ -655,4 +655,5 @@ export const FR: Record<TranslationKey, string> = {
   'form.run-action-hint': 'Cliquer pour exécuter, clic droit pour configurer',
   'form.response-success': 'Succès',
   'form.response-error': 'Erreur',
+  'form.no-body': 'Ce point de terminaison ne nécessite pas de corps de requête (GET/DELETE).',
 };
