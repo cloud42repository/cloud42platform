@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserEntity } from './user.entity';
 import { WorkflowEntity } from '../workflow/workflow.entity';
 import { AuthConfigEntity } from '../auth-config/auth-config.entity';
+import { FormEntity } from '../form/form.entity';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 
@@ -20,7 +21,7 @@ import { UserService } from './user.service';
         username: config.get<string>('AZURE_POSTGRESQL_USER', 'postgres'),
         password: config.get<string>('AZURE_POSTGRESQL_PASSWORD', 'Password1'),
         database: config.get<string>('AZURE_POSTGRESQL_DATABASE', 'postgres'),
-        entities: [UserEntity, WorkflowEntity, AuthConfigEntity],
+        entities: [UserEntity, WorkflowEntity, AuthConfigEntity, FormEntity],
         synchronize: config.get<string>('AZURE_POSTGRESQL_SYNC', 'true') === 'true', // auto-create tables (dev only)
         ssl: config.get<string>('AZURE_POSTGRESQL_SSL', 'false') === 'true'
           ? { rejectUnauthorized: false }
