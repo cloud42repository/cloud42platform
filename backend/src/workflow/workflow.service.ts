@@ -24,6 +24,8 @@ export class WorkflowService {
       name: w.name,
       description: w.description ?? '',
       steps: w.steps ?? [],
+      inputs: w.inputs ?? [],
+      outputs: w.outputs ?? [],
       status: w.status,
       scheduledAt: w.scheduledAt ? w.scheduledAt.toISOString() : null,
       lastRunLog: w.lastRunLog ?? null,
@@ -63,6 +65,8 @@ export class WorkflowService {
       name: dto.name,
       description: dto.description ?? '',
       steps: dto.steps ?? [],
+      inputs: dto.inputs ?? [],
+      outputs: dto.outputs ?? [],
       status: dto.status ?? 'draft',
       scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
     });
@@ -82,6 +86,8 @@ export class WorkflowService {
     if (dto.name !== undefined) wf.name = dto.name;
     if (dto.description !== undefined) wf.description = dto.description;
     if (dto.steps !== undefined) wf.steps = dto.steps;
+    if (dto.inputs !== undefined) wf.inputs = dto.inputs;
+    if (dto.outputs !== undefined) wf.outputs = dto.outputs;
     if (dto.status !== undefined) wf.status = dto.status;
     if (dto.scheduledAt !== undefined) {
       wf.scheduledAt = dto.scheduledAt ? new Date(dto.scheduledAt) : null;

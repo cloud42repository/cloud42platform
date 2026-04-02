@@ -1713,8 +1713,13 @@ export class FormBuilderComponent implements OnInit {
       pathParams: action.pathParams,
     });
     if (!action.moduleApiPrefix || !action.pathTemplate) {
-      console.warn('[FormBuilder] Missing moduleApiPrefix or pathTemplate — opening config instead');
-      this.selectAction(action.id);
+      console.warn('[FormBuilder] Missing moduleApiPrefix or pathTemplate — action not configured');
+      // Show error result instead of silently opening config
+      this.lastResponse.set({
+        actionId: action.id,
+        status: 'error',
+        data: { error: 'Action not configured — click the ⚙ button to set module and endpoint' },
+      });
       return;
     }
 

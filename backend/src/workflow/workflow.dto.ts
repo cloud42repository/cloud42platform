@@ -9,6 +9,8 @@ export interface CreateWorkflowDto {
   name: string;
   description?: string;
   steps: unknown[];
+  inputs?: unknown[];
+  outputs?: unknown[];
   status?: WorkflowStatus;
   scheduledAt?: string | null;
 }
@@ -18,6 +20,8 @@ export interface UpdateWorkflowDto {
   name?: string;
   description?: string;
   steps?: unknown[];
+  inputs?: unknown[];
+  outputs?: unknown[];
   status?: WorkflowStatus;
   scheduledAt?: string | null;
   lastRunLog?: unknown | null;
@@ -31,6 +35,8 @@ export interface WorkflowResponseDto {
   name: string;
   description: string;
   steps: unknown[];
+  inputs: unknown[];
+  outputs: unknown[];
   status: WorkflowStatus;
   scheduledAt: string | null;
   lastRunLog: unknown | null;

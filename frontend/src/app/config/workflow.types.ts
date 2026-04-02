@@ -7,7 +7,7 @@ export type PayloadSource =
   | { type: 'from-step'; stepId: string; field: string };
 
 /** Discriminator for workflow canvas nodes */
-export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter';
+export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow';
 
 /** How the request body is configured for a POST / PUT / PATCH step */
 export type BodyMode = 'fields' | 'text' | 'form';
@@ -123,8 +123,38 @@ export interface FilterBlock {
   filterValue?: string;
 }
 
+/**
+ * Sub-workflow block — calls another workflow, binding inputs from the
+ * current execution context and collecting outputs as the block result.
+ */
+export interface SubWorkflowBlock {
+  id: string;
+  kind: 'sub-workflow';
+  label?: string;
+  /** ID of the workflow to call */
+  workflowId?: string;
+  /** Display name of the target workflow (cached for UI) */
+  workflowName?: string;
+  /** Map: target workflow input name → PayloadSource in current context */
+  inputBindings: Record<string, PayloadSource>;
+}
+
+/** A named input parameter that a workflow accepts */
+export interface WorkflowInput {
+  name: string;
+  /** Optional default value when not provided */
+  defaultValue?: string;
+}
+
+/** A named output that a workflow returns at end */
+export interface WorkflowOutput {
+  name: string;
+  /** Source: 'from-step' reads from a step's response */
+  source: PayloadSource;
+}
+
 /** Any top-level canvas node (endpoint step or control-flow block) */
-export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock | MapperBlock | FilterBlock;
+export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock | MapperBlock | FilterBlock | SubWorkflowBlock;
 
 export type WorkflowStatus = 'draft' | 'scheduled' | 'running' | 'completed' | 'failed';
 
@@ -152,6 +182,10 @@ export interface Workflow {
   id: string;
   name: string;
   description?: string;
+  /** Named input parameters this workflow accepts */
+  inputs?: WorkflowInput[];
+  /** Named outputs this workflow returns after execution */
+  outputs?: WorkflowOutput[];
   steps: WorkflowNode[];
   status: WorkflowStatus;
   /** Optional ISO datetime: scheduler fires the whole workflow at this time */

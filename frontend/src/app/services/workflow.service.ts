@@ -5,6 +5,7 @@ import { UserManagementService } from './user-management.service';
 import {
   Workflow, WorkflowNode, WorkflowStep, WorkflowStatus,
   TryCatchBlock, LoopBlock, IfElseBlock, MapperBlock, FilterBlock,
+  SubWorkflowBlock, WorkflowInput, WorkflowOutput,
   WorkflowRunLog, WorkflowRunStepLog, PayloadSource,
 } from '../config/workflow.types';
 
@@ -56,6 +57,8 @@ export class WorkflowService {
           name: workflow.name,
           description: workflow.description ?? '',
           steps: workflow.steps,
+          inputs: workflow.inputs ?? [],
+          outputs: workflow.outputs ?? [],
           status: workflow.status,
           scheduledAt: workflow.scheduledAt,
         })
@@ -73,6 +76,8 @@ export class WorkflowService {
           name: workflow.name,
           description: workflow.description ?? '',
           steps: workflow.steps,
+          inputs: workflow.inputs ?? [],
+          outputs: workflow.outputs ?? [],
           status: workflow.status,
           scheduledAt: workflow.scheduledAt,
           lastRunLog: workflow.lastRunLog,
@@ -103,6 +108,8 @@ export class WorkflowService {
       steps: (dto['steps'] ?? []) as WorkflowNode[],
       status: (dto['status'] as WorkflowStatus) ?? 'draft',
       scheduledAt: (dto['scheduledAt'] as string) ?? null,
+      inputs: (dto['inputs'] as WorkflowInput[]) ?? [],
+      outputs: (dto['outputs'] as WorkflowOutput[]) ?? [],
       createdAt: dto['createdAt'] as string,
       updatedAt: dto['updatedAt'] as string,
       lastRunLog: (dto['lastRunLog'] as WorkflowRunLog) ?? undefined,
@@ -134,7 +141,7 @@ export class WorkflowService {
   /** Top-level steps of the currently executing workflow — used for step-index → step-id mapping */
   private executingSteps: WorkflowNode[] = [];
 
-  async execute(workflowId: string): Promise<WorkflowRunLog> {
+  async execute(workflowId: string, inputValues?: Record<string, string>): Promise<WorkflowRunLog> {
     const workflow = this.getById(workflowId);
     if (!workflow) throw new Error(`Workflow ${workflowId} not found`);
 
@@ -148,11 +155,27 @@ export class WorkflowService {
     };
 
     const stepResults = new Map<string, unknown>();
+
+    // Seed step results with workflow inputs (accessible via special __input__ key)
+    const resolvedInputs: Record<string, string> = {};
+    for (const inp of workflow.inputs ?? []) {
+      resolvedInputs[inp.name] = inputValues?.[inp.name] ?? inp.defaultValue ?? '';
+    }
+    stepResults.set('__input__', resolvedInputs);
+
     this.executingSteps = workflow.steps;
     const success = await this.executeNodes(workflow.steps, stepResults, log);
 
     log.success = success;
     log.finishedAt = new Date().toISOString();
+
+    // Build workflow outputs
+    const outputs: Record<string, unknown> = {};
+    for (const out of workflow.outputs ?? []) {
+      outputs[out.name] = this.resolveRaw(out.source, stepResults);
+    }
+    stepResults.set('__output__', outputs);
+    (log as WorkflowRunLog & { outputs?: unknown }).outputs = outputs;
 
     // Persist log + update status
     this._workflows.update(ws => ws.map(w => {
@@ -304,6 +327,54 @@ export class WorkflowService {
           response: filtered,
           success: true,
         });
+
+      } else if (kind === 'sub-workflow') {
+        const block = node as SubWorkflowBlock;
+        if (!block.workflowId) {
+          log.steps.push({
+            stepId: block.id,
+            label: block.label || 'Sub-Workflow',
+            startedAt: new Date().toISOString(),
+            finishedAt: new Date().toISOString(),
+            resolvedParams: {},
+            error: 'No workflow selected',
+            success: false,
+          });
+          return false;
+        }
+        // Resolve input bindings
+        const inputValues: Record<string, string> = {};
+        for (const [inputName, source] of Object.entries(block.inputBindings)) {
+          const raw = this.resolveRaw(source, stepResults);
+          inputValues[inputName] = typeof raw === 'string' ? raw : JSON.stringify(raw);
+        }
+        try {
+          const subLog = await this.execute(block.workflowId, inputValues);
+          const subOutputs = (subLog as WorkflowRunLog & { outputs?: unknown }).outputs ?? {};
+          stepResults.set(block.id, subOutputs);
+          log.steps.push({
+            stepId: block.id,
+            label: block.label || block.workflowName || 'Sub-Workflow',
+            startedAt: subLog.startedAt,
+            finishedAt: subLog.finishedAt,
+            resolvedParams: inputValues,
+            response: subOutputs,
+            success: subLog.success,
+            error: subLog.error,
+          });
+          if (!subLog.success) return false;
+        } catch (err: unknown) {
+          log.steps.push({
+            stepId: block.id,
+            label: block.label || block.workflowName || 'Sub-Workflow',
+            startedAt: new Date().toISOString(),
+            finishedAt: new Date().toISOString(),
+            resolvedParams: inputValues,
+            error: err instanceof Error ? err.message : String(err),
+            success: false,
+          });
+          return false;
+        }
       }
     }
     return true;
@@ -436,7 +507,7 @@ export class WorkflowService {
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
   /**
-   * Replace {{steps.N.path}} tokens in a raw body string with resolved values.
+   * Replace {{steps.N.path}} and {{input.name}} tokens in a raw body string with resolved values.
    * N is 1-based step index. Path uses dot-notation (e.g. data.id).
    */
   private interpolateStepRefs(
@@ -444,30 +515,48 @@ export class WorkflowService {
     allSteps: WorkflowNode[],
     stepResults: Map<string, unknown>,
   ): string {
-    // Match {{steps.N}}, {{steps.N.path}}, and {{steps.N[0].path}} (bracket notation)
-    return raw.replace(/\{\{steps\.(\d+)((?:[\.\[])[^}]+?)?\}\}/g, (_match, idxStr, rawPath) => {
-      const idx = Number(idxStr) - 1; // Convert to 0-based
-      const step = allSteps[idx];
-      if (!step) return '';
-      const result = stepResults.get(step.id);
-      if (result == null) return '';
-      // Normalize path: convert [N] to .N FIRST, then strip any leading dot
-      const path = rawPath
-        ? rawPath.replace(/\[(\d+)\]/g, '.$1').replace(/^\./, '')
-        : '';
-      if (!path) {
-        return typeof result === 'object' ? JSON.stringify(result) : String(result);
+    // Match all {{...}} tokens
+    return raw.replace(/\{\{([^}]+)\}\}/g, (_match, tokenBody: string) => {
+      const token = tokenBody.trim();
+
+      // {{steps.N}} or {{steps.N.path}} or {{steps.N[0].path}}
+      const stepMatch = token.match(/^steps\.(\d+)((?:[.\[])[^]*)?$/);
+      if (stepMatch) {
+        const idx = Number(stepMatch[1]) - 1; // Convert to 0-based
+        const step = allSteps[idx];
+        if (!step) return '';
+        const result = stepResults.get(step.id);
+        if (result == null) return '';
+        const path = stepMatch[2]
+          ? stepMatch[2].replace(/\[(\d+)\]/g, '.$1').replace(/^\./, '')
+          : '';
+        if (!path) {
+          return typeof result === 'object' ? JSON.stringify(result) : String(result);
+        }
+        const resolved = this.getPathRaw(result, path);
+        if (resolved == null) return '';
+        return typeof resolved === 'object' ? JSON.stringify(resolved) : String(resolved);
       }
-      const resolved = this.getPathRaw(result, path);
-      if (resolved == null) return '';
-      return typeof resolved === 'object' ? JSON.stringify(resolved) : String(resolved);
+
+      // {{input.paramName}} or {{input.paramName.subPath}}
+      const inputMatch = token.match(/^input\.(.+)$/);
+      if (inputMatch) {
+        const inputData = stepResults.get('__input__');
+        if (inputData == null) return '';
+        const resolved = this.getPathRaw(inputData, inputMatch[1]);
+        if (resolved == null) return '';
+        return typeof resolved === 'object' ? JSON.stringify(resolved) : String(resolved);
+      }
+
+      // Unrecognised token — leave as-is
+      return _match;
     });
   }
 
   private resolve(source: PayloadSource, stepResults: Map<string, unknown>, allSteps?: WorkflowNode[]): string {
     if (source.type === 'hardcoded') {
-      // Interpolate any {{steps.N.path}} tokens in the hardcoded value
-      if (source.value.includes('{{steps.')) {
+      // Interpolate any {{steps.N.path}} or {{input.name}} tokens in the hardcoded value
+      if (source.value.includes('{{')) {
         return this.interpolateStepRefs(source.value, allSteps ?? this.executingSteps, stepResults);
       }
       return source.value;
@@ -475,6 +564,19 @@ export class WorkflowService {
     const result = stepResults.get(source.stepId);
     if (result == null) return '';
     return this.getPath(result, source.field);
+  }
+
+  /** Like resolve() but preserves objects/arrays instead of stringifying them */
+  private resolveRaw(source: PayloadSource, stepResults: Map<string, unknown>): unknown {
+    if (source.type === 'hardcoded') {
+      if (source.value.includes('{{')) {
+        return this.interpolateStepRefs(source.value, this.executingSteps, stepResults);
+      }
+      return source.value;
+    }
+    const result = stepResults.get(source.stepId);
+    if (result == null) return '';
+    return this.getPathRaw(result, source.field) ?? '';
   }
 
   getPath(obj: unknown, path: string): string {

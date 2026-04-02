@@ -22,9 +22,10 @@ import {
 } from '@angular/cdk/drag-drop';
 
 import { MODULES, ModuleDef, EndpointDef, extractPathParams } from '../../config/endpoints';
+import { getEndpointPayload } from '../../config/endpoint-payloads';
 import { WorkflowService } from '../../services/workflow.service';
 import {
-  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FilterBlock, FieldMapping, PayloadSource, StepKind, BodyMode,
+  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FilterBlock, SubWorkflowBlock, WorkflowInput, WorkflowOutput, FieldMapping, PayloadSource, StepKind, BodyMode,
 } from '../../config/workflow.types';
 import { FormViewComponent, StepRefSuggestion } from '../../shared/form-view/form-view.component';
 import { TranslatePipe } from '../../i18n/translate.pipe';
@@ -39,7 +40,7 @@ interface AutocompleteSuggestion {
 }
 
 interface EndpointRef { module: ModuleDef; endpoint: EndpointDef; }
-interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter'; label: string; icon: string; color: string; }
+interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow'; label: string; icon: string; color: string; }
 
 @Component({
   selector: 'app-workflow-builder',
@@ -82,6 +83,12 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
         <button mat-stroked-button (click)="save()">
           <mat-icon>save</mat-icon> {{ 'workflow.save' | t }}
         </button>
+        <button mat-stroked-button (click)="ioPanelOpen.update(v => !v)"
+                [class.active-io]="ioPanelOpen()"
+                matTooltip="{{ 'workflow.io-config' | t }}">
+          <mat-icon>{{ ioPanelOpen() ? 'expand_less' : 'settings_input_component' }}</mat-icon>
+          {{ 'workflow.io' | t }}
+        </button>
         <button mat-flat-button color="primary"
                 (click)="runNow()"
                 [disabled]="steps().length === 0 || running()">
@@ -97,6 +104,80 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
         }
       </div>
     </div>
+
+    <!-- ── I/O Configuration Panel ──────────────────────────────────── -->
+    @if (ioPanelOpen()) {
+      <div class="io-panel">
+        <div class="io-section">
+          <div class="io-section-header">
+            <mat-icon>input</mat-icon>
+            <span>{{ 'workflow.inputs' | t }}</span>
+            <button mat-icon-button (click)="addInput()" matTooltip="{{ 'workflow.add-input' | t }}">
+              <mat-icon>add_circle_outline</mat-icon>
+            </button>
+          </div>
+          @for (inp of wfInputs(); track inp.name; let i = $index) {
+            <div class="io-row">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="io-name-field">
+                <mat-label>{{ 'workflow.input-name' | t }}</mat-label>
+                <input matInput [value]="inp.name"
+                       (input)="updateInput(i, 'name', $any($event.target).value)" placeholder="e.g. contactId" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="io-default-field">
+                <mat-label>{{ 'workflow.default-value' | t }}</mat-label>
+                <input matInput [value]="inp.defaultValue ?? ''"
+                       (input)="updateInput(i, 'defaultValue', $any($event.target).value)" />
+              </mat-form-field>
+              <button mat-icon-button color="warn" (click)="removeInput(i)">
+                <mat-icon>remove_circle_outline</mat-icon>
+              </button>
+            </div>
+          }
+          @if (wfInputs().length === 0) {
+            <p class="io-empty">{{ 'workflow.no-inputs' | t }}</p>
+          }
+        </div>
+        <div class="io-divider"></div>
+        <div class="io-section">
+          <div class="io-section-header">
+            <mat-icon>output</mat-icon>
+            <span>{{ 'workflow.outputs' | t }}</span>
+            <button mat-icon-button (click)="addOutput()" matTooltip="{{ 'workflow.add-output' | t }}">
+              <mat-icon>add_circle_outline</mat-icon>
+            </button>
+          </div>
+          @for (out of wfOutputs(); track out.name; let i = $index) {
+            <div class="io-row">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="io-name-field">
+                <mat-label>{{ 'workflow.output-name' | t }}</mat-label>
+                <input matInput [value]="out.name"
+                       (input)="updateOutput(i, 'name', $any($event.target).value)" placeholder="e.g. result" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="io-step-field">
+                <mat-label>{{ 'workflow.source-step' | t }}</mat-label>
+                <mat-select [value]="out.source.type === 'from-step' ? out.source.stepId : ''"
+                            (selectionChange)="setOutputSourceStep(i, $event.value)">
+                  @for (s of steps(); track s.id; let si = $index) {
+                    <mat-option [value]="s.id">Step {{ si + 1 }}: {{ getStepLabel(s) }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="io-field-field">
+                <mat-label>{{ 'workflow.source-field' | t }}</mat-label>
+                <input matInput [value]="out.source.type === 'from-step' ? out.source.field : ''"
+                       (input)="setOutputSourceField(i, $any($event.target).value)" placeholder="e.g. data.id" />
+              </mat-form-field>
+              <button mat-icon-button color="warn" (click)="removeOutput(i)">
+                <mat-icon>remove_circle_outline</mat-icon>
+              </button>
+            </div>
+          }
+          @if (wfOutputs().length === 0) {
+            <p class="io-empty">{{ 'workflow.no-outputs' | t }}</p>
+          }
+        </div>
+      </div>
+    }
 
     <!-- ── Three-panel layout ────────────────────────────────────────────── -->
     <div class="builder-layout">
@@ -531,6 +612,37 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
                   </div>
                 }
 
+                <!-- ── SUB-WORKFLOW BLOCK ── -->
+                @if (node.kind === 'sub-workflow') {
+                  @let block = asSubWorkflow(node);
+                  <div class="block-card block-card--sub-workflow" (click)="selectStep(node.id)">
+                    <div class="block-header">
+                      <mat-icon class="block-icon">account_tree</mat-icon>
+                      <span class="block-title">{{ block.label || block.workflowName || ('workflow.sub-workflow' | t) }}</span>
+                      @if (block.workflowName) {
+                        <span class="block-badge">{{ block.workflowName }}</span>
+                      }
+                      <div class="step-card-actions" (click)="$event.stopPropagation()">
+                        <button mat-icon-button (click)="selectStep(node.id)" matTooltip="{{ 'workflow.configure-step' | t }}">
+                          <mat-icon>settings</mat-icon>
+                        </button>
+                        <button mat-icon-button (click)="removeStep(node.id)" color="warn" matTooltip="{{ 'workflow.remove-step' | t }}">
+                          <mat-icon>delete_outline</mat-icon>
+                        </button>
+                        <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
+                      </div>
+                    </div>
+                    @if (getSubWorkflowInputNames(block.workflowId).length > 0) {
+                      <div class="sub-wf-io-preview">
+                        <span class="sub-wf-io-label">
+                          <mat-icon style="font-size:12px;width:12px;height:12px">input</mat-icon>
+                          {{ getSubWorkflowInputNames(block.workflowId).join(', ') }}
+                        </span>
+                      </div>
+                    }
+                  </div>
+                }
+
                 <!-- DnD extras -->
                 <div *cdkDragPlaceholder class="drag-placeholder-canvas"></div>
 
@@ -572,6 +684,9 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
             } @else if (selectedStep()!.kind === 'filter') {
               <mat-icon style="color:#dc2626">filter_list</mat-icon>
               <span class="config-title">{{ asFilter(selectedStep()!).label || ('workflow.filter' | t) }}</span>
+            } @else if (selectedStep()!.kind === 'sub-workflow') {
+              <mat-icon style="color:#7c3aed">account_tree</mat-icon>
+              <span class="config-title">{{ asSubWorkflow(selectedStep()!).label || ('workflow.sub-workflow' | t) }}</span>
             }
             <button mat-icon-button (click)="selectedStepId.set(null)" style="margin-left:auto">
               <mat-icon>close</mat-icon>
@@ -720,6 +835,10 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
 
                 <!-- ── TEXT MODE (raw JSON with intellisense) ── -->
                 @if (getBodyMode(ep) === 'text') {
+                  <button mat-stroked-button class="generate-btn" (click)="generateWfTextTemplate()"
+                          matTooltip="{{ 'workflow.generate-hint' | t }}">
+                    <mat-icon>auto_fix_high</mat-icon> {{ 'workflow.generate-template' | t }}
+                  </button>
                   <div class="raw-body-wrapper">
                     <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                       <mat-label>{{ 'workflow.request-body-json' | t }}</mat-label>
@@ -1154,26 +1273,104 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
               </p>
             }
 
-          </div>
-          <!-- Shared autocomplete overlay for all inputs in config panel -->
-          @if (acSuggestions().length > 0) {
-            <div class="ac-overlay ac-overlay--panel" [ngStyle]="acOverlayStyle()">
-              @for (s of acSuggestions(); track s.insertText; let i = $index) {
-                <div class="ac-item" [class.ac-item--active]="i === acSelectedIndex()"
-                     (mousedown)="insertSuggestion(s, $event)">
-                  <mat-icon class="ac-icon ac-icon--{{ s.icon }}">{{ s.icon }}</mat-icon>
-                  <div class="ac-text">
-                    <span class="ac-label">{{ s.label }}
-                      @if (s.typeHint) {
-                        <span class="ac-type ac-type--{{ s.typeHint }}">{{ s.typeHint }}</span>
+            <!-- ── SUB-WORKFLOW CONFIG ─────────────────────────────────────── -->
+            @if (selectedStep()!.kind === 'sub-workflow') {
+              @let block = asSubWorkflow(selectedStep()!);
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'workflow.label' | t }}</mat-label>
+                <input matInput [value]="block.label ?? ''" (input)="mutateBlock(block.id, $any($event.target).value, 'label')" />
+              </mat-form-field>
+
+              <div class="config-section-label">{{ 'workflow.select-workflow' | t }}</div>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'workflow.target-workflow' | t }}</mat-label>
+                <mat-select [value]="block.workflowId ?? ''"
+                            (selectionChange)="setSubWorkflowTarget(block.id, $event.value)">
+                  @for (wf of availableSubWorkflows(); track wf.id) {
+                    <mat-option [value]="wf.id">
+                      {{ wf.name }}
+                      @if ((wf.inputs ?? []).length > 0) {
+                        <span class="sub-wf-input-count">({{ (wf.inputs ?? []).length }} inputs)</span>
                       }
-                    </span>
-                    <span class="ac-detail">{{ s.detail }}</span>
-                  </div>
-                </div>
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <!-- Input bindings -->
+              @if (block.workflowId) {
+                @let targetInputs = getSubWorkflowInputDefs(block.workflowId);
+                @if (targetInputs.length > 0) {
+                  <mat-divider class="section-divider" />
+                  <div class="config-section-label">{{ 'workflow.bind-inputs' | t }}</div>
+                  @for (inp of targetInputs; track inp.name) {
+                    <div class="field-block">
+                      <div class="field-name-row">
+                        <mat-icon>input</mat-icon>
+                        <code>{{ inp.name }}</code>
+                        @if (inp.defaultValue) {
+                          <span class="default-hint">(default: {{ inp.defaultValue }})</span>
+                        }
+                      </div>
+                      <div class="source-toggle">
+                        <button mat-stroked-button
+                                [class.active-mode]="getSubWfBindingType(block, inp.name) === 'hardcoded'"
+                                (click)="setSubWfBindingType(block.id, inp.name, 'hardcoded')">
+                          <mat-icon>text_fields</mat-icon> {{ 'workflow.hardcoded' | t }}
+                        </button>
+                        <button mat-stroked-button
+                                [class.active-mode]="getSubWfBindingType(block, inp.name) === 'from-step'"
+                                (click)="setSubWfBindingType(block.id, inp.name, 'from-step')">
+                          <mat-icon>link</mat-icon> {{ 'workflow.from-step' | t }}
+                        </button>
+                      </div>
+                      @if (getSubWfBindingType(block, inp.name) === 'hardcoded') {
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                          <mat-label>{{ 'workflow.value' | t }}</mat-label>
+                          <input matInput [value]="getSubWfBindingValue(block, inp.name)"
+                                 (input)="setSubWfBindingHardcoded(block.id, inp.name, $any($event.target).value)" />
+                        </mat-form-field>
+                      }
+                      @if (getSubWfBindingType(block, inp.name) === 'from-step') {
+                        <div class="from-step-row">
+                          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="step-select">
+                            <mat-label>{{ 'workflow.step' | t }}</mat-label>
+                            <mat-select [value]="getSubWfBindingStepId(block, inp.name)"
+                                        (selectionChange)="setSubWfBindingStep(block.id, inp.name, $event.value)">
+                              @for (prev of previousSteps(); track prev.id; let si = $index) {
+                                <mat-option [value]="prev.id">Step {{ si + 1 }}: {{ getStepLabel(prev) }}</mat-option>
+                              }
+                            </mat-select>
+                          </mat-form-field>
+                          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field-input">
+                            <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
+                            <input matInput [value]="getSubWfBindingField(block, inp.name)"
+                                   (input)="setSubWfBindingField(block.id, inp.name, $any($event.target).value)"
+                                   placeholder="e.g. data.id" />
+                          </mat-form-field>
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+
+                @let targetOutputNames = getSubWorkflowOutputNames(block.workflowId);
+                @if (targetOutputNames.length > 0) {
+                  <mat-divider class="section-divider" />
+                  <div class="config-section-label">{{ 'workflow.output-preview' | t }}</div>
+                  <p class="config-hint">{{ 'workflow.sub-wf-output-hint' | t }}</p>
+                  @for (o of targetOutputNames; track o) {
+                    <div class="io-preview-chip">
+                      <mat-icon style="font-size:14px;width:14px;height:14px">output</mat-icon>
+                      {{ o }}
+                    </div>
+                  }
+                }
               }
-            </div>
-          }
+            }
+
+          </div>
         </div>
       }
     </div>
@@ -1309,6 +1506,26 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
         </div>
       </div>
     }
+
+    <!-- Shared autocomplete overlay (root-level, not clipped by overflow:hidden) -->
+    @if (acSuggestions().length > 0) {
+      <div class="ac-overlay ac-overlay--panel" [ngStyle]="acOverlayStyle()">
+        @for (s of acSuggestions(); track s.insertText; let i = $index) {
+          <div class="ac-item" [class.ac-item--active]="i === acSelectedIndex()"
+               (mousedown)="insertSuggestion(s, $event)">
+            <mat-icon class="ac-icon ac-icon--{{ s.icon }}">{{ s.icon }}</mat-icon>
+            <div class="ac-text">
+              <span class="ac-label">{{ s.label }}
+                @if (s.typeHint) {
+                  <span class="ac-type ac-type--{{ s.typeHint }}">{{ s.typeHint }}</span>
+                }
+              </span>
+              <span class="ac-detail">{{ s.detail }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
   `,
   styles: [`
     :host { display: flex; flex-direction: column; height: 100%; gap: 0; overflow: hidden; }
@@ -1324,6 +1541,43 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
     .schedule-field { width: 200px; min-width: 180px; }
     .schedule-field { flex: 1 1 200px; min-width: 200px; }
     .topbar-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .active-io { background: #ede9fe !important; border-color: #7c3aed !important; color: #7c3aed; }
+
+    /* ── I/O Panel ── */
+    .io-panel {
+      display: flex; gap: 0; padding: 12px 24px;
+      background: #fafbfc; border-bottom: 1px solid #e2e8f0;
+    }
+    .io-section { flex: 1; padding: 0 12px; }
+    .io-divider { width: 1px; background: #e2e8f0; margin: 0 8px; }
+    .io-section-header {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 8px;
+    }
+    .io-section-header button { margin-left: auto; width: 24px; height: 24px; line-height: 24px; }
+    .io-section-header button mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .io-row { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+    .io-name-field { flex: 1; }
+    .io-default-field { flex: 1; }
+    .io-step-field { flex: 1; }
+    .io-field-field { flex: 1; }
+    .io-empty { font-size: 11px; color: #94a3b8; font-style: italic; margin: 0; }
+
+    .sub-wf-io-preview {
+      padding: 4px 12px 8px; display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .sub-wf-io-label {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 10px; color: #64748b; background: #f1f5f9;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    .sub-wf-input-count { font-size: 10px; color: #64748b; margin-left: 4px; }
+    .default-hint { font-size: 10px; color: #94a3b8; margin-left: 4px; }
+    .io-preview-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; background: #f1f5f9; padding: 4px 10px;
+      border-radius: 6px; margin: 2px 4px 2px 0; color: #1e293b;
+    }
 
     /* ── Layout ── */
     .builder-layout {
@@ -1541,6 +1795,11 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
     }
     .raw-body-textarea { font-family: 'Fira Code', 'Consolas', monospace; font-size: 12px; line-height: 1.5; }
     .raw-body-wrapper { position: relative; }
+    .generate-btn {
+      margin-bottom: 8px; font-size: 12px; height: 32px;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .generate-btn mat-icon { font-size: 16px; width: 16px; height: 16px; }
     .ac-overlay {
       position: absolute; z-index: 100; left: 12px; right: 12px;
       top: calc(100% - 24px);
@@ -1555,11 +1814,12 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
     .ac-item:hover, .ac-item--active { background: #eff6ff; }
     .ac-field-wrapper { position: relative; }
     .ac-overlay--panel {
-      position: fixed; z-index: 200;
+      position: fixed; z-index: 1000;
       width: 320px;
       background: #fff; border: 1px solid #cbd5e1; border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0,0,0,.12); max-height: 180px; overflow-y: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15); max-height: 240px; overflow-y: auto;
       padding: 4px 0;
+      pointer-events: auto;
     }
     .ac-icon { font-size: 16px; width: 16px; height: 16px; flex-shrink: 0; }
     .ac-icon--data_object { color: #0284c7; }
@@ -1793,6 +2053,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
     .block-card--ifelse { border-left: 3px solid #0284c7 !important; }
     .block-card--mapper { border-left: 3px solid #059669 !important; }
     .block-card--filter { border-left: 3px solid #dc2626 !important; }
+    .block-card--sub-workflow { border-left: 3px solid #7c3aed !important; }
 
     .block-header {
       display: flex; align-items: center; gap: 8px; padding: 8px 12px;
@@ -1946,6 +2207,9 @@ export class WorkflowBuilderComponent implements OnInit {
   stepViewModes: Record<string, 'json' | 'list' | 'form'> = {};
 
   readonly steps = signal<WorkflowNode[]>([]);
+  readonly wfInputs = signal<WorkflowInput[]>([]);
+  readonly wfOutputs = signal<WorkflowOutput[]>([]);
+  readonly ioPanelOpen = signal(false);
   readonly selectedStepId = signal<string | null>(null);
   readonly selectedStep = computed<WorkflowNode | null>(() => this.findNodeById(this.steps(), this.selectedStepId()));
 
@@ -1956,6 +2220,7 @@ export class WorkflowBuilderComponent implements OnInit {
     { kind: 'if-else',   label: 'If / Else',   icon: 'call_split', color: '#0284c7' },
     { kind: 'mapper',    label: 'Mapper',       icon: 'swap_horiz', color: '#059669' },
     { kind: 'filter',    label: 'Filter',       icon: 'filter_list', color: '#dc2626' },
+    { kind: 'sub-workflow', label: 'Sub-Workflow', icon: 'account_tree', color: '#7c3aed' },
   ];
 
   // ── Browser state ─────────────────────────────────────────────────────────
@@ -2014,6 +2279,8 @@ export class WorkflowBuilderComponent implements OnInit {
           ...s,
           kind: (s as WorkflowNode).kind ?? 'endpoint',
         })) as WorkflowNode[]);
+        this.wfInputs.set(wf.inputs ?? []);
+        this.wfOutputs.set(wf.outputs ?? []);
       }
     }
   }
@@ -2080,6 +2347,7 @@ export class WorkflowBuilderComponent implements OnInit {
       paramSources: {},
       bodyKeys: [],
       bodySources: {},
+      ...this.autoFillPayload(ref.module.id, ref.endpoint.id, ref.endpoint.hasBody ?? false),
     };
   }
 
@@ -2093,6 +2361,8 @@ export class WorkflowBuilderComponent implements OnInit {
       return { id, kind: 'mapper', mappings: [] } as MapperBlock;
     } else if (ref.kind === 'filter') {
       return { id, kind: 'filter', filterOperator: '==' } as FilterBlock;
+    } else if (ref.kind === 'sub-workflow') {
+      return { id, kind: 'sub-workflow', inputBindings: {} } as SubWorkflowBlock;
     } else {
       return { id, kind: 'if-else', conditionOperator: '==', thenSteps: [], elseSteps: [] } as IfElseBlock;
     }
@@ -2235,6 +2505,7 @@ export class WorkflowBuilderComponent implements OnInit {
   asIfElse(node: WorkflowNode): IfElseBlock     { return node as IfElseBlock; }
   asMapper(node: WorkflowNode): MapperBlock     { return node as MapperBlock; }
   asFilter(node: WorkflowNode): FilterBlock     { return node as FilterBlock; }
+  asSubWorkflow(node: WorkflowNode): SubWorkflowBlock { return node as SubWorkflowBlock; }
 
   getNodeLabel(node: WorkflowNode): string {
     if (node.kind === 'endpoint') return (node as WorkflowStep).endpointLabel;
@@ -2243,8 +2514,11 @@ export class WorkflowBuilderComponent implements OnInit {
     if (node.kind === 'if-else') return (node as IfElseBlock).label || 'If / Else';
     if (node.kind === 'mapper') return (node as MapperBlock).label || 'Mapper';
     if (node.kind === 'filter') return (node as FilterBlock).label || 'Filter';
+    if (node.kind === 'sub-workflow') return (node as SubWorkflowBlock).label || (node as SubWorkflowBlock).workflowName || 'Sub-Workflow';
     return 'Step';
   }
+
+  getStepLabel(node: WorkflowNode): string { return this.getNodeLabel(node); }
 
   readonly allEndpointRefs = computed<EndpointRef[]>(() =>
     MODULES.flatMap(mod => mod.endpoints.map(ep => ({ module: mod, endpoint: ep })))
@@ -2510,12 +2784,40 @@ export class WorkflowBuilderComponent implements OnInit {
   private acCallback: ((value: string) => void) | null = null;
   /** 'json' = raw body textarea (field + value suggestions), 'ref' = any input (step ref suggestions only) */
   private acMode: 'json' | 'ref' = 'ref';
+  /** Debounce timer for raw body updates (prevents change detection resetting textarea during typing) */
+  private rawBodyTimer: ReturnType<typeof setTimeout> | null = null;
 
-  private updateOverlayPosition() {
+  /** Update the step's rawBody with debounce to prevent textarea flicker during typing */
+  private setRawBodyDebounced(value: string) {
+    if (this.rawBodyTimer) clearTimeout(this.rawBodyTimer);
+    this.rawBodyTimer = setTimeout(() => {
+      const id = this.selectedStepId();
+      if (id) this.mutateStep(id, s => ({ ...s, rawBody: value }));
+    }, 400);
+  }
+
+  private updateOverlayPosition(savedCursorPos?: number) {
     if (!this.acInput) return;
     const rect = this.acInput.getBoundingClientRect();
+
+    // For textareas: estimate cursor Y from line number so overlay appears near the caret
+    let top = rect.bottom + 4;
+    if (this.acInput instanceof HTMLTextAreaElement) {
+      const ta = this.acInput;
+      const pos = savedCursorPos ?? ta.selectionStart ?? 0;
+      const textBefore = ta.value.substring(0, pos);
+      const lineNumber = textBefore.split('\n').length;
+      const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 18;
+      const paddingTop = parseFloat(getComputedStyle(ta).paddingTop) || 8;
+      top = rect.top + paddingTop + lineNumber * lineHeight + 4;
+    }
+
+    // Clamp so the overlay stays within the viewport
+    const maxTop = window.innerHeight - 260;
+    if (top > maxTop) top = maxTop;
+
     this.acOverlayStyle.set({
-      top: rect.bottom + 4 + 'px',
+      top: top + 'px',
       left: rect.left + 'px',
       width: Math.max(rect.width, 280) + 'px',
     });
@@ -2642,18 +2944,83 @@ export class WorkflowBuilderComponent implements OnInit {
     if (trigger === 'field') {
       const suggestions: AutocompleteSuggestion[] = [];
       const fields = this.schemaService.getFields(ep.moduleApiPrefix, ep.endpointId);
-      for (const f of fields) {
-        if (filter && !f.key.toLowerCase().includes(filter.toLowerCase())) continue;
-        suggestions.push({
-          label: f.key,
-          insertText: `"${f.key}"`,
-          detail: `${f.type}${f.required ? ' (required)' : ''}`,
-          icon: 'data_object',
-        });
+
+      // Get payload template for type-aware defaults
+      const payload = getEndpointPayload(ep.moduleId, ep.endpointId) as Record<string, unknown> | null;
+
+      if (fields.length > 0) {
+        for (const f of fields) {
+          if (filter && !f.key.toLowerCase().includes(filter.toLowerCase())) continue;
+          const templateVal = payload?.[f.key];
+          const defaultVal = this.jsonDefaultValue(templateVal, f.type);
+          suggestions.push({
+            label: f.key,
+            insertText: `"${f.key}": ${defaultVal}`,
+            detail: `${f.type}${f.required ? ' (required)' : ''}`,
+            icon: 'data_object',
+            typeHint: templateVal !== undefined ? this.detectType(templateVal) : 'string',
+          });
+        }
+      } else if (payload) {
+        // Fallback: use payload template keys when schema is empty
+        for (const [key, val] of Object.entries(payload)) {
+          if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+          const defaultVal = this.jsonDefaultValue(val);
+          const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
+            : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
+          suggestions.push({
+            label: key,
+            insertText: `"${key}": ${defaultVal}`,
+            detail: type,
+            icon: 'data_object',
+            typeHint: type as AutocompleteSuggestion['typeHint'],
+          });
+        }
       }
-      return suggestions.slice(0, 15);
+
+      // Last fallback: parse existing rawBody JSON for key suggestions
+      if (suggestions.length === 0 && ep.rawBody) {
+        try {
+          const obj = JSON.parse(ep.rawBody);
+          if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+            for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
+              if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+              suggestions.push({
+                label: key,
+                insertText: `"${key}": ${this.jsonDefaultValue(val)}`,
+                detail: typeof val === 'string' ? 'string' : typeof val === 'number' ? 'number' : 'object',
+                icon: 'data_object',
+              });
+            }
+          }
+        } catch { /* not valid JSON yet, skip */ }
+      }
+
+      // Also add step ref suggestions for quick access
+      if (this.previousSteps().length > 0) {
+        const refs = this.buildStepRefSuggestions(filter);
+        suggestions.push(...refs.slice(0, 5));
+      }
+
+      return suggestions.slice(0, 25);
     }
+
+    // Value trigger — show step refs
     return this.buildStepRefSuggestions(filter);
+  }
+
+  /** Produce a sensible JSON default for insertion based on template value or field type */
+  private jsonDefaultValue(templateVal?: unknown, fieldType?: string): string {
+    if (templateVal !== undefined && templateVal !== null) {
+      if (typeof templateVal === 'string') return '""';
+      if (typeof templateVal === 'number') return '0';
+      if (typeof templateVal === 'boolean') return 'false';
+      if (Array.isArray(templateVal)) return JSON.stringify(templateVal, null, 2);
+      if (typeof templateVal === 'object') return JSON.stringify(templateVal, null, 2);
+    }
+    if (fieldType === 'number') return '0';
+    if (fieldType === 'boolean') return 'false';
+    return '""';
   }
 
   /** Check for {{ trigger in an input value and show step ref suggestions */
@@ -2679,32 +3046,93 @@ export class WorkflowBuilderComponent implements OnInit {
     return false;
   }
 
+  /** Auto-fill rawBody + bodyKeys/bodySources from endpoint-payloads when creating a step */
+  private autoFillPayload(moduleId: string, endpointId: string, hasBody: boolean): Partial<WorkflowStep> {
+    if (!hasBody) return {};
+    const payload = getEndpointPayload(moduleId, endpointId);
+    if (!payload || typeof payload !== 'object') return {};
+    const rawBody = JSON.stringify(payload, null, 2);
+    const keys = Object.keys(payload as Record<string, unknown>);
+    const bodySources: Record<string, PayloadSource> = {};
+    for (const key of keys) {
+      const val = (payload as Record<string, unknown>)[key];
+      bodySources[key] = { type: 'hardcoded', value: typeof val === 'string' ? val : JSON.stringify(val) };
+    }
+    return { rawBody, bodyMode: 'text' as BodyMode, bodyKeys: keys, bodySources };
+  }
+
+  /** Generate the default JSON template for the current endpoint step */
+  generateWfTextTemplate() {
+    const step = this.selectedStep();
+    if (!step || step.kind !== 'endpoint') return;
+    const ep = step as WorkflowStep;
+    const payload = getEndpointPayload(ep.moduleId, ep.endpointId);
+    if (payload && typeof payload === 'object') {
+      const json = JSON.stringify(payload, null, 2);
+      this.setRawBody(json);
+    }
+  }
+
   // ── Raw body textarea (JSON mode) handlers ────────────────────────────────
 
   /** Detect context from cursor position and show suggestions */
   onRawBodyInput(textarea: HTMLTextAreaElement) {
+    const cursorPos = textarea.selectionStart ?? 0;
+    const fullText = textarea.value;
+
     this.acInput = textarea;
     this.acCallback = (v: string) => this.setRawBody(v);
     this.acMode = 'json';
-    this.setRawBody(textarea.value);
-    this.updateOverlayPosition();
+
+    // Debounce the signal update so Angular doesn't run change detection
+    // and re-render (reset) the textarea while the user is typing
+    this.setRawBodyDebounced(fullText);
+    this.updateOverlayPosition(cursorPos);
+
+    const textBefore = fullText.substring(0, cursorPos);
 
     // Check {{ trigger first
-    if (this.checkRefTrigger(textarea)) return;
+    if (textBefore.endsWith('{{')) {
+      this.acSuggestions.set(this.buildStepRefSuggestions(''));
+      this.acSelectedIndex.set(0);
+      return;
+    }
+    const openIdx = textBefore.lastIndexOf('{{');
+    const closeIdx = textBefore.lastIndexOf('}}');
+    if (openIdx > closeIdx && openIdx >= 0) {
+      const partial = textBefore.substring(openIdx + 2);
+      this.acSuggestions.set(this.buildStepRefSuggestions(partial));
+      this.acSelectedIndex.set(0);
+      return;
+    }
 
-    // Check if typing a JSON key
-    const pos = textarea.selectionStart;
-    const textBefore = textarea.value.substring(0, pos);
     const lineStart = textBefore.lastIndexOf('\n') + 1;
     const line = textBefore.substring(lineStart).trimStart();
+
+    // Check if typing a JSON key (cursor inside key before colon)
     if (line.startsWith('"') && !line.includes(':')) {
-      const partial = line.substring(1);
+      const partial = line.substring(1).replace(/"$/, '');
       const ep = this.selectedStep() as WorkflowStep | undefined;
       if (ep?.kind === 'endpoint') {
         this.acSuggestions.set(this.buildJsonSuggestions(ep, 'field', partial));
         this.acSelectedIndex.set(0);
       }
       return;
+    }
+
+    // Check if typing a JSON value (cursor after colon) → show step ref suggestions
+    const colonMatch = line.match(/^"[^"]+"\s*:\s*"?(.*)$/);
+    if (colonMatch) {
+      const ep = this.selectedStep() as WorkflowStep | undefined;
+      if (ep?.kind === 'endpoint' && this.previousSteps().length > 0) {
+        const partial = colonMatch[1];
+        const suggestions = this.buildStepRefSuggestions(partial);
+        if (suggestions.length > 0) {
+          this.acSuggestions.set(suggestions);
+          this.acSelectedIndex.set(0);
+          return;
+        }
+      }
     }
 
     this.acSuggestions.set([]);
@@ -2765,26 +3193,42 @@ export class WorkflowBuilderComponent implements OnInit {
         input.setSelectionRange(cursorPos, cursorPos);
       }
     } else if (this.acMode === 'json') {
-      // Field name in JSON — replace from opening quote
+      // Field name in JSON — replace from opening quote, insert with default value
       const lineStart = before.lastIndexOf('\n') + 1;
       const lineText = before.substring(lineStart);
       const quoteIdx = lineText.indexOf('"');
       if (quoteIdx >= 0) {
         const replaceFrom = lineStart + quoteIdx;
-        const insertText = suggestion.insertText + ': ';
+        // If insertText already has `: ` (field suggestion with default), use as-is
+        const insertText = suggestion.insertText.includes(': ') ? suggestion.insertText : suggestion.insertText + ': ';
         const newText = text.substring(0, replaceFrom) + insertText + text.substring(pos);
         input.value = newText;
+        // Place cursor at end of default value or after colon
         const cursorPos = replaceFrom + insertText.length;
         input.setSelectionRange(cursorPos, cursorPos);
       }
     }
 
-    if (this.acCallback) this.acCallback(input.value);
+    if (this.acCallback) {
+      // Cancel debounce and save immediately
+      if (this.rawBodyTimer) { clearTimeout(this.rawBodyTimer); this.rawBodyTimer = null; }
+      const savedPos = input.selectionStart ?? 0;
+      this.acCallback(input.value);
+      // Restore cursor after Angular change detection may reset it via [value] binding
+      input.setSelectionRange(savedPos, savedPos);
+    }
     this.acSuggestions.set([]);
     input.focus();
   }
 
   closeAutocomplete() {
+    // Flush any pending debounced rawBody update
+    if (this.rawBodyTimer && this.acInput) {
+      clearTimeout(this.rawBodyTimer);
+      this.rawBodyTimer = null;
+      const id = this.selectedStepId();
+      if (id) this.mutateStep(id, s => ({ ...s, rawBody: this.acInput!.value }));
+    }
     setTimeout(() => { this.acSuggestions.set([]); this.acInput = null; }, 150);
   }
 
@@ -2840,6 +3284,115 @@ export class WorkflowBuilderComponent implements OnInit {
     return `step${idx + 1}.${src.field || '?'}`;
   }
 
+  // ── I/O management ────────────────────────────────────────────────────────
+
+  addInput() {
+    this.wfInputs.update(arr => [...arr, { name: '', defaultValue: '' }]);
+  }
+  removeInput(i: number) {
+    this.wfInputs.update(arr => arr.filter((_, idx) => idx !== i));
+  }
+  updateInput(i: number, field: 'name' | 'defaultValue', value: string) {
+    this.wfInputs.update(arr => arr.map((inp, idx) => idx === i ? { ...inp, [field]: value } : inp));
+  }
+
+  addOutput() {
+    this.wfOutputs.update(arr => [...arr, { name: '', source: { type: 'from-step', stepId: '', field: '' } }]);
+  }
+  removeOutput(i: number) {
+    this.wfOutputs.update(arr => arr.filter((_, idx) => idx !== i));
+  }
+  updateOutput(i: number, field: 'name', value: string) {
+    this.wfOutputs.update(arr => arr.map((o, idx) => idx === i ? { ...o, [field]: value } : o));
+  }
+  setOutputSourceStep(i: number, stepId: string) {
+    this.wfOutputs.update(arr => arr.map((o, idx) =>
+      idx === i ? { ...o, source: { type: 'from-step' as const, stepId, field: o.source.type === 'from-step' ? o.source.field : '' } } : o
+    ));
+  }
+  setOutputSourceField(i: number, field: string) {
+    this.wfOutputs.update(arr => arr.map((o, idx) =>
+      idx === i && o.source.type === 'from-step' ? { ...o, source: { ...o.source, field } } : o
+    ));
+  }
+
+  // ── Sub-workflow helpers ──────────────────────────────────────────────────
+
+  /** Workflows that can be used as sub-workflows (all except current) */
+  readonly availableSubWorkflows = computed(() =>
+    this.svc.workflows().filter(w => w.id !== this.workflowId)
+  );
+
+  setSubWorkflowTarget(blockId: string, workflowId: string) {
+    const wf = this.svc.getById(workflowId);
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => ({
+      ...n,
+      workflowId,
+      workflowName: wf?.name ?? '',
+      inputBindings: {},
+    })));
+  }
+
+  getSubWorkflowInputDefs(workflowId: string | undefined): WorkflowInput[] {
+    if (!workflowId) return [];
+    return this.svc.getById(workflowId)?.inputs ?? [];
+  }
+
+  getSubWorkflowInputNames(workflowId: string | undefined): string[] {
+    return this.getSubWorkflowInputDefs(workflowId).map(i => i.name).filter(Boolean);
+  }
+
+  getSubWorkflowOutputNames(workflowId: string | undefined): string[] {
+    if (!workflowId) return [];
+    return (this.svc.getById(workflowId)?.outputs ?? []).map(o => o.name).filter(Boolean);
+  }
+
+  getSubWfBindingType(block: SubWorkflowBlock, inputName: string): 'hardcoded' | 'from-step' {
+    return block.inputBindings[inputName]?.type ?? 'hardcoded';
+  }
+  getSubWfBindingValue(block: SubWorkflowBlock, inputName: string): string {
+    const b = block.inputBindings[inputName];
+    return b?.type === 'hardcoded' ? b.value : '';
+  }
+  getSubWfBindingStepId(block: SubWorkflowBlock, inputName: string): string {
+    const b = block.inputBindings[inputName];
+    return b?.type === 'from-step' ? b.stepId : '';
+  }
+  getSubWfBindingField(block: SubWorkflowBlock, inputName: string): string {
+    const b = block.inputBindings[inputName];
+    return b?.type === 'from-step' ? b.field : '';
+  }
+
+  setSubWfBindingType(blockId: string, inputName: string, type: 'hardcoded' | 'from-step') {
+    const src: PayloadSource = type === 'hardcoded'
+      ? { type: 'hardcoded', value: '' }
+      : { type: 'from-step', stepId: '', field: '' };
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => ({
+      ...n,
+      inputBindings: { ...(n as SubWorkflowBlock).inputBindings, [inputName]: src },
+    })));
+  }
+  setSubWfBindingHardcoded(blockId: string, inputName: string, value: string) {
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => ({
+      ...n,
+      inputBindings: { ...(n as SubWorkflowBlock).inputBindings, [inputName]: { type: 'hardcoded' as const, value } },
+    })));
+  }
+  setSubWfBindingStep(blockId: string, inputName: string, stepId: string) {
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const existing = (n as SubWorkflowBlock).inputBindings[inputName];
+      const field = existing?.type === 'from-step' ? existing.field : '';
+      return { ...n, inputBindings: { ...(n as SubWorkflowBlock).inputBindings, [inputName]: { type: 'from-step' as const, stepId, field } } };
+    }));
+  }
+  setSubWfBindingField(blockId: string, inputName: string, field: string) {
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const existing = (n as SubWorkflowBlock).inputBindings[inputName];
+      const stepId = existing?.type === 'from-step' ? existing.stepId : '';
+      return { ...n, inputBindings: { ...(n as SubWorkflowBlock).inputBindings, [inputName]: { type: 'from-step' as const, stepId, field } } };
+    }));
+  }
+
   // ── Save / Run ────────────────────────────────────────────────────────────
   save() {
     if (!this.wfName.trim()) {
@@ -2852,6 +3405,8 @@ export class WorkflowBuilderComponent implements OnInit {
     const wf: Workflow = {
       id,
       name: this.wfName.trim(),
+      inputs: this.wfInputs(),
+      outputs: this.wfOutputs(),
       steps: this.steps(),
       status: scheduledAt ? 'scheduled' : 'draft',
       scheduledAt,

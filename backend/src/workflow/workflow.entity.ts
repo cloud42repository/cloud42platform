@@ -37,6 +37,14 @@ export class WorkflowEntity {
   @Column({ type: 'jsonb', default: [] })
   steps!: unknown[];
 
+  /** Named input parameters this workflow accepts */
+  @Column({ type: 'jsonb', default: [] })
+  inputs!: unknown[];
+
+  /** Named outputs this workflow returns */
+  @Column({ type: 'jsonb', default: [] })
+  outputs!: unknown[];
+
   @Column({ type: 'varchar', length: 20, default: 'draft' })
   status!: WorkflowStatus;
 
