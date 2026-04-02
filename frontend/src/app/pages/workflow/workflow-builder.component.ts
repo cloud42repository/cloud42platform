@@ -3193,19 +3193,36 @@ export class WorkflowBuilderComponent implements OnInit {
         input.setSelectionRange(cursorPos, cursorPos);
       }
     } else if (this.acMode === 'json') {
-      // Field name in JSON — replace from opening quote, insert with default value
+      // JSON field suggestion — smart insertion based on context
       const lineStart = before.lastIndexOf('\n') + 1;
       const lineText = before.substring(lineStart);
       const quoteIdx = lineText.indexOf('"');
       if (quoteIdx >= 0) {
         const replaceFrom = lineStart + quoteIdx;
-        // If insertText already has `: ` (field suggestion with default), use as-is
-        const insertText = suggestion.insertText.includes(': ') ? suggestion.insertText : suggestion.insertText + ': ';
-        const newText = text.substring(0, replaceFrom) + insertText + text.substring(pos);
-        input.value = newText;
-        // Place cursor at end of default value or after colon
-        const cursorPos = replaceFrom + insertText.length;
-        input.setSelectionRange(cursorPos, cursorPos);
+        const afterCursor = text.substring(pos);
+        // Check if the rest of the line already has ": <value>" (existing key-value line)
+        const hasExistingColon = /^\s*"?\s*:/.test(afterCursor.split('\n')[0] ?? '');
+
+        if (hasExistingColon) {
+          // Only replace the key portion (from opening " to just before the closing " or :)
+          // Find the end of the current key: next unescaped " after cursor, or the : 
+          const restOfLine = afterCursor.split('\n')[0] ?? '';
+          const keyEndMatch = restOfLine.match(/^[^"]*"/);
+          const replaceEnd = keyEndMatch ? pos + keyEndMatch[0].length : pos;
+          // Extract just the key name from insertText (strip surrounding quotes and `: value`)
+          const keyOnly = suggestion.label;
+          const newText = text.substring(0, replaceFrom) + '"' + keyOnly + '"' + text.substring(replaceEnd);
+          input.value = newText;
+          const cursorPos = replaceFrom + keyOnly.length + 2; // after closing "
+          input.setSelectionRange(cursorPos, cursorPos);
+        } else {
+          // Fresh line — insert full "key": defaultValue
+          const insertText = suggestion.insertText.includes(': ') ? suggestion.insertText : suggestion.insertText + ': ';
+          const newText = text.substring(0, replaceFrom) + insertText + text.substring(pos);
+          input.value = newText;
+          const cursorPos = replaceFrom + insertText.length;
+          input.setSelectionRange(cursorPos, cursorPos);
+        }
       }
     }
 
