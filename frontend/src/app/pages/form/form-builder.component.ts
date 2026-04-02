@@ -31,6 +31,7 @@ import {
   BodyFieldSource,
 } from '../../config/form.types';
 import { MODULES, ModuleDef, EndpointDef } from '../../config/endpoints';
+import { getEndpointPayload } from '../../config/endpoint-payloads';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
 
@@ -573,7 +574,13 @@ interface FieldTypeRef {
 
             <!-- ── FIELDS MODE ── -->
             @if (getBodyMode(action) === 'fields') {
-              <p class="config-hint">{{ 'form.body-mapping-hint' | t }}</p>
+              <div class="generate-row">
+                <p class="config-hint">{{ 'form.body-mapping-hint' | t }}</p>
+                <button mat-stroked-button class="generate-btn" (click)="generateFieldsTemplate(action.id)"
+                        matTooltip="{{ 'form.generate-hint' | t }}">
+                  <mat-icon>auto_fix_high</mat-icon> {{ 'form.generate-template' | t }}
+                </button>
+              </div>
               @for (key of action.bodyKeys; track key) {
                 <div class="field-block">
                   <div class="field-name-row">
@@ -631,6 +638,10 @@ interface FieldTypeRef {
 
             <!-- ── TEXT MODE ── -->
             @if (getBodyMode(action) === 'text') {
+              <button mat-stroked-button class="generate-btn" (click)="generateTextTemplate(action.id)"
+                      matTooltip="{{ 'form.generate-hint' | t }}">
+                <mat-icon>auto_fix_high</mat-icon> {{ 'form.generate-template' | t }}
+              </button>
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                 <mat-label>{{ 'form.raw-body-json' | t }}</mat-label>
                 <textarea matInput rows="10"
@@ -646,6 +657,10 @@ interface FieldTypeRef {
 
             <!-- ── FORM MODE ── -->
             @if (getBodyMode(action) === 'form') {
+              <button mat-stroked-button class="generate-btn" (click)="generateFormTemplate(action.id)"
+                      matTooltip="{{ 'form.generate-hint' | t }}">
+                <mat-icon>auto_fix_high</mat-icon> {{ 'form.generate-template' | t }}
+              </button>
               <p class="config-hint">{{ 'form.form-mode-hint' | t }}</p>
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                 <mat-label>{{ 'form.raw-body-json' | t }}</mat-label>
@@ -1013,6 +1028,13 @@ interface FieldTypeRef {
     .add-field-row { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
     .add-key-input { flex: 1; }
 
+    .generate-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .generate-row .config-hint { margin: 0; flex: 1; }
+    .generate-btn {
+      font-size: 11px; white-space: nowrap; margin-bottom: 8px;
+    }
+    .generate-btn mat-icon { font-size: 16px; width: 16px; height: 16px; margin-right: 4px; }
+
     /* ── Autocomplete overlay ── */
     .ac-overlay {
       position: fixed; z-index: 1000;
@@ -1347,6 +1369,26 @@ export class FormBuilderComponent implements OnInit {
     const ep = mod?.endpoints.find(e => e.pathTemplate === pathTemplate);
     if (!ep) return;
     const hasBody = ep.hasBody ?? ['POST', 'PUT', 'PATCH'].includes(ep.method);
+
+    // Auto-generate payload from endpoint template
+    let rawBody = hasBody ? '{}' : '';
+    let bodyKeys: string[] = hasBody ? action.bodyKeys : [];
+    let bodySources: Record<string, BodyFieldSource> = hasBody ? action.bodySources : {};
+
+    if (hasBody && mod) {
+      const payload = getEndpointPayload(mod.id, ep.id);
+      if (payload && typeof payload === 'object') {
+        rawBody = JSON.stringify(payload, null, 2);
+        const keys = Object.keys(payload as Record<string, unknown>);
+        bodyKeys = keys;
+        bodySources = {};
+        for (const key of keys) {
+          const val = (payload as Record<string, unknown>)[key];
+          bodySources[key] = { type: 'hardcoded', value: typeof val === 'string' ? val : JSON.stringify(val) };
+        }
+      }
+    }
+
     this.submitActions.update(as => as.map(a => {
       if (a.id !== actionId) return a;
       return {
@@ -1355,10 +1397,10 @@ export class FormBuilderComponent implements OnInit {
         pathTemplate: ep.pathTemplate,
         endpointLabel: ep.label,
         pathParams: {},
-        bodyMode: 'fields',
-        rawBody: hasBody ? '{}' : '',
-        bodyKeys: hasBody ? a.bodyKeys : [],
-        bodySources: hasBody ? a.bodySources : {},
+        bodyMode: 'text',
+        rawBody,
+        bodyKeys,
+        bodySources,
       };
     }));
   }
@@ -1368,6 +1410,43 @@ export class FormBuilderComponent implements OnInit {
       if (a.id !== actionId) return a;
       return { ...a, pathParams: { ...a.pathParams, [param]: value } };
     }));
+  }
+
+  /** Generate body keys + sources from current form fields (fields mode) */
+  generateFieldsTemplate(actionId: string) {
+    const ff = this.fields();
+    if (ff.length === 0) return;
+    const keys = ff.map(f => f.label || f.id);
+    const sources: Record<string, BodyFieldSource> = {};
+    ff.forEach(f => { sources[f.label || f.id] = { type: 'form-field', fieldId: f.id }; });
+    this.submitActions.update(as => as.map(a => {
+      if (a.id !== actionId) return a;
+      return { ...a, bodyKeys: keys, bodySources: sources };
+    }));
+  }
+
+  /** Generate raw JSON with field labels as keys and empty default values (text mode) */
+  generateTextTemplate(actionId: string) {
+    const ff = this.fields();
+    if (ff.length === 0) return;
+    const obj: Record<string, string> = {};
+    ff.forEach(f => { obj[f.label || f.id] = ''; });
+    const json = JSON.stringify(obj, null, 2);
+    this.submitActions.update(as => as.map(a =>
+      a.id === actionId ? { ...a, rawBody: json } : a
+    ));
+  }
+
+  /** Generate raw JSON with {{field.xxx}} references (form mode) */
+  generateFormTemplate(actionId: string) {
+    const ff = this.fields();
+    if (ff.length === 0) return;
+    const obj: Record<string, string> = {};
+    ff.forEach(f => { obj[f.label || f.id] = `{{field.${f.id}}}`; });
+    const json = JSON.stringify(obj, null, 2);
+    this.submitActions.update(as => as.map(a =>
+      a.id === actionId ? { ...a, rawBody: json } : a
+    ));
   }
 
   // ── Body mode & fields ──────────────────────────────────────────────────

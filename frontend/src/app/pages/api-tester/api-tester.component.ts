@@ -13,6 +13,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatChipsModule } from '@angular/material/chips';
 import { ApiService } from '../../services/api.service';
 import { MODULES, ModuleDef, EndpointDef } from '../../config/endpoints';
+import { getEndpointPayload } from '../../config/endpoint-payloads';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
 
@@ -442,8 +443,11 @@ export class ApiTesterComponent {
       for (const name of names) {
         this.pathParams[name] = '';
       }
-      if (ep.hasBody && this.bodyText === '{}') {
-        this.bodyText = '{\n  \n}';
+      // Auto-generate body from payload template
+      if (ep.hasBody) {
+        const mod = MODULES.find(m => m.apiPrefix === this.selectedModulePrefix);
+        const payload = mod ? getEndpointPayload(mod.id, ep.id) : null;
+        this.bodyText = payload ? JSON.stringify(payload, null, 2) : '{\n  \n}';
       }
     }
     this.refreshUrl();

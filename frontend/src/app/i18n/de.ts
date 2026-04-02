@@ -657,6 +657,8 @@ export const DE: Record<TranslationKey, string> = {
   'form.response-success': 'Erfolg',
   'form.response-error': 'Fehler',
   'form.no-body': 'Dieser Endpunkt benötigt keinen Request-Body (GET/DELETE).',
+  'form.generate-template': 'Vorlage generieren',
+  'form.generate-hint': 'JSON-Body aus Formularfeldern automatisch generieren',
 
   /* ── API Tester Seite ── */
   'api-tester.history': 'Verlauf',

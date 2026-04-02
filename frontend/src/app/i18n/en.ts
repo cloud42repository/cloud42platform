@@ -655,6 +655,8 @@ export const EN = {
   'form.response-success': 'Success',
   'form.response-error': 'Error',
   'form.no-body': 'This endpoint does not require a request body (GET/DELETE).',
+  'form.generate-template': 'Generate template',
+  'form.generate-hint': 'Auto-generate JSON body from form fields',
 
   /* ── API Tester page ── */
   'api-tester.history': 'History',
