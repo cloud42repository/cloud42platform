@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserContextInterceptor } from './auth-module/user-context';
 
 import { AuthModule } from './auth-module/auth.module';
@@ -36,9 +37,33 @@ import { ShareModule } from './share/share.module';
 import { AuthConfigModule } from './auth-config/auth-config.module';
 import { ZohoOAuthModule } from './zoho-oauth/zoho-oauth.module';
 
+import { UserEntity } from './user/user.entity';
+import { WorkflowEntity } from './workflow/workflow.entity';
+import { DashboardEntity } from './dashboard/dashboard.entity';
+import { FormEntity } from './form/form.entity';
+import { ShareEntity } from './share/share.entity';
+import { AuthConfigEntity } from './auth-config/auth-config.entity';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        type: 'postgres' as const,
+        host: config.get<string>('AZURE_POSTGRESQL_HOST', 'localhost'),
+        port: config.get<number>('AZURE_POSTGRESQL_PORT', 5432),
+        username: config.get<string>('AZURE_POSTGRESQL_USER', 'postgres'),
+        password: config.get<string>('AZURE_POSTGRESQL_PASSWORD', 'Password1'),
+        database: config.get<string>('AZURE_POSTGRESQL_DATABASE', 'postgres'),
+        entities: [UserEntity, WorkflowEntity, DashboardEntity, FormEntity, ShareEntity, AuthConfigEntity],
+        synchronize: config.get<string>('AZURE_POSTGRESQL_SYNC', 'true') === 'true',
+        ssl: config.get<string>('AZURE_POSTGRESQL_SSL', 'false') === 'true'
+          ? { rejectUnauthorized: false }
+          : false,
+      }),
+    }),
     AuthModule,
     ZohoCrmModule,
     ZohoBooksModule,
