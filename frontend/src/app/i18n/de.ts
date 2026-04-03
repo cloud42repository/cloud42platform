@@ -604,6 +604,7 @@ export const DE: Record<TranslationKey, string> = {
   'dashboard.badge-suffix': 'Suffix',
   'dashboard.badge-suffix-hint': 'z.B. EUR, %, Einträge',
   'dashboard.export-pdf': 'PDF exportieren',
+  'dashboard.export-excel': 'Excel exportieren',
   'dashboard.search-placeholder': 'Alle Daten durchsuchen…',
   'dashboard.search-text-hint': 'Dieses Widget fügt eine Suchleiste hinzu, die alle abgerufenen Daten aller Widgets mit einer Enthält-Suche (%text%) filtert.',
 

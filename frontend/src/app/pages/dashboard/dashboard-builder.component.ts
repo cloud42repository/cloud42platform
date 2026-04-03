@@ -137,6 +137,10 @@ interface EndpointRef {
             @if (exporting()) { <mat-spinner diameter="16" /> }
             <mat-icon>picture_as_pdf</mat-icon> {{ 'dashboard.export-pdf' | t }}
           </button>
+          <button mat-stroked-button (click)="exportExcel()" [disabled]="widgets().length === 0 || exportingExcel()">
+            @if (exportingExcel()) { <mat-spinner diameter="16" /> }
+            <mat-icon>table_view</mat-icon> {{ 'dashboard.export-excel' | t }}
+          </button>
         </div>
 
         <div class="canvas-area"
@@ -1580,5 +1584,264 @@ export class DashboardBuilderComponent implements OnInit {
     } finally {
       this.exporting.set(false);
     }
+  }
+
+  // ── Export Excel ─────────────────────────────────────────────────────────
+
+  readonly exportingExcel = signal(false);
+
+  async exportExcel() {
+    // Ensure data is loaded first
+    if (!this.previewMode()) {
+      await this.preview();
+    }
+
+    this.exportingExcel.set(true);
+    try {
+      const ExcelJS = await import('exceljs');
+      const { saveAs } = await import('file-saver');
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'cloud42 Platform';
+      wb.created = new Date();
+
+      const dashName = this.dashboardName() || 'Dashboard';
+
+      // ── Summary sheet ──
+      const summaryWs = wb.addWorksheet('Summary');
+      summaryWs.columns = [
+        { header: 'Dashboard', key: 'name', width: 30 },
+        { header: 'Exported', key: 'date', width: 22 },
+        { header: 'Widgets', key: 'count', width: 12 },
+      ];
+      summaryWs.addRow({ name: dashName, date: new Date().toLocaleString(), count: this.widgets().length });
+      this.styleHeaderRow(summaryWs);
+
+      // ── One sheet per widget ──
+      for (const widget of this.widgets()) {
+        if (widget.kind === 'search-text') continue; // no data to export
+
+        const sheetName = this.sanitizeSheetName(widget.label || this.kindLabel(widget.kind), wb);
+        const ws = wb.addWorksheet(sheetName);
+
+        if (widget.kind === 'data-table') {
+          this.exportDataTableSheet(ws, widget);
+        } else if (widget.kind === 'badge') {
+          this.exportBadgeSheet(ws, widget);
+        } else if (widget.kind === 'line-chart') {
+          this.exportLineChartSheet(ws, wb, widget, sheetName);
+        } else if (widget.kind === 'bar-chart') {
+          this.exportBarChartSheet(ws, wb, widget, sheetName);
+        } else if (widget.kind === 'pie-chart') {
+          this.exportPieChartSheet(ws, wb, widget, sheetName);
+        }
+      }
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, (dashName + '.xlsx').replace(/[\\/:*?"<>|]/g, '_'));
+    } finally {
+      this.exportingExcel.set(false);
+    }
+  }
+
+  private sanitizeSheetName(name: string, wb: import('exceljs').Workbook): string {
+    // Excel sheet names: max 31 chars, no special chars
+    let clean = name.replace(/[\\/:*?\[\]]/g, '').substring(0, 28);
+    if (!clean) clean = 'Sheet';
+    // Ensure unique
+    let suffix = 1;
+    let final = clean;
+    while (wb.getWorksheet(final)) {
+      final = clean.substring(0, 28 - String(suffix).length - 1) + '_' + suffix;
+      suffix++;
+    }
+    return final;
+  }
+
+  private styleHeaderRow(ws: import('exceljs').Worksheet) {
+    const row = ws.getRow(1);
+    row.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+    row.alignment = { vertical: 'middle', horizontal: 'left' };
+    row.height = 24;
+  }
+
+  private exportDataTableSheet(ws: import('exceljs').Worksheet, widget: DashboardWidget) {
+    const columns = this.getTableColumns(widget);
+    const rows = this.getItems(widget);
+
+    ws.columns = columns.map(col => ({
+      header: col,
+      key: col,
+      width: Math.max(12, Math.min(40, col.length + 4)),
+    }));
+
+    for (const item of rows) {
+      const row: Record<string, unknown> = {};
+      for (const col of columns) {
+        const val = this.extractField(item, col);
+        row[col] = val ?? '';
+      }
+      ws.addRow(row);
+    }
+
+    this.styleHeaderRow(ws);
+
+    // Add Excel table for filtering/sorting
+    if (rows.length > 0) {
+      const lastCol = String.fromCharCode(64 + columns.length); // A, B, C...
+      const ref = columns.length <= 26
+        ? `A1:${lastCol}${rows.length + 1}`
+        : `A1:${this.colLetter(columns.length)}${rows.length + 1}`;
+      ws.addTable({
+        name: 'Table_' + ws.name.replace(/[^a-zA-Z0-9]/g, ''),
+        ref,
+        headerRow: true,
+        style: { theme: 'TableStyleMedium2', showRowStripes: true },
+        columns: columns.map(c => ({ name: c, filterButton: true })),
+        rows: rows.map(item => columns.map(col => this.extractField(item, col) ?? '')),
+      });
+    }
+  }
+
+  private exportBadgeSheet(ws: import('exceljs').Worksheet, widget: DashboardWidget) {
+    const agg = (widget.bindings['aggregation'] || 'count') as AggregateFunction;
+    const field = widget.bindings['valueField'];
+
+    ws.columns = [
+      { header: 'Metric', key: 'metric', width: 25 },
+      { header: 'Value', key: 'value', width: 20 },
+    ];
+
+    ws.addRow({ metric: widget.label || 'Badge', value: this.getBadgeValue(widget) });
+    ws.addRow({ metric: 'Aggregation', value: agg });
+    if (field) ws.addRow({ metric: 'Field', value: field });
+    if (widget.bindings['suffix']) ws.addRow({ metric: 'Suffix', value: widget.bindings['suffix'] });
+
+    this.styleHeaderRow(ws);
+
+    // Also add raw data if available
+    if (Array.isArray(widget.lastData) && widget.lastData.length > 0) {
+      const items = this.getItems(widget);
+      const startRow = ws.rowCount + 2;
+      ws.getCell(`A${startRow}`).value = 'Raw Data';
+      ws.getCell(`A${startRow}`).font = { bold: true, size: 12 };
+
+      const keys = Object.keys(items[0]).slice(0, 15);
+      const headerRow = ws.getRow(startRow + 1);
+      keys.forEach((k, i) => { headerRow.getCell(i + 1).value = k; });
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF475569' } };
+
+      for (const item of items.slice(0, 200)) {
+        const row = ws.addRow(keys.map(k => this.extractField(item, k) ?? ''));
+        row; // suppress unused
+      }
+    }
+  }
+
+  private exportLineChartSheet(ws: import('exceljs').Worksheet, wb: import('exceljs').Workbook, widget: DashboardWidget, sheetName: string) {
+    const items = this.getItems(widget);
+    const labelField = widget.bindings['labelField'];
+    const valueField = widget.bindings['valueField'];
+
+    ws.columns = [
+      { header: labelField || 'Label', key: 'label', width: 25 },
+      { header: valueField || 'Value', key: 'value', width: 18 },
+    ];
+    for (const item of items) {
+      ws.addRow({
+        label: labelField ? String(this.extractField(item, labelField) ?? '') : '',
+        value: valueField ? (Number(this.extractField(item, valueField)) || 0) : 0,
+      });
+    }
+    this.styleHeaderRow(ws);
+
+    // Add line chart
+    if (items.length > 0) {
+      this.addExcelChart(ws, 'line', sheetName, widget.label || 'Line Chart', items.length);
+    }
+  }
+
+  private exportBarChartSheet(ws: import('exceljs').Worksheet, wb: import('exceljs').Workbook, widget: DashboardWidget, sheetName: string) {
+    const items = this.getItems(widget);
+    const labelField = widget.bindings['labelField'];
+    const valueField = widget.bindings['valueField'];
+
+    ws.columns = [
+      { header: labelField || 'Label', key: 'label', width: 25 },
+      { header: valueField || 'Value', key: 'value', width: 18 },
+    ];
+    for (const item of items) {
+      ws.addRow({
+        label: labelField ? String(this.extractField(item, labelField) ?? '') : '',
+        value: valueField ? (Number(this.extractField(item, valueField)) || 0) : 0,
+      });
+    }
+    this.styleHeaderRow(ws);
+
+    if (items.length > 0) {
+      this.addExcelChart(ws, 'bar', sheetName, widget.label || 'Bar Chart', items.length);
+    }
+  }
+
+  private exportPieChartSheet(ws: import('exceljs').Worksheet, wb: import('exceljs').Workbook, widget: DashboardWidget, sheetName: string) {
+    const items = this.getItems(widget);
+    const labelField = widget.bindings['labelField'];
+    const valueField = widget.bindings['valueField'];
+
+    // For pie charts, aggregate by label like the UI does
+    const map = new Map<string, number>();
+    for (const item of items) {
+      const label = labelField ? String(this.extractField(item, labelField) ?? 'Unknown') : 'Item';
+      const val = valueField ? (Number(this.extractField(item, valueField)) || 0) : 0;
+      map.set(label, (map.get(label) ?? 0) + val);
+    }
+    const entries = [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15);
+
+    ws.columns = [
+      { header: labelField || 'Label', key: 'label', width: 25 },
+      { header: valueField || 'Value', key: 'value', width: 18 },
+    ];
+    for (const [label, value] of entries) {
+      ws.addRow({ label, value });
+    }
+    this.styleHeaderRow(ws);
+
+    if (entries.length > 0) {
+      this.addExcelChart(ws, 'pie', sheetName, widget.label || 'Pie Chart', entries.length);
+    }
+  }
+
+  private addExcelChart(ws: import('exceljs').Worksheet, type: 'line' | 'bar' | 'pie', sheetName: string, title: string, dataCount: number) {
+    const lastRow = dataCount + 1;
+    const chartType = type === 'line' ? 'line' as const : type === 'bar' ? 'bar' as const : 'pie' as const;
+
+    (ws as any).addChart?.({
+      type: chartType,
+      title: { text: title },
+      legend: { position: 'bottom' },
+      plotArea: {
+        catAxis: { title: { text: '' } },
+        valAxis: { title: { text: '' } },
+      },
+      series: [{
+        categories: `'${sheetName}'!A2:A${lastRow}`,
+        values: `'${sheetName}'!B2:B${lastRow}`,
+      }],
+    }, {
+      tl: { col: 3, row: 1 },
+      br: { col: 12, row: 20 },
+    });
+  }
+
+  private colLetter(n: number): string {
+    let s = '';
+    while (n > 0) {
+      n--;
+      s = String.fromCharCode(65 + (n % 26)) + s;
+      n = Math.floor(n / 26);
+    }
+    return s;
   }
 }

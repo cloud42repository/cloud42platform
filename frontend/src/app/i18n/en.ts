@@ -602,6 +602,7 @@ export const EN = {
   'dashboard.badge-suffix': 'Suffix',
   'dashboard.badge-suffix-hint': 'e.g. USD, %, items',
   'dashboard.export-pdf': 'Export PDF',
+  'dashboard.export-excel': 'Export Excel',
   'dashboard.search-placeholder': 'Search all data…',
   'dashboard.search-text-hint': 'This widget adds a search bar that filters all fetched data across all widgets using a contains (%text%) match.',
 
