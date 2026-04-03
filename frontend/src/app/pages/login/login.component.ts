@@ -1,7 +1,6 @@
 import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { MODULES } from '../../config/endpoints';
 import { environment } from '../../../environments/environment';
 
 // Minimal typings for Google Identity Services
@@ -161,7 +160,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     if (this.authService.isLoggedIn()) {
-      this.router.navigate([`/${MODULES[0].id}`]);
+      this.router.navigate(['/dashboards']);
     }
   }
 
@@ -176,7 +175,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
     try {
       this.loginError = false;
       await this.authService.devLogin();
-      this.router.navigate([`/${MODULES[0].id}`]);
+      this.router.navigate(['/dashboards']);
     } catch (err) {
       console.error('Dev login failed', err);
       this.loginErrorMessage = (err as any)?.error?.message
@@ -212,7 +211,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
           this.loginError = false;
           // Send raw Google ID token to backend for server-side verification
           await this.authService.loginWithGoogle(response.credential);
-          this.router.navigate([`/${MODULES[0].id}`]);
+          this.router.navigate(['/dashboards']);
         } catch (err: any) {
           console.error('Login failed', err);
           this.loginErrorMessage = err?.error?.message
