@@ -56,6 +56,7 @@ interface FieldTypeRef {
   template: `
     <div class="builder-shell" cdkDropListGroup>
       <!-- ── BROWSER PANEL (left) ── -->
+      @if (!previewMode()) {
       <div class="browser-panel">
         <div class="browser-header">
           <mat-icon>edit_note</mat-icon>
@@ -123,6 +124,7 @@ interface FieldTypeRef {
           }
         </div>
       </div>
+      }
 
       <!-- ── CANVAS (center) ── -->
       <div class="canvas-panel">
@@ -132,16 +134,24 @@ interface FieldTypeRef {
           </a>
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="name-input">
             <input matInput [value]="formName()" (input)="formName.set($any($event.target).value)"
-                   placeholder="{{ 'form.name-placeholder' | t }}" />
+                   placeholder="{{ 'form.name-placeholder' | t }}" [readonly]="previewMode()" />
           </mat-form-field>
           <span class="spacer"></span>
+          @if (!previewMode()) {
           <button mat-flat-button color="primary" (click)="save()" [disabled]="saving()">
             @if (saving()) { <mat-spinner diameter="16" /> }
             <mat-icon>save</mat-icon> {{ 'form.save' | t }}
           </button>
+          }
+          @if (previewMode()) {
+          <button mat-stroked-button (click)="previewMode.set(false)">
+            <mat-icon>edit</mat-icon> {{ 'form.exit-preview' | t }}
+          </button>
+          } @else {
           <button mat-stroked-button (click)="preview()" [disabled]="fields().length === 0">
             <mat-icon>visibility</mat-icon> {{ 'form.preview' | t }}
           </button>
+          }
         </div>
 
         <div class="canvas-area"
@@ -160,11 +170,11 @@ interface FieldTypeRef {
           <!-- Form fields -->
           @for (field of fields(); track field.id; let i = $index) {
             <div class="field-card field-card--{{ field.kind }}"
-                 cdkDrag [cdkDragData]="field"
-                 [class.selected]="selectedFieldId() === field.id"
+                 cdkDrag [cdkDragData]="field" [cdkDragDisabled]="previewMode()"
+                 [class.selected]="!previewMode() && selectedFieldId() === field.id"
                  [style.grid-column]="'span ' + field.width"
                  [style.grid-row]="'span ' + field.height"
-                 (click)="selectField(field.id)">
+                 (click)="!previewMode() && selectField(field.id)">
               <div class="field-header">
                 <mat-icon class="field-type-icon">
                   @if (field.kind === 'text') { text_fields }
@@ -175,6 +185,7 @@ interface FieldTypeRef {
                 <span class="field-title">{{ field.label || kindLabel(field.kind) }}</span>
                 <span class="field-badge">{{ kindLabel(field.kind) }}</span>
                 @if (field.required) { <span class="required-mark">*</span> }
+                @if (!previewMode()) {
                 <div class="field-actions" (click)="$event.stopPropagation()">
                   <button mat-icon-button (click)="selectField(field.id)" matTooltip="{{ 'form.configure' | t }}">
                     <mat-icon>settings</mat-icon>
@@ -184,6 +195,7 @@ interface FieldTypeRef {
                   </button>
                   <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
                 </div>
+                }
               </div>
 
               <!-- Field preview -->
@@ -281,9 +293,11 @@ interface FieldTypeRef {
               <div *cdkDragPlaceholder class="field-drag-placeholder"></div>
 
               <!-- Resize handles -->
+              @if (!previewMode()) {
               <div class="field-resize-handle resize-e" (mousedown)="onFieldResizeStart($event, field, 'e')" (click)="$event.stopPropagation()"></div>
               <div class="field-resize-handle resize-s" (mousedown)="onFieldResizeStart($event, field, 's')" (click)="$event.stopPropagation()"></div>
               <div class="field-resize-handle resize-se" (mousedown)="onFieldResizeStart($event, field, 'se')" (click)="$event.stopPropagation()"></div>
+              }
             </div>
           }
 
@@ -303,11 +317,13 @@ interface FieldTypeRef {
                     }
                     {{ action.label || action.method }}
                   </button>
+                  @if (!previewMode()) {
                   <button mat-icon-button class="action-config-btn"
                           (click)="selectAction(action.id)"
                           matTooltip="{{ 'form.configure-action' | t }}">
                     <mat-icon>settings</mat-icon>
                   </button>
+                  }
                 </div>
               }
             </div>
@@ -333,6 +349,7 @@ interface FieldTypeRef {
       </div>
 
       <!-- ── CONFIG PANEL (right) ── -->
+      @if (!previewMode()) {
       <div class="config-panel" [class.open]="selectedField() !== null || selectedAction() !== null">
 
         <!-- Field configuration -->
@@ -696,6 +713,7 @@ interface FieldTypeRef {
           </div>
         }
       </div>
+      }
     </div>
   `,
   styles: [`

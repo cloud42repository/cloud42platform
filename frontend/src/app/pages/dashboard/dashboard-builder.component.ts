@@ -56,6 +56,7 @@ interface EndpointRef {
   template: `
     <div class="builder-shell" cdkDropListGroup>
       <!-- ── BROWSER PANEL (left) ── -->
+      @if (!previewMode()) {
       <div class="browser-panel">
         <div class="browser-header">
           <mat-icon>widgets</mat-icon>
@@ -104,6 +105,7 @@ interface EndpointRef {
           }
         </div>
       </div>
+      }
 
       <!-- ── CANVAS (center) ── -->
       <div class="canvas-panel">
@@ -113,16 +115,24 @@ interface EndpointRef {
           </a>
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="name-input">
             <input matInput [value]="dashboardName()" (input)="dashboardName.set($any($event.target).value)"
-                   placeholder="{{ 'dashboard.name-placeholder' | t }}" />
+                   placeholder="{{ 'dashboard.name-placeholder' | t }}" [readonly]="previewMode()" />
           </mat-form-field>
           <span class="spacer"></span>
+          @if (!previewMode()) {
           <button mat-flat-button color="primary" (click)="save()" [disabled]="saving()">
             @if (saving()) { <mat-spinner diameter="16" /> }
             <mat-icon>save</mat-icon> {{ 'dashboard.save' | t }}
           </button>
+          }
+          @if (previewMode()) {
+          <button mat-stroked-button (click)="previewMode.set(false)">
+            <mat-icon>edit</mat-icon> {{ 'dashboard.exit-preview' | t }}
+          </button>
+          } @else {
           <button mat-stroked-button (click)="preview()" [disabled]="widgets().length === 0">
             <mat-icon>visibility</mat-icon> {{ 'dashboard.preview' | t }}
           </button>
+          }
           <button mat-stroked-button (click)="exportPdf()" [disabled]="widgets().length === 0 || exporting()">
             @if (exporting()) { <mat-spinner diameter="16" /> }
             <mat-icon>picture_as_pdf</mat-icon> {{ 'dashboard.export-pdf' | t }}
@@ -143,11 +153,11 @@ interface EndpointRef {
           }
           @for (widget of widgets(); track widget.id; let i = $index) {
             <div class="widget-card widget-card--{{ widget.kind }}"
-                 cdkDrag [cdkDragData]="widget"
-                 [class.selected]="selectedWidgetId() === widget.id"
+                 cdkDrag [cdkDragData]="widget" [cdkDragDisabled]="previewMode()"
+                 [class.selected]="!previewMode() && selectedWidgetId() === widget.id"
                  [style.grid-column]="'span ' + widget.width"
                  [style.grid-row]="'span ' + widget.height"
-                 (click)="selectWidget(widget.id)">
+                 (click)="!previewMode() && selectWidget(widget.id)">
               <div class="widget-header">
                 <mat-icon class="widget-type-icon">
                   @if (widget.kind === 'search-text') { search }
@@ -159,6 +169,7 @@ interface EndpointRef {
                 </mat-icon>
                 <span class="widget-title">{{ widget.label || kindLabel(widget.kind) }}</span>
                 <span class="widget-badge">{{ kindLabel(widget.kind) }}</span>
+                @if (!previewMode()) {
                 <div class="widget-actions" (click)="$event.stopPropagation()">
                   <button mat-icon-button (click)="selectWidget(widget.id)" matTooltip="{{ 'dashboard.configure' | t }}">
                     <mat-icon>settings</mat-icon>
@@ -168,6 +179,7 @@ interface EndpointRef {
                   </button>
                   <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
                 </div>
+                }
               </div>
               <div class="widget-preview">
                 <!-- SEARCH TEXT widget -->
@@ -349,15 +361,18 @@ interface EndpointRef {
                 }
               </div>
               <div *cdkDragPlaceholder class="widget-drag-placeholder"></div>
+              @if (!previewMode()) {
               <div class="widget-resize-handle resize-e" (mousedown)="onWidgetResizeStart($event, widget, 'e')" (click)="$event.stopPropagation()"></div>
               <div class="widget-resize-handle resize-s" (mousedown)="onWidgetResizeStart($event, widget, 's')" (click)="$event.stopPropagation()"></div>
               <div class="widget-resize-handle resize-se" (mousedown)="onWidgetResizeStart($event, widget, 'se')" (click)="$event.stopPropagation()"></div>
+              }
             </div>
           }
         </div>
       </div>
 
       <!-- ── CONFIG PANEL (right) ── -->
+      @if (!previewMode()) {
       <div class="config-panel" [class.open]="selectedWidget() !== null">
         @if (selectedWidget(); as widget) {
           <div class="config-header">
@@ -552,6 +567,7 @@ interface EndpointRef {
           </div>
         }
       </div>
+      }
     </div>
   `,
   styles: [`
