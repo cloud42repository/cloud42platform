@@ -19,6 +19,7 @@ import {
   CdkDragHandle,
 } from '@angular/cdk/drag-drop';
 import { DashboardService } from '../../services/dashboard.service';
+import { ShareService } from '../../services/share.service';
 import { ApiService } from '../../services/api.service';
 import {
   Dashboard,
@@ -141,6 +142,15 @@ interface EndpointRef {
             @if (exportingExcel()) { <mat-spinner diameter="16" /> }
             <mat-icon>table_view</mat-icon> {{ 'dashboard.export-excel' | t }}
           </button>
+          <button mat-stroked-button (click)="shareDashboard()" [disabled]="!dashboardId()">
+            <mat-icon>{{ shareUrl() ? 'link' : 'share' }}</mat-icon> {{ 'dashboard.share' | t }}
+          </button>
+          @if (shareUrl()) {
+            <div class="share-url-chip" (click)="copyShareUrl()">
+              <mat-icon>content_copy</mat-icon>
+              <span>{{ shareUrl() }}</span>
+            </div>
+          }
         </div>
 
         <div class="canvas-area"
@@ -808,6 +818,14 @@ interface EndpointRef {
     .section-divider { margin: 8px 0; }
     .full-width { width: 100%; }
     .size-row { display: flex; gap: 8px; }
+    .share-url-chip {
+      display: flex; align-items: center; gap: 4px; padding: 4px 10px;
+      background: #dbeafe; color: #1d4ed8; border-radius: 6px; font-size: 11px;
+      cursor: pointer; max-width: 260px; overflow: hidden;
+    }
+    .share-url-chip:hover { background: #bfdbfe; }
+    .share-url-chip mat-icon { font-size: 14px; width: 14px; height: 14px; }
+    .share-url-chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .size-field { flex: 1; }
 
     .kv-rows { display: flex; flex-direction: column; gap: 4px; }
@@ -872,6 +890,7 @@ export class DashboardBuilderComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly svc = inject(DashboardService);
+  private readonly shareSvc = inject(ShareService);
   private readonly api = inject(ApiService);
 
   readonly allModules = MODULES;
@@ -1843,5 +1862,23 @@ export class DashboardBuilderComponent implements OnInit {
       n = Math.floor(n / 26);
     }
     return s;
+  }
+
+  // ── Share ─────────────────────────────────────────────────────────────────
+
+  readonly shareUrl = signal<string>('');
+
+  async shareDashboard() {
+    const id = this.dashboardId();
+    if (!id) return;
+    try {
+      const link = await this.shareSvc.createShare('dashboard', id);
+      this.shareUrl.set(this.shareSvc.getShareUrl(link.token));
+    } catch { /* ignore */ }
+  }
+
+  copyShareUrl() {
+    const url = this.shareUrl();
+    if (url) navigator.clipboard.writeText(url);
   }
 }

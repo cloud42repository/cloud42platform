@@ -32,6 +32,7 @@ import { UserModule } from './user/user.module';
 import { WorkflowModule } from './workflow/workflow.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { FormModule } from './form/form.module';
+import { ShareModule } from './share/share.module';
 import { AuthConfigModule } from './auth-config/auth-config.module';
 import { ZohoOAuthModule } from './zoho-oauth/zoho-oauth.module';
 
@@ -67,6 +68,7 @@ import { ZohoOAuthModule } from './zoho-oauth/zoho-oauth.module';
     WorkflowModule,
     DashboardModule,
     FormModule,
+    ShareModule,
     AuthConfigModule,
     ZohoOAuthModule,
   ],

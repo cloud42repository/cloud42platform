@@ -14,6 +14,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { ApiService } from '../../services/api.service';
 import { MODULES, ModuleDef, EndpointDef } from '../../config/endpoints';
 import { getEndpointPayload } from '../../config/endpoint-payloads';
+import { getEndpointInputSchema } from '../../config/endpoint-schemas';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
 
@@ -102,9 +103,9 @@ interface HistoryEntry {
 
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="endpoint-select">
             <mat-label>{{ 'api-tester.endpoint' | t }}</mat-label>
-            <mat-select [(value)]="selectedPathTemplate" (selectionChange)="onEndpointChange()">
+            <mat-select [(value)]="selectedEndpointId" (selectionChange)="onEndpointChange()">
               @for (ep of filteredEndpoints(); track ep.id) {
-                <mat-option [value]="ep.pathTemplate">
+                <mat-option [value]="ep.id">
                   <span class="method-badge method-{{ ep.method.toLowerCase() }}">{{ ep.method }}</span>
                   {{ ep.label }}
                 </mat-option>
@@ -195,9 +196,23 @@ interface HistoryEntry {
             <div class="tab-body">
               <textarea class="body-editor"
                         [(ngModel)]="bodyText"
+                        (input)="onBodyInput($any($event.target))"
+                        (keydown)="onBodyAcKeydown($event)"
+                        (blur)="closeBodyAc()"
                         rows="12"
                         placeholder='{ "key": "value" }'
                         spellcheck="false"></textarea>
+              @if (bodyAcSuggestions().length > 0) {
+                <div class="ac-overlay" [ngStyle]="bodyAcStyle()">
+                  @for (s of bodyAcSuggestions(); track s.insertText; let i = $index) {
+                    <div class="ac-item" [class.ac-active]="i === bodyAcIndex()" (mousedown)="insertBodyAcSuggestion(s, $event)">
+                      <mat-icon class="ac-icon">{{ s.icon }}</mat-icon>
+                      <span class="ac-label">{{ s.label }}</span>
+                      <span class="ac-detail">{{ s.detail }}</span>
+                    </div>
+                  }
+                </div>
+              }
             </div>
           </mat-tab>
 
@@ -380,6 +395,19 @@ interface HistoryEntry {
       white-space: pre-wrap; word-break: break-all;
     }
     .response-body.empty { color: #64748b; background: #f8fafc; border: 1px dashed #e2e8f0; }
+    .ac-overlay {
+      position: fixed; z-index: 1000;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12); max-height: 220px; overflow-y: auto;
+    }
+    .ac-item {
+      display: flex; align-items: center; gap: 6px; padding: 6px 12px; cursor: pointer;
+      font-size: 13px;
+    }
+    .ac-item:hover, .ac-item.ac-active { background: #eff6ff; }
+    .ac-icon { font-size: 16px; width: 16px; height: 16px; color: #64748b; }
+    .ac-label { font-weight: 500; flex-shrink: 0; }
+    .ac-detail { color: #94a3b8; margin-left: auto; font-size: 11px; }
   `],
 })
 export class ApiTesterComponent {
@@ -389,6 +417,7 @@ export class ApiTesterComponent {
   // ── Request state ──
   method = 'GET';
   selectedModulePrefix = '';
+  selectedEndpointId = '';
   selectedPathTemplate = '';
   pathParams: Record<string, string> = {};
   queryParamKeys: string[] = [];
@@ -397,6 +426,11 @@ export class ApiTesterComponent {
   headerValues: string[] = [];
   bodyText = '{}';
 
+  // ── Body autocomplete state ──
+  readonly bodyAcSuggestions = signal<{ label: string; insertText: string; detail: string; icon: string }[]>([]);
+  readonly bodyAcIndex = signal(0);
+  readonly bodyAcStyle = signal<{ [key: string]: string }>({});
+  private bodyAcTextarea: HTMLTextAreaElement | null = null;
   // ── Response state ──
   readonly sending = signal(false);
   readonly lastResponse = signal<unknown>(null);
@@ -426,6 +460,7 @@ export class ApiTesterComponent {
   onModuleChange() {
     const mod = MODULES.find(m => m.apiPrefix === this.selectedModulePrefix);
     this.filteredEndpoints.set(mod?.endpoints ?? []);
+    this.selectedEndpointId = '';
     this.selectedPathTemplate = '';
     this.pathParams = {};
     this.pathParamNames.set([]);
@@ -433,9 +468,10 @@ export class ApiTesterComponent {
   }
 
   onEndpointChange() {
-    const ep = this.filteredEndpoints().find(e => e.pathTemplate === this.selectedPathTemplate);
+    const ep = this.filteredEndpoints().find(e => e.id === this.selectedEndpointId);
     if (ep) {
       this.method = ep.method;
+      this.selectedPathTemplate = ep.pathTemplate;
       const matches = this.selectedPathTemplate.match(/:(\w+)/g);
       const names = matches ? matches.map(m => m.slice(1)) : [];
       this.pathParamNames.set(names);
@@ -544,6 +580,131 @@ export class ApiTesterComponent {
   copyResponse() {
     const text = this.formatJson(this.lastResponse());
     navigator.clipboard.writeText(text);
+  }
+
+  // ── Body textarea autocomplete ──────────────────────────────────────────
+
+  onBodyInput(textarea: HTMLTextAreaElement) {
+    this.bodyAcTextarea = textarea;
+    const cursorPos = textarea.selectionStart ?? 0;
+    const textBefore = textarea.value.substring(0, cursorPos);
+    const lineStart = textBefore.lastIndexOf('\n') + 1;
+    const line = textBefore.substring(lineStart).trimStart();
+
+    // Only suggest when user is typing a JSON key (starts with " but no : yet)
+    if (line.startsWith('"') && !line.includes(':')) {
+      const partial = line.substring(1).replace(/"$/, '');
+      const suggestions = this.buildBodySuggestions(partial);
+      if (suggestions.length > 0) {
+        this.bodyAcSuggestions.set(suggestions);
+        this.bodyAcIndex.set(0);
+        const rect = textarea.getBoundingClientRect();
+        const lineNumber = textBefore.split('\n').length;
+        const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 18;
+        const paddingTop = parseFloat(getComputedStyle(textarea).paddingTop) || 8;
+        let top = rect.top + paddingTop + lineNumber * lineHeight + 4;
+        const maxTop = window.innerHeight - 240;
+        if (top > maxTop) top = maxTop;
+        this.bodyAcStyle.set({
+          top: top + 'px',
+          left: rect.left + 'px',
+          width: Math.max(rect.width, 260) + 'px',
+        });
+        return;
+      }
+    }
+
+    this.bodyAcSuggestions.set([]);
+  }
+
+  private buildBodySuggestions(filter: string): { label: string; insertText: string; detail: string; icon: string }[] {
+    const mod = MODULES.find(m => m.apiPrefix === this.selectedModulePrefix);
+    const ep = this.filteredEndpoints().find(e => e.id === this.selectedEndpointId);
+    if (!mod || !ep) return [];
+
+    const suggestions: { label: string; insertText: string; detail: string; icon: string }[] = [];
+
+    // Try input schema first
+    const inputSchema = getEndpointInputSchema(mod.id, ep.id);
+    if (inputSchema) {
+      for (const [key, val] of Object.entries(inputSchema)) {
+        if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+        const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
+          : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
+        const defaultVal = val === null ? 'null' : typeof val === 'string' ? '""'
+          : typeof val === 'number' ? '0' : typeof val === 'boolean' ? 'false'
+          : JSON.stringify(val, null, 2);
+        suggestions.push({ label: key, insertText: `"${key}": ${defaultVal}`, detail: type, icon: 'data_object' });
+      }
+    }
+
+    // Fall back to payload templates
+    if (suggestions.length === 0) {
+      const payload = getEndpointPayload(mod.id, ep.id) as Record<string, unknown> | null;
+      if (payload) {
+        for (const [key, val] of Object.entries(payload)) {
+          if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+          const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
+            : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
+          const defaultVal = val === null ? 'null' : typeof val === 'string' ? '""'
+            : typeof val === 'number' ? '0' : typeof val === 'boolean' ? 'false'
+            : JSON.stringify(val, null, 2);
+          suggestions.push({ label: key, insertText: `"${key}": ${defaultVal}`, detail: type, icon: 'data_object' });
+        }
+      }
+    }
+
+    return suggestions.slice(0, 20);
+  }
+
+  onBodyAcKeydown(event: KeyboardEvent) {
+    const list = this.bodyAcSuggestions();
+    if (list.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.bodyAcIndex.update(i => Math.min(i + 1, list.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.bodyAcIndex.update(i => Math.max(i - 1, 0));
+    } else if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault();
+      this.insertBodyAcSuggestion(list[this.bodyAcIndex()]);
+    } else if (event.key === 'Escape') {
+      this.bodyAcSuggestions.set([]);
+    }
+  }
+
+  insertBodyAcSuggestion(suggestion: { insertText: string }, event?: MouseEvent) {
+    if (event) event.preventDefault();
+    const ta = this.bodyAcTextarea;
+    if (!ta) { this.bodyAcSuggestions.set([]); return; }
+
+    const pos = ta.selectionStart ?? 0;
+    const text = ta.value;
+    const before = text.substring(0, pos);
+    const lineStart = before.lastIndexOf('\n') + 1;
+    const indent = before.substring(lineStart).match(/^(\s*)/)?.[1] ?? '';
+    const after = text.substring(pos);
+
+    // Replace current line content from the opening quote
+    const quoteStart = before.lastIndexOf('"', pos - 1);
+    const lineEnd = after.indexOf('\n');
+    const replaceEnd = lineEnd >= 0 ? pos + lineEnd : text.length;
+
+    const newText = text.substring(0, quoteStart >= lineStart ? quoteStart : lineStart + indent.length) +
+      suggestion.insertText +
+      text.substring(replaceEnd);
+    ta.value = newText;
+    this.bodyText = newText;
+
+    const cursorPos = (quoteStart >= lineStart ? quoteStart : lineStart + indent.length) + suggestion.insertText.length;
+    ta.setSelectionRange(cursorPos, cursorPos);
+    this.bodyAcSuggestions.set([]);
+    ta.focus();
+  }
+
+  closeBodyAc() {
+    setTimeout(() => { this.bodyAcSuggestions.set([]); this.bodyAcTextarea = null; }, 150);
   }
 
   formatJson(data: unknown): string {

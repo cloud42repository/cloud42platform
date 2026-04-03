@@ -701,6 +701,21 @@ export const EN = {
   'api-tester.response': 'Response',
   'api-tester.no-response': 'No response yet — select an endpoint and click Send',
   'api-tester.copy': 'Copy response',
+
+  // ── Shared viewer ─────────────────────────────────────────────────
+  'shared.loading': 'Loading shared item…',
+  'shared.not-found': 'Share link not found',
+  'shared.read-only': 'Read Only',
+  'shared.no-data-source': 'No data source',
+  'shared.loading-data': 'Loading data…',
+  'shared.run-workflow': 'Run Workflow',
+  'shared.workflow-inputs': 'Workflow Inputs',
+  'shared.execution-results': 'Execution Results',
+
+  // ── Share buttons ──────────────────────────────────────────────────
+  'dashboard.share': 'Share',
+  'form.share': 'Share',
+  'workflow.share': 'Share',
 } as const;
 
 export type TranslationKey = keyof typeof EN;

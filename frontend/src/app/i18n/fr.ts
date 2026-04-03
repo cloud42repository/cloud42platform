@@ -703,4 +703,17 @@ export const FR: Record<TranslationKey, string> = {
   'api-tester.response': 'Réponse',
   'api-tester.no-response': 'Pas encore de réponse — sélectionnez un point d\'accès et cliquez Envoyer',
   'api-tester.copy': 'Copier la réponse',
+
+  'shared.loading': 'Chargement de l\'élément partagé…',
+  'shared.not-found': 'Lien de partage introuvable',
+  'shared.read-only': 'Lecture seule',
+  'shared.no-data-source': 'Aucune source de données',
+  'shared.loading-data': 'Chargement des données…',
+  'shared.run-workflow': 'Exécuter le workflow',
+  'shared.workflow-inputs': 'Entrées du workflow',
+  'shared.execution-results': 'Résultats d\'exécution',
+
+  'dashboard.share': 'Partager',
+  'form.share': 'Partager',
+  'workflow.share': 'Partager',
 };

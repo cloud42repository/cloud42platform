@@ -23,7 +23,9 @@ import {
 
 import { MODULES, ModuleDef, EndpointDef, extractPathParams } from '../../config/endpoints';
 import { getEndpointPayload } from '../../config/endpoint-payloads';
+import { getEndpointInputSchema, getEndpointOutputSchema, getEndpointOutputLabel, flattenSchemaKeys } from '../../config/endpoint-schemas';
 import { WorkflowService } from '../../services/workflow.service';
+import { ShareService } from '../../services/share.service';
 import {
   Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FilterBlock, SubWorkflowBlock, WorkflowInput, WorkflowOutput, FieldMapping, PayloadSource, StepKind, BodyMode,
 } from '../../config/workflow.types';
@@ -101,6 +103,15 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
             <mat-icon>{{ resultPanelOpen() ? 'expand_more' : 'expand_less' }}</mat-icon>
             {{ 'workflow.results' | t }}
           </button>
+        }
+        <button mat-stroked-button (click)="shareWorkflow()" [disabled]="!hasWorkflowId()">
+          <mat-icon>{{ shareUrl() ? 'link' : 'share' }}</mat-icon> {{ 'workflow.share' | t }}
+        </button>
+        @if (shareUrl()) {
+          <div class="share-url-chip" (click)="copyShareUrl()">
+            <mat-icon>content_copy</mat-icon>
+            <span>{{ shareUrl() }}</span>
+          </div>
         }
       </div>
     </div>
@@ -1862,6 +1873,14 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
 
     /* ── Results button ── */
     .results-btn { color: #0284c7 !important; border-color: #0284c7 !important; }
+    .share-url-chip {
+      display: flex; align-items: center; gap: 4px; padding: 4px 10px;
+      background: #dbeafe; color: #1d4ed8; border-radius: 6px; font-size: 11px;
+      cursor: pointer; max-width: 260px; overflow: hidden;
+    }
+    .share-url-chip:hover { background: #bfdbfe; }
+    .share-url-chip mat-icon { font-size: 14px; width: 14px; height: 14px; }
+    .share-url-chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .results-btn mat-icon { font-size: 18px; }
 
     /* ── Bottom result panel ── */
@@ -2189,6 +2208,7 @@ export class WorkflowBuilderComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly svc = inject(WorkflowService);
+  private readonly shareSvc = inject(ShareService);
   private readonly snack = inject(MatSnackBar);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -2841,7 +2861,22 @@ export class WorkflowBuilderComponent implements OnInit {
       // Whole step output
       const ref = `{{steps.${idx}}}`;
       if (!filter || ref.toLowerCase().includes(filter.toLowerCase()) || label.toLowerCase().includes(filter.toLowerCase())) {
-        suggestions.push({ label: `steps.${idx}`, insertText: ref, detail: label + this.typePreview(resp), icon: 'link', typeHint: this.detectType(resp) });
+        // Show run-data type preview, or fall back to schema-derived label
+        let stepDetail = label;
+        let stepTypeHint = this.detectType(resp);
+        if (resp != null) {
+          stepDetail += this.typePreview(resp);
+        } else if (ps.kind === 'endpoint') {
+          const outLabel = getEndpointOutputLabel((ps as WorkflowStep).moduleId, (ps as WorkflowStep).endpointId);
+          const outSchema = getEndpointOutputSchema((ps as WorkflowStep).moduleId, (ps as WorkflowStep).endpointId);
+          if (outLabel) {
+            stepDetail += ` — ${outLabel}`;
+          }
+          if (outSchema) {
+            stepTypeHint = Array.isArray(outSchema) ? 'array' : 'object';
+          }
+        }
+        suggestions.push({ label: `steps.${idx}`, insertText: ref, detail: stepDetail, icon: 'link', typeHint: stepTypeHint });
       }
 
       if (ps.kind === 'endpoint') {
@@ -2853,6 +2888,21 @@ export class WorkflowBuilderComponent implements OnInit {
           if (!filter || subRef.toLowerCase().includes(filter.toLowerCase()) || f.key.toLowerCase().includes(filter.toLowerCase())) {
             const subVal = resp != null ? this.resolvePath(resp, f.key) : undefined;
             suggestions.push({ label: `steps.${idx}.${f.key}`, insertText: subRef, detail: `${label} → ${f.key}${this.typePreview(subVal)}`, icon: 'link', typeHint: this.detectType(subVal) });
+          }
+        }
+
+        // Output schema-derived sub-paths (when no schema service fields)
+        if (stepFields.length === 0) {
+          const outSchema = getEndpointOutputSchema(step.moduleId, step.endpointId);
+          if (outSchema) {
+            const schemaPaths = flattenSchemaKeys(outSchema);
+            for (const sp of schemaPaths.slice(0, 15)) {
+              const subRef = `{{steps.${idx}.${sp}}}`;
+              if (suggestions.find(s => s.insertText === subRef)) continue;
+              if (filter && !subRef.toLowerCase().includes(filter.toLowerCase()) && !sp.toLowerCase().includes(filter.toLowerCase())) continue;
+              const subVal = resp != null ? this.resolvePath(resp, sp) : undefined;
+              suggestions.push({ label: `steps.${idx}.${sp}`, insertText: subRef, detail: `${label} → ${sp}${this.typePreview(subVal)}`, icon: 'link', typeHint: this.detectType(subVal) });
+            }
           }
         }
       }
@@ -2975,6 +3025,26 @@ export class WorkflowBuilderComponent implements OnInit {
             icon: 'data_object',
             typeHint: type as AutocompleteSuggestion['typeHint'],
           });
+        }
+      }
+
+      // Fallback: use input schema from endpoint-schemas config
+      if (suggestions.length === 0) {
+        const inputSchema = getEndpointInputSchema(ep.moduleId, ep.endpointId);
+        if (inputSchema) {
+          for (const [key, val] of Object.entries(inputSchema)) {
+            if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+            const defaultVal = this.jsonDefaultValue(val);
+            const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
+              : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
+            suggestions.push({
+              label: key,
+              insertText: `"${key}": ${defaultVal}`,
+              detail: type + ' (schema)',
+              icon: 'data_object',
+              typeHint: type as AutocompleteSuggestion['typeHint'],
+            });
+          }
         }
       }
 
@@ -3181,9 +3251,10 @@ export class WorkflowBuilderComponent implements OnInit {
     const before = text.substring(0, pos);
 
     if (suggestion.icon === 'link') {
-      // Step reference — replace from {{ onwards
+      // Step reference — replace from {{ onwards, or insert at cursor if no {{ found
       const openIdx = before.lastIndexOf('{{');
-      if (openIdx >= 0) {
+      const closeIdx = before.lastIndexOf('}}');
+      if (openIdx >= 0 && openIdx > closeIdx) {
         const afterCursor = text.substring(pos);
         const closeMatch = afterCursor.match(/^[^}]*}}/);
         const replaceEnd = closeMatch ? pos + closeMatch[0].length : pos;
@@ -3191,6 +3262,29 @@ export class WorkflowBuilderComponent implements OnInit {
         input.value = newText;
         const cursorPos = openIdx + suggestion.insertText.length;
         input.setSelectionRange(cursorPos, cursorPos);
+      } else {
+        // No {{ in text — insert the full token at cursor position
+        // If cursor is inside quotes (after : "...), replace partial text to end of value
+        const lineStart = before.lastIndexOf('\n') + 1;
+        const lineText = before.substring(lineStart);
+        const colonQuoteMatch = lineText.match(/^(\s*"[^"]+"\s*:\s*")(.*)$/);
+        if (colonQuoteMatch) {
+          const insertAt = lineStart + colonQuoteMatch[1].length;
+          const afterCursor = text.substring(pos);
+          // Find closing quote of the value
+          const closeQuoteIdx = afterCursor.indexOf('"');
+          const replaceEnd = closeQuoteIdx >= 0 ? pos + closeQuoteIdx : pos;
+          const newText = text.substring(0, insertAt) + suggestion.insertText + text.substring(replaceEnd);
+          input.value = newText;
+          const cursorPos = insertAt + suggestion.insertText.length;
+          input.setSelectionRange(cursorPos, cursorPos);
+        } else {
+          // Fallback: just insert at cursor
+          const newText = before + suggestion.insertText + text.substring(pos);
+          input.value = newText;
+          const cursorPos = pos + suggestion.insertText.length;
+          input.setSelectionRange(cursorPos, cursorPos);
+        }
       }
     } else if (this.acMode === 'json') {
       // JSON field suggestion — smart insertion based on context
@@ -3570,5 +3664,24 @@ export class WorkflowBuilderComponent implements OnInit {
     document.body.style.userSelect = 'none';
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
+  }
+
+  // ── Share ─────────────────────────────────────────────────────────────────
+
+  readonly shareUrl = signal<string>('');
+
+  hasWorkflowId(): boolean { return !!this.workflowId; }
+
+  async shareWorkflow() {
+    if (!this.workflowId) return;
+    try {
+      const link = await this.shareSvc.createShare('workflow', this.workflowId);
+      this.shareUrl.set(this.shareSvc.getShareUrl(link.token));
+    } catch { /* ignore */ }
+  }
+
+  copyShareUrl() {
+    const url = this.shareUrl();
+    if (url) navigator.clipboard.writeText(url);
   }
 }

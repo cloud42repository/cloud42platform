@@ -20,6 +20,7 @@ import {
   CdkDragHandle,
 } from '@angular/cdk/drag-drop';
 import { FormService } from '../../services/form.service';
+import { ShareService } from '../../services/share.service';
 import { ApiService } from '../../services/api.service';
 import {
   FormDefinition,
@@ -32,6 +33,7 @@ import {
 } from '../../config/form.types';
 import { MODULES, ModuleDef, EndpointDef } from '../../config/endpoints';
 import { getEndpointPayload } from '../../config/endpoint-payloads';
+import { getEndpointInputSchema } from '../../config/endpoint-schemas';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
 
@@ -151,6 +153,15 @@ interface FieldTypeRef {
           <button mat-stroked-button (click)="preview()" [disabled]="fields().length === 0">
             <mat-icon>visibility</mat-icon> {{ 'form.preview' | t }}
           </button>
+          }
+          <button mat-stroked-button (click)="shareForm()" [disabled]="!formId()">
+            <mat-icon>{{ shareUrl() ? 'link' : 'share' }}</mat-icon> {{ 'form.share' | t }}
+          </button>
+          @if (shareUrl()) {
+            <div class="share-url-chip" (click)="copyShareUrl()">
+              <mat-icon>content_copy</mat-icon>
+              <span>{{ shareUrl() }}</span>
+            </div>
           }
         </div>
 
@@ -1009,6 +1020,14 @@ interface FieldTypeRef {
     .section-divider { margin: 8px 0; }
     .full-width { width: 100%; }
     .size-row { display: flex; gap: 8px; }
+    .share-url-chip {
+      display: flex; align-items: center; gap: 4px; padding: 4px 10px;
+      background: #dbeafe; color: #1d4ed8; border-radius: 6px; font-size: 11px;
+      cursor: pointer; max-width: 260px; overflow: hidden;
+    }
+    .share-url-chip:hover { background: #bfdbfe; }
+    .share-url-chip mat-icon { font-size: 14px; width: 14px; height: 14px; }
+    .share-url-chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .size-field { flex: 1; }
 
     .kv-rows { display: flex; flex-direction: column; gap: 4px; }
@@ -1098,6 +1117,7 @@ export class FormBuilderComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly svc = inject(FormService);
+  private readonly shareSvc = inject(ShareService);
   private readonly api = inject(ApiService);
   private readonly el = inject(ElementRef);
 
@@ -1814,14 +1834,16 @@ export class FormBuilderComponent implements OnInit {
     }
 
     if (mode === 'text') {
+      // Resolve {{field.xxx}} references before parsing JSON
+      const resolved = this.resolveFieldRefs(action.rawBody ?? '{}', values);
       try {
-        return JSON.parse(action.rawBody ?? '{}');
+        return JSON.parse(resolved);
       } catch {
         try {
-          const fixed = (action.rawBody ?? '{}').replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
+          const fixed = resolved.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
           return JSON.parse(fixed);
         } catch {
-          console.warn('[FormBuilder] Invalid JSON in text body:', action.rawBody);
+          console.warn('[FormBuilder] Invalid JSON in text body:', resolved);
           return {};
         }
       }
@@ -1867,6 +1889,13 @@ export class FormBuilderComponent implements OnInit {
   readonly acStyle = signal<Record<string, string>>({});
   private acInput: HTMLInputElement | HTMLTextAreaElement | null = null;
   private acCallback: ((value: string) => void) | null = null;
+  private rawBodyTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Debounced setRawBody to prevent Angular change detection from resetting textarea cursor */
+  private setRawBodyDebounced(actionId: string, value: string) {
+    if (this.rawBodyTimer) clearTimeout(this.rawBodyTimer);
+    this.rawBodyTimer = setTimeout(() => this.setRawBody(actionId, value), 400);
+  }
 
   private buildFieldSuggestions(filter: string): { label: string; insertText: string; detail: string; icon: string }[] {
     const suggestions: { label: string; insertText: string; detail: string; icon: string }[] = [];
@@ -1913,8 +1942,24 @@ export class FormBuilderComponent implements OnInit {
   private updateAcPosition() {
     if (!this.acInput) return;
     const rect = this.acInput.getBoundingClientRect();
+
+    let top = rect.bottom + 4;
+    // For textareas: position near cursor line instead of below the entire element
+    if (this.acInput instanceof HTMLTextAreaElement) {
+      const ta = this.acInput;
+      const pos = ta.selectionStart ?? 0;
+      const textBefore = ta.value.substring(0, pos);
+      const lineNumber = textBefore.split('\n').length;
+      const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 18;
+      const paddingTop = parseFloat(getComputedStyle(ta).paddingTop) || 8;
+      top = rect.top + paddingTop + lineNumber * lineHeight + 4;
+    }
+
+    const maxTop = window.innerHeight - 260;
+    if (top > maxTop) top = maxTop;
+
     this.acStyle.set({
-      top: rect.bottom + 4 + 'px',
+      top: top + 'px',
       left: rect.left + 'px',
       width: Math.max(rect.width, 260) + 'px',
     });
@@ -1933,11 +1978,71 @@ export class FormBuilderComponent implements OnInit {
   onAcTextareaInput(textarea: HTMLTextAreaElement, actionId: string) {
     this.acInput = textarea;
     this.acCallback = (v: string) => this.setRawBody(actionId, v);
-    this.setRawBody(actionId, textarea.value);
+
+    // Save cursor position BEFORE updating the signal (Angular re-render resets cursor)
+    const cursorPos = textarea.selectionStart ?? 0;
+    const textBefore = textarea.value.substring(0, cursorPos);
+
+    // Debounce the signal update to prevent textarea flicker during typing
+    this.setRawBodyDebounced(actionId, textarea.value);
     this.updateAcPosition();
+
     if (!this.checkFieldRefTrigger(textarea)) {
+      // Try JSON field suggestions when typing a key
+      const lineStart = textBefore.lastIndexOf('\n') + 1;
+      const line = textBefore.substring(lineStart).trimStart();
+
+      if (line.startsWith('"') && !line.includes(':')) {
+        const partial = line.substring(1).replace(/"$/, '');
+        const suggestions = this.buildJsonFieldSuggestions(actionId, partial);
+        if (suggestions.length > 0) {
+          this.acSuggestions.set(suggestions);
+          this.acIndex.set(0);
+          return;
+        }
+      }
       this.acSuggestions.set([]);
     }
+  }
+
+  private buildJsonFieldSuggestions(actionId: string, filter: string): { label: string; insertText: string; detail: string; icon: string }[] {
+    const action = this.submitActions().find(a => a.id === actionId);
+    if (!action) return [];
+    const mod = MODULES.find(m => m.apiPrefix === action.moduleApiPrefix);
+    const ep = mod?.endpoints.find(e => e.pathTemplate === action.pathTemplate && e.method === action.method);
+    if (!mod || !ep) return [];
+
+    const suggestions: { label: string; insertText: string; detail: string; icon: string }[] = [];
+
+    const inputSchema = getEndpointInputSchema(mod.id, ep.id);
+    if (inputSchema) {
+      for (const [key, val] of Object.entries(inputSchema)) {
+        if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+        const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
+          : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
+        const defaultVal = val === null ? 'null' : typeof val === 'string' ? '""'
+          : typeof val === 'number' ? '0' : typeof val === 'boolean' ? 'false'
+          : JSON.stringify(val, null, 2);
+        suggestions.push({ label: key, insertText: `"${key}": ${defaultVal}`, detail: type, icon: 'data_object' });
+      }
+    }
+
+    if (suggestions.length === 0) {
+      const payload = getEndpointPayload(mod.id, ep.id) as Record<string, unknown> | null;
+      if (payload) {
+        for (const [key, val] of Object.entries(payload)) {
+          if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+          const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
+            : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
+          const defaultVal = val === null ? 'null' : typeof val === 'string' ? '""'
+            : typeof val === 'number' ? '0' : typeof val === 'boolean' ? 'false'
+            : JSON.stringify(val, null, 2);
+          suggestions.push({ label: key, insertText: `"${key}": ${defaultVal}`, detail: type, icon: 'data_object' });
+        }
+      }
+    }
+
+    return suggestions.slice(0, 20);
   }
 
   onAcKeydown(event: KeyboardEvent) {
@@ -1967,13 +2072,27 @@ export class FormBuilderComponent implements OnInit {
     const before = text.substring(0, pos);
     const openIdx = before.lastIndexOf('{{');
 
-    if (openIdx >= 0) {
+    if (openIdx >= 0 && !before.substring(openIdx).includes('}}')) {
+      // {{ reference insertion
       const after = text.substring(pos);
       const closeMatch = after.match(/^[^}]*}}/);
       const replaceEnd = closeMatch ? pos + closeMatch[0].length : pos;
       const newText = text.substring(0, openIdx) + suggestion.insertText + text.substring(replaceEnd);
       input.value = newText;
       const cursorPos = openIdx + suggestion.insertText.length;
+      input.setSelectionRange(cursorPos, cursorPos);
+    } else if (suggestion.insertText.startsWith('"') && suggestion.insertText.includes(':')) {
+      // JSON field insertion — replace the current line from the opening quote
+      const lineStart = before.lastIndexOf('\n') + 1;
+      const indent = before.substring(lineStart).match(/^(\s*)/)?.[1] ?? '';
+      const quoteStart = before.lastIndexOf('"', pos - 1);
+      const after = text.substring(pos);
+      const lineEnd = after.indexOf('\n');
+      const replaceEnd = lineEnd >= 0 ? pos + lineEnd : text.length;
+      const insertStart = quoteStart >= lineStart ? quoteStart : lineStart + indent.length;
+      const newText = text.substring(0, insertStart) + suggestion.insertText + text.substring(replaceEnd);
+      input.value = newText;
+      const cursorPos = insertStart + suggestion.insertText.length;
       input.setSelectionRange(cursorPos, cursorPos);
     }
 
@@ -1988,5 +2107,23 @@ export class FormBuilderComponent implements OnInit {
 
   acSetHardcoded(actionId: string, key: string, value: string) {
     this.setBodyHardcoded(actionId, key, value);
+  }
+
+  // ── Share ─────────────────────────────────────────────────────────────────
+
+  readonly shareUrl = signal<string>('');
+
+  async shareForm() {
+    const id = this.formId();
+    if (!id) return;
+    try {
+      const link = await this.shareSvc.createShare('form', id);
+      this.shareUrl.set(this.shareSvc.getShareUrl(link.token));
+    } catch { /* ignore */ }
+  }
+
+  copyShareUrl() {
+    const url = this.shareUrl();
+    if (url) navigator.clipboard.writeText(url);
   }
 }
