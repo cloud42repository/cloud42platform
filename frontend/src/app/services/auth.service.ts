@@ -15,6 +15,7 @@ export interface CloudUser {
 
 interface AuthResponse {
   accessToken: string;
+  refreshToken?: string;
   user: {
     email: string;
     name: string;
@@ -29,19 +30,21 @@ interface AuthResponse {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly STORAGE_KEY = 'cloud42_user';
+  private readonly TOKEN_KEY = 'cloud42_access';
+  private readonly REFRESH_KEY = 'cloud42_refresh';
 
   /**
-   * JWT access token — held ONLY in memory (never persisted).
-   * Lost on page refresh; silently refreshed via HttpOnly cookie.
+   * JWT access token — persisted in sessionStorage so it survives page
+   * refreshes within the same tab.  Also sent as Bearer header.
    */
-  private _accessToken = signal<string | null>(null);
+  private _accessToken = signal<string | null>(this.loadToken(this.TOKEN_KEY));
 
   private _user = signal<CloudUser | null>(this.loadProfileFromStorage());
 
   readonly user = this._user.asReadonly();
   readonly isLoggedIn = computed(() => !!this._user());
 
-  /** Expose the in-memory access token for the HTTP interceptor */
+  /** Expose the access token for the HTTP interceptor */
   get accessToken(): string | null {
     return this._accessToken();
   }
@@ -53,6 +56,28 @@ export class AuthService {
     private readonly router: Router,
     private readonly http: HttpClient,
   ) {}
+
+  /* ── Token persistence ── */
+
+  private loadToken(key: string): string | null {
+    try { return sessionStorage.getItem(key); } catch { return null; }
+  }
+
+  private saveTokens(access: string, refresh?: string): void {
+    this._accessToken.set(access);
+    try {
+      sessionStorage.setItem(this.TOKEN_KEY, access);
+      if (refresh) sessionStorage.setItem(this.REFRESH_KEY, refresh);
+    } catch { /* quota / private-mode */ }
+  }
+
+  private clearTokens(): void {
+    this._accessToken.set(null);
+    try {
+      sessionStorage.removeItem(this.TOKEN_KEY);
+      sessionStorage.removeItem(this.REFRESH_KEY);
+    } catch { /* ignore */ }
+  }
 
   /* ── Profile persistence (non-sensitive) ── */
 
@@ -74,7 +99,7 @@ export class AuthService {
 
   /**
    * Send the raw Google ID token to the backend for verification.
-   * Receives a JWT access token (in body) and refresh token (HttpOnly cookie).
+   * Receives JWT access + refresh tokens in body AND refresh as HttpOnly cookie.
    */
   async loginWithGoogle(googleIdToken: string): Promise<CloudUser> {
     const res = await firstValueFrom(
@@ -85,7 +110,7 @@ export class AuthService {
       ),
     );
 
-    this._accessToken.set(res.accessToken);
+    this.saveTokens(res.accessToken, res.refreshToken);
 
     const user: CloudUser = {
       name: res.user.name,
@@ -113,7 +138,7 @@ export class AuthService {
       ),
     );
 
-    this._accessToken.set(res.accessToken);
+    this.saveTokens(res.accessToken, res.refreshToken);
 
     const user: CloudUser = {
       name: res.user.name,
@@ -129,8 +154,9 @@ export class AuthService {
   /* ── Token Refresh ── */
 
   /**
-   * Silently refresh the access token using the HttpOnly cookie.
-   * Returns the new access token or null if refresh fails.
+   * Silently refresh the access token.
+   * Tries the HttpOnly cookie first; falls back to the refresh token
+   * stored in sessionStorage (needed for cross-origin Azure deployments).
    */
   async refreshAccessToken(): Promise<string | null> {
     // Deduplicate concurrent refresh calls
@@ -146,15 +172,17 @@ export class AuthService {
 
   private async _doRefresh(): Promise<string | null> {
     try {
+      // Send stored refresh token in body as fallback for cross-origin cookie issues
+      const storedRefresh = this.loadToken(this.REFRESH_KEY);
       const res = await firstValueFrom(
         this.http.post<AuthResponse>(
           `${environment.apiBase}/auth/refresh`,
-          {},
+          storedRefresh ? { refreshToken: storedRefresh } : {},
           { withCredentials: true },
         ),
       );
 
-      this._accessToken.set(res.accessToken);
+      this.saveTokens(res.accessToken, res.refreshToken);
 
       // Sync user profile (role may have changed)
       const user: CloudUser = {
@@ -169,7 +197,7 @@ export class AuthService {
       return res.accessToken;
     } catch {
       // Refresh failed — session expired
-      this._accessToken.set(null);
+      this.clearTokens();
       return null;
     }
   }
@@ -204,7 +232,7 @@ export class AuthService {
       // Best-effort — still clear local state
     }
 
-    this._accessToken.set(null);
+    this.clearTokens();
     this._user.set(null);
     localStorage.removeItem(this.STORAGE_KEY);
     this.router.navigate(['/login']);

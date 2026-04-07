@@ -46,7 +46,7 @@ export class AuthController {
 
     this.setRefreshCookie(res, refreshToken);
 
-    return { accessToken, user };
+    return { accessToken, refreshToken, user };
   }
 
   /* ── POST /api/auth/dev-login ── (MOCK_MODE only) */
@@ -70,7 +70,7 @@ export class AuthController {
 
     this.setRefreshCookie(res, refreshToken);
 
-    return { accessToken, user };
+    return { accessToken, refreshToken, user };
   }
 
   /* ── POST /api/auth/refresh ── */
@@ -80,9 +80,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refresh(
     @Req() req: Request,
+    @Body() body: { refreshToken?: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const oldToken = req.cookies?.[AuthController.REFRESH_COOKIE] as string | undefined;
+    // Accept refresh token from cookie OR request body (fallback for cross-origin)
+    const oldToken = req.cookies?.[AuthController.REFRESH_COOKIE] as string | undefined
+      || body?.refreshToken;
 
     if (!oldToken) {
       throw new UnauthorizedException('No refresh token');
@@ -93,7 +96,7 @@ export class AuthController {
 
     this.setRefreshCookie(res, refreshToken);
 
-    return { accessToken, user };
+    return { accessToken, refreshToken, user };
   }
 
   /* ── POST /api/auth/logout ── */

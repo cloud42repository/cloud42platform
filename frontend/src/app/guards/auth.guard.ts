@@ -19,11 +19,11 @@ export const authGuard: CanActivateFn = async () => {
   // Mock mode — skip authentication entirely
   if (environment.mockMode) return true;
 
-  // Already fully authenticated
+  // Already fully authenticated (token in memory or restored from sessionStorage)
   if (auth.isLoggedIn() && auth.accessToken) return true;
 
-  // Profile exists but token lost (page reload) — try silent refresh
-  if (auth.isLoggedIn() && !auth.accessToken) {
+  // Profile exists but token missing or expired — try silent refresh
+  if (auth.isLoggedIn()) {
     const newToken = await auth.refreshAccessToken();
     if (newToken) return true;
   }
