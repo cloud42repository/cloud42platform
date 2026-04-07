@@ -12,6 +12,7 @@ export interface ShareLink {
   ownerEmail: string;
   active: boolean;
   createdAt: string;
+  sharedWithEmail?: string | null;
 }
 
 export interface SharedItemData {
@@ -27,18 +28,16 @@ export class ShareService {
   private readonly userMgmt = inject(UserManagementService);
   private readonly API_PREFIX = '/shares';
 
-  /** Create a share link for a dashboard/form/workflow */
-  async createShare(itemType: ShareItemType, itemId: string): Promise<ShareLink> {
+  /** Create share links for a dashboard/form/workflow, optionally scoped to specific users */
+  async createShare(itemType: ShareItemType, itemId: string, sharedWithEmails?: string[]): Promise<ShareLink[]> {
     const email = this.userMgmt.currentUser()?.email;
     if (!email) throw new Error('Not authenticated');
+    const body: Record<string, unknown> = { itemType, itemId, ownerEmail: email };
+    if (sharedWithEmails?.length) body['sharedWithEmails'] = sharedWithEmails;
     const res = await firstValueFrom(
-      this.api.post(this.API_PREFIX, '', {}, {
-        itemType,
-        itemId,
-        ownerEmail: email,
-      })
+      this.api.post(this.API_PREFIX, '', {}, body)
     );
-    return res as ShareLink;
+    return res as ShareLink[];
   }
 
   /** Get the shareable URL for a token */
@@ -69,6 +68,16 @@ export class ShareService {
     if (!email) return [];
     const res = await firstValueFrom(
       this.api.get(this.API_PREFIX, '', {}, { ownerEmail: email })
+    );
+    return res as ShareLink[];
+  }
+
+  /** List shares that others have shared with current user */
+  async listSharedWithMe(): Promise<ShareLink[]> {
+    const email = this.userMgmt.currentUser()?.email;
+    if (!email) return [];
+    const res = await firstValueFrom(
+      this.api.get(this.API_PREFIX, '/shared-with-me', {}, { email })
     );
     return res as ShareLink[];
   }

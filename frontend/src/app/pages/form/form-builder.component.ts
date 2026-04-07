@@ -2117,8 +2117,10 @@ export class FormBuilderComponent implements OnInit {
     const id = this.formId();
     if (!id) return;
     try {
-      const link = await this.shareSvc.createShare('form', id);
-      this.shareUrl.set(this.shareSvc.getShareUrl(link.token));
+      const links = await this.shareSvc.createShare('form', id);
+      if (links.length > 0) {
+        this.shareUrl.set(this.shareSvc.getShareUrl(links[0].token));
+      }
     } catch { /* ignore */ }
   }
 

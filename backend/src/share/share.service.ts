@@ -33,6 +33,7 @@ export class ShareService {
       ownerEmail: s.ownerEmail,
       active: s.active,
       createdAt: s.createdAt.toISOString(),
+      sharedWithEmail: s.sharedWithEmail,
     };
   }
 
@@ -41,31 +42,57 @@ export class ShareService {
   }
 
   /** Create a share link (or return existing active one) */
-  async create(dto: CreateShareDto): Promise<ShareResponseDto> {
-    // Check if an active share already exists for this item
-    const existing = await this.shareRepo.findOneBy({
-      itemType: dto.itemType,
-      itemId: dto.itemId,
-      ownerEmail: dto.ownerEmail,
-      active: true,
-    });
-    if (existing) return this.toDto(existing);
+  async create(dto: CreateShareDto): Promise<ShareResponseDto[]> {
+    const emails = dto.sharedWithEmails?.length ? dto.sharedWithEmails : [null];
+    const results: ShareResponseDto[] = [];
 
-    const share = this.shareRepo.create({
-      token: this.generateToken(),
-      itemType: dto.itemType,
-      itemId: dto.itemId,
-      ownerEmail: dto.ownerEmail,
-      active: true,
-    });
-    const saved = await this.shareRepo.save(share);
-    return this.toDto(saved);
+    for (const email of emails) {
+      // Check if an active share already exists for this item + target
+      const where: Record<string, unknown> = {
+        itemType: dto.itemType,
+        itemId: dto.itemId,
+        ownerEmail: dto.ownerEmail,
+        active: true,
+      };
+      if (email) {
+        where['sharedWithEmail'] = email;
+      } else {
+        where['sharedWithEmail'] = null as any;
+      }
+      const existing = await this.shareRepo.findOneBy(where as any);
+      if (existing) {
+        results.push(this.toDto(existing));
+        continue;
+      }
+
+      const share = this.shareRepo.create({
+        token: this.generateToken(),
+        itemType: dto.itemType,
+        itemId: dto.itemId,
+        ownerEmail: dto.ownerEmail,
+        active: true,
+        sharedWithEmail: email,
+      });
+      const saved = await this.shareRepo.save(share);
+      results.push(this.toDto(saved));
+    }
+
+    return results;
   }
 
   /** List all shares for a given user */
   async findByOwner(ownerEmail: string): Promise<ShareResponseDto[]> {
     const rows = await this.shareRepo.find({
       where: { ownerEmail, active: true },
+      order: { createdAt: 'DESC' },
+    });
+    return rows.map(s => this.toDto(s));
+  }
+
+  /** List shares that were shared WITH a specific user */
+  async findSharedWithMe(email: string): Promise<ShareResponseDto[]> {
+    const rows = await this.shareRepo.find({
+      where: { sharedWithEmail: email, active: true },
       order: { createdAt: 'DESC' },
     });
     return rows.map(s => this.toDto(s));

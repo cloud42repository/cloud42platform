@@ -27,6 +27,12 @@ export class ShareController {
     return this.service.findByOwner(ownerEmail);
   }
 
+  /** GET /api/shares/shared-with-me?email=xxx — list shares shared with a user */
+  @Get('shared-with-me')
+  sharedWithMe(@Query('email') email: string) {
+    return this.service.findSharedWithMe(email);
+  }
+
   /** GET /api/shares/public/:token — resolve public share (no auth) */
   @Public()
   @Get('public/:token')

@@ -36,6 +36,10 @@ export class ShareEntity {
   @Column({ type: 'boolean', default: true })
   active!: boolean;
 
+  /** If set, restrict access to this specific user email */
+  @Column({ type: 'varchar', length: 320, nullable: true, default: null })
+  sharedWithEmail!: string | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 }

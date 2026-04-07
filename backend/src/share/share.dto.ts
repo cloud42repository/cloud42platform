@@ -5,6 +5,8 @@ export interface CreateShareDto {
   itemType: ShareItemType;
   itemId: string;
   ownerEmail: string;
+  /** If provided, the share is restricted to these user emails */
+  sharedWithEmails?: string[];
 }
 
 /** Response DTO */
@@ -15,6 +17,7 @@ export interface ShareResponseDto {
   ownerEmail: string;
   active: boolean;
   createdAt: string;
+  sharedWithEmail?: string | null;
 }
 
 /** GET /api/shares/:token — public response with item data inlined */
