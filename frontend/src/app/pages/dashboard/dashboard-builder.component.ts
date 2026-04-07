@@ -183,6 +183,11 @@ interface EndpointRef {
                 </mat-icon>
                 <span class="widget-title">{{ widget.label || kindLabel(widget.kind) }}</span>
                 <span class="widget-badge">{{ kindLabel(widget.kind) }}</span>
+                @if (previewMode() && widget.dataSource && widget.kind !== 'search-text') {
+                  <button mat-icon-button class="widget-refresh-btn" (click)="fetchWidgetData(widget); $event.stopPropagation()" matTooltip="Refresh data">
+                    <mat-icon>refresh</mat-icon>
+                  </button>
+                }
                 @if (!previewMode()) {
                 <div class="widget-actions" (click)="$event.stopPropagation()">
                   <button mat-icon-button (click)="selectWidget(widget.id)" matTooltip="{{ 'dashboard.configure' | t }}">
@@ -741,6 +746,9 @@ interface EndpointRef {
     .widget-actions { display: flex; align-items: center; margin-left: 4px; }
     .widget-actions button { width: 28px; height: 28px; line-height: 28px; }
     .widget-actions mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .widget-refresh-btn { width: 24px !important; height: 24px !important; line-height: 24px !important; opacity: 0.5; }
+    .widget-refresh-btn:hover { opacity: 1; }
+    .widget-refresh-btn mat-icon { font-size: 15px; width: 15px; height: 15px; }
     .drag-handle { cursor: grab; color: #94a3b8; font-size: 18px; width: 18px; height: 18px; }
 
     .widget-preview { margin-top: 8px; flex: 1; overflow: auto; }
@@ -1872,6 +1880,21 @@ export class DashboardBuilderComponent implements OnInit {
     const id = this.dashboardId();
     if (!id) return;
     try {
+      // Save dashboard WITH lastData so the shared view has snapshotted data
+      const dashboard: Dashboard = {
+        id,
+        name: this.dashboardName() || 'Untitled Dashboard',
+        widgets: this.widgets(), // includes lastData
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      const existing = this.svc.getById(id);
+      if (existing) {
+        dashboard.createdAt = existing.createdAt;
+      }
+      this.svc.upsert(dashboard);
+
       const link = await this.shareSvc.createShare('dashboard', id);
       this.shareUrl.set(this.shareSvc.getShareUrl(link.token));
     } catch { /* ignore */ }

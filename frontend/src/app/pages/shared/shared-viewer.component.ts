@@ -65,6 +65,11 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                       @else { table_chart }
                     </mat-icon>
                     <span class="widget-title">{{ widget.label || widget.kind }}</span>
+                    @if (widget.dataSource && widget.kind !== 'search-text') {
+                      <button mat-icon-button class="widget-refresh-btn" (click)="refreshWidget(widget)" matTooltip="Refresh data">
+                        <mat-icon>refresh</mat-icon>
+                      </button>
+                    }
                   </div>
                   <div class="widget-body">
                     @if (!widget.dataSource) {
@@ -455,6 +460,9 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
     }
     .widget-type-icon { font-size: 16px; width: 16px; height: 16px; color: #64748b; }
     .widget-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .widget-refresh-btn { width: 24px !important; height: 24px !important; line-height: 24px !important; opacity: 0.4; }
+    .widget-refresh-btn:hover { opacity: 1; }
+    .widget-refresh-btn mat-icon { font-size: 15px; width: 15px; height: 15px; }
     .widget-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px 12px; overflow: auto; }
     .no-data { display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 12px; }
     .badge-vis { text-align: center; }
@@ -635,9 +643,9 @@ export class SharedViewerComponent implements OnInit {
       if (result.itemType === 'dashboard') {
         const widgets = (d['widgets'] || []) as DashboardWidget[];
         this.dashboardWidgets.set(widgets);
-        // Fetch data for each widget
+        // Fetch live data only for widgets that don't have snapshotted lastData
         for (const w of widgets) {
-          if (w.dataSource) this.fetchWidgetData(w);
+          if (w.dataSource && w.lastData == null) this.fetchWidgetData(w);
         }
       } else if (result.itemType === 'form') {
         this.formFields.set(d['fields'] || []);
@@ -655,6 +663,10 @@ export class SharedViewerComponent implements OnInit {
   }
 
   // ── Dashboard helpers ──
+  refreshWidget(widget: DashboardWidget) {
+    this.fetchWidgetData(widget);
+  }
+
   private async fetchWidgetData(widget: DashboardWidget) {
     if (!widget.dataSource) return;
     const ds = widget.dataSource;
@@ -665,12 +677,24 @@ export class SharedViewerComponent implements OnInit {
         ds.pathParams || {},
         ds.queryParams || {},
       ).toPromise();
-      let data = res;
+      let data: unknown = res;
       if (widget.dataPath) {
         data = this.getPath(res, widget.dataPath);
       }
-      widget.lastData = data;
-      this.dashboardWidgets.update(ws => [...ws]); // trigger re-render
+      // Auto-detect wrapped arrays (e.g. { data: [...] }, { contacts: [...] })
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const obj = data as Record<string, unknown>;
+        if (Array.isArray(obj['data'])) {
+          data = obj['data'];
+        } else {
+          const firstArr = Object.values(obj).find(v => Array.isArray(v));
+          if (firstArr) data = firstArr;
+        }
+      }
+      // Create new widget object so Angular detects the change
+      this.dashboardWidgets.update(ws =>
+        ws.map(w => w.id === widget.id ? { ...w, lastData: data } : w)
+      );
     } catch { /* ignore fetch errors in shared view */ }
   }
 
