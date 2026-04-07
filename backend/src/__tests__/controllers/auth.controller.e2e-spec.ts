@@ -46,7 +46,7 @@ describe('AuthController (e2e)', () => {
   it('POST /auth/refresh → refresh()', async () => {
     const mockReq = { cookies: {} } as any;
     await expect(
-      controller.refresh(mockReq, mockRes),
+      controller.refresh(mockReq, {}, mockRes),
     ).rejects.toThrow('No refresh token');
   });
 
