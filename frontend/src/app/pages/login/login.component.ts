@@ -1,5 +1,5 @@
 import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 
@@ -156,11 +156,12 @@ export class LoginComponent implements OnInit, AfterViewInit {
   constructor(
     private authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
     if (this.authService.isLoggedIn()) {
-      this.router.navigate(['/dashboards']);
+      this.redirectAfterLogin();
     }
   }
 
@@ -175,7 +176,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
     try {
       this.loginError = false;
       await this.authService.devLogin();
-      this.router.navigate(['/dashboards']);
+      this.redirectAfterLogin();
     } catch (err) {
       console.error('Dev login failed', err);
       this.loginErrorMessage = (err as any)?.error?.message
@@ -183,6 +184,11 @@ export class LoginComponent implements OnInit, AfterViewInit {
         || 'Dev login failed. Is the backend running in MOCK_MODE?';
       this.loginError = true;
     }
+  }
+
+  private redirectAfterLogin(): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    this.router.navigateByUrl(returnUrl && returnUrl !== '/' ? returnUrl : '/dashboards');
   }
 
   private loadGoogleScript(): Promise<void> {
@@ -211,7 +217,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
           this.loginError = false;
           // Send raw Google ID token to backend for server-side verification
           await this.authService.loginWithGoogle(response.credential);
-          this.router.navigate(['/dashboards']);
+          this.redirectAfterLogin();
         } catch (err: any) {
           console.error('Login failed', err);
           this.loginErrorMessage = err?.error?.message
