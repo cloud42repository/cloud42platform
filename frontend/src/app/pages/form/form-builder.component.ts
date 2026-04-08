@@ -22,6 +22,7 @@ import {
 import { FormService } from '../../services/form.service';
 import { ShareService } from '../../services/share.service';
 import { ApiService } from '../../services/api.service';
+import { UserManagementService } from '../../services/user-management.service';
 import {
   FormDefinition,
   FormField,
@@ -154,16 +155,51 @@ interface FieldTypeRef {
             <mat-icon>visibility</mat-icon> {{ 'form.preview' | t }}
           </button>
           }
-          <button mat-stroked-button (click)="shareForm()" [disabled]="!formId()">
+          <button mat-stroked-button (click)="toggleSharePanel()" [disabled]="!formId()">
             <mat-icon>{{ shareUrl() ? 'link' : 'share' }}</mat-icon> {{ 'form.share' | t }}
           </button>
-          @if (shareUrl()) {
-            <div class="share-url-chip" (click)="copyShareUrl()">
-              <mat-icon>content_copy</mat-icon>
-              <span>{{ shareUrl() }}</span>
-            </div>
+          @if (shareCopied()) {
+            <span class="share-copied-badge"><mat-icon>check</mat-icon> Copied!</span>
           }
         </div>
+
+        <!-- Share panel overlay -->
+        @if (sharePanelOpen()) {
+          <div class="share-panel-backdrop" (click)="sharePanelOpen.set(false)"></div>
+          <div class="share-panel">
+            <div class="share-panel-header">
+              <mat-icon>group</mat-icon>
+              <span>Share with users</span>
+              <span class="spacer"></span>
+              <button mat-icon-button (click)="sharePanelOpen.set(false)"><mat-icon>close</mat-icon></button>
+            </div>
+            <div class="share-panel-body">
+              @for (user of shareableUsers(); track user.email) {
+                <label class="share-user-row">
+                  <mat-checkbox [checked]="isUserSelected(user.email)" (change)="toggleShareUser(user.email)"></mat-checkbox>
+                  <span class="share-user-name">{{ user.name || user.email }}</span>
+                  <span class="share-user-email">{{ user.email }}</span>
+                </label>
+              }
+              @if (shareableUsers().length === 0) {
+                <div class="share-no-users">No other users registered</div>
+              }
+            </div>
+            <div class="share-panel-footer">
+              <button mat-flat-button color="primary" (click)="shareForm()">
+                <mat-icon>send</mat-icon> {{ selectedShareUsers().length > 0 ? 'Share with selected' : 'Share public link' }}
+              </button>
+              @if (shareUrl()) {
+                <div class="share-url-display">
+                  <input readonly [value]="shareUrl()" (click)="$event.target.select()" class="share-url-input" />
+                  <button mat-icon-button (click)="copyShareUrl()" matTooltip="Copy link">
+                    <mat-icon>content_copy</mat-icon>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
 
         <div class="canvas-area"
              cdkDropList
@@ -1020,14 +1056,46 @@ interface FieldTypeRef {
     .section-divider { margin: 8px 0; }
     .full-width { width: 100%; }
     .size-row { display: flex; gap: 8px; }
-    .share-url-chip {
-      display: flex; align-items: center; gap: 4px; padding: 4px 10px;
-      background: #dbeafe; color: #1d4ed8; border-radius: 6px; font-size: 11px;
-      cursor: pointer; max-width: 260px; overflow: hidden;
+    .share-copied-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      color: #16a34a; font-size: 12px; font-weight: 600;
     }
-    .share-url-chip:hover { background: #bfdbfe; }
-    .share-url-chip mat-icon { font-size: 14px; width: 14px; height: 14px; }
-    .share-url-chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .share-copied-badge mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .share-panel-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.15); z-index: 900; }
+    .share-panel {
+      position: fixed; top: 56px; right: 24px; z-index: 901;
+      width: 360px; background: white;
+      border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.18);
+      display: flex; flex-direction: column;
+      max-height: calc(100vh - 80px);
+    }
+    .share-panel-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px; font-weight: 700; font-size: 14px; color: #1e293b;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .share-panel-header .spacer { flex: 1; }
+    .share-panel-body { flex: 1; overflow-y: auto; padding: 8px 0; max-height: 240px; min-height: 60px; }
+    .share-user-row {
+      display: flex; align-items: center; gap: 8px; padding: 6px 16px; cursor: pointer;
+    }
+    .share-user-row:hover { background: #f8fafc; }
+    .share-user-name { font-size: 13px; font-weight: 600; color: #334155; }
+    .share-user-email { font-size: 11px; color: #94a3b8; margin-left: auto; }
+    .share-no-users { padding: 24px 16px; text-align: center; color: #94a3b8; font-size: 13px; }
+    .share-panel-footer {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px;
+      border-top: 1px solid #e2e8f0;
+    }
+    .share-panel-footer .share-url-display { flex-basis: 100%; }
+    .share-url-display {
+      display: flex; align-items: center; gap: 4px; margin-top: 8px; width: 100%;
+    }
+    .share-url-input {
+      flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px;
+      font-size: 12px; color: #1e293b; background: #f8fafc; outline: none; min-width: 0;
+    }
+    .share-url-input:focus { border-color: #3b82f6; }
     .size-field { flex: 1; }
 
     .kv-rows { display: flex; flex-direction: column; gap: 4px; }
@@ -1120,6 +1188,7 @@ export class FormBuilderComponent implements OnInit {
   private readonly shareSvc = inject(ShareService);
   private readonly api = inject(ApiService);
   private readonly el = inject(ElementRef);
+  private readonly userMgmt = inject(UserManagementService);
 
   readonly allModules = MODULES;
   readonly widthOptions = [3, 4, 6, 8, 12];
@@ -2112,20 +2181,57 @@ export class FormBuilderComponent implements OnInit {
   // ── Share ─────────────────────────────────────────────────────────────────
 
   readonly shareUrl = signal<string>('');
+  readonly sharePanelOpen = signal(false);
+  readonly selectedShareUsers = signal<string[]>([]);
+  readonly shareCopied = signal(false);
+
+  readonly shareableUsers = computed(() => {
+    const currentEmail = this.userMgmt.currentUser()?.email;
+    return this.userMgmt.users().filter(u => u.email !== currentEmail);
+  });
+
+  toggleSharePanel() {
+    this.sharePanelOpen.update(v => !v);
+  }
+
+  isUserSelected(email: string): boolean {
+    return this.selectedShareUsers().includes(email);
+  }
+
+  toggleShareUser(email: string) {
+    this.selectedShareUsers.update(list =>
+      list.includes(email) ? list.filter(e => e !== email) : [...list, email]
+    );
+  }
 
   async shareForm() {
     const id = this.formId();
     if (!id) return;
     try {
-      const links = await this.shareSvc.createShare('form', id);
+      const emails = this.selectedShareUsers();
+      const links = await this.shareSvc.createShare('form', id, emails.length > 0 ? emails : undefined);
       if (links.length > 0) {
-        this.shareUrl.set(this.shareSvc.getShareUrl(links[0].token));
+        const url = this.shareSvc.getShareUrl(links[0].token);
+        this.shareUrl.set(url);
+        this.clipboardCopy(url);
       }
     } catch { /* ignore */ }
   }
 
   copyShareUrl() {
     const url = this.shareUrl();
-    if (url) navigator.clipboard.writeText(url);
+    if (url) this.clipboardCopy(url);
+  }
+
+  private clipboardCopy(text: string) {
+    try { navigator.clipboard.writeText(text); }
+    catch {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    }
+    this.shareCopied.set(true);
+    setTimeout(() => this.shareCopied.set(false), 2500);
   }
 }
