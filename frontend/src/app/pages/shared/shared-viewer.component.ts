@@ -72,7 +72,20 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                     }
                   </div>
                   <div class="widget-body">
-                    @if (!widget.dataSource) {
+                    @if (widget.kind === 'search-text') {
+                      <div class="search-widget">
+                        <mat-icon>search</mat-icon>
+                        <input class="search-input" type="text"
+                               [value]="searchFilter()"
+                               (input)="searchFilter.set($any($event.target).value)"
+                               placeholder="{{ widget.label || 'Search...' }}" />
+                        @if (searchFilter()) {
+                          <button class="search-clear" (click)="searchFilter.set('')">
+                            <mat-icon>close</mat-icon>
+                          </button>
+                        }
+                      </div>
+                    } @else if (!widget.dataSource) {
                       <div class="no-data"><mat-icon>cloud_off</mat-icon> {{ 'shared.no-data-source' | t }}</div>
                     } @else if (widget.kind === 'badge') {
                       <div class="badge-vis">
@@ -101,15 +114,68 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                         </table>
                       </div>
                     } @else if ((widget.kind === 'line-chart' || widget.kind === 'bar-chart' || widget.kind === 'pie-chart') && widget.lastData) {
-                      <div class="chart-placeholder">
-                        <mat-icon>{{ widget.kind === 'line-chart' ? 'show_chart' : widget.kind === 'bar-chart' ? 'bar_chart' : 'pie_chart' }}</mat-icon>
-                        <span>{{ getChartSummary(widget) }}</span>
-                      </div>
-                    } @else if (widget.kind === 'search-text') {
-                      <div class="search-widget">
-                        <mat-icon>search</mat-icon>
-                        <span>Search</span>
-                      </div>
+
+                      <!-- LINE CHART -->
+                      @if (widget.kind === 'line-chart') {
+                        <div class="chart-container">
+                          <svg [attr.viewBox]="'0 0 400 200'" class="line-chart-svg" preserveAspectRatio="xMidYMid meet">
+                            <line x1="40" y1="10" x2="40" y2="170" stroke="#e2e8f0" stroke-width="1" />
+                            <line x1="40" y1="170" x2="390" y2="170" stroke="#e2e8f0" stroke-width="1" />
+                            @for (gl of [0.25, 0.5, 0.75]; track gl) {
+                              <line [attr.x1]="40" [attr.y1]="170 - 160 * gl" [attr.x2]="390" [attr.y2]="170 - 160 * gl" stroke="#f1f5f9" stroke-width="1" />
+                            }
+                            <polyline [attr.points]="getLineChartPoints(widget)" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                            <polygon [attr.points]="getLineChartArea(widget)" fill="rgba(37,99,235,0.08)" />
+                            @for (pt of getLineChartDots(widget); track $index) {
+                              <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3.5" fill="#2563eb" stroke="white" stroke-width="1.5" />
+                              <text [attr.x]="pt.x" [attr.y]="pt.y - 8" text-anchor="middle" class="chart-dot-label">{{ pt.val }}</text>
+                            }
+                            @for (lbl of getLineChartLabels(widget); track $index) {
+                              <text [attr.x]="lbl.x" y="186" text-anchor="middle" class="chart-axis-label">{{ lbl.text }}</text>
+                            }
+                          </svg>
+                        </div>
+                      }
+
+                      <!-- BAR CHART -->
+                      @if (widget.kind === 'bar-chart') {
+                        <div class="chart-container">
+                          <svg [attr.viewBox]="'0 0 400 220'" class="bar-chart-svg" preserveAspectRatio="xMidYMid meet">
+                            <line x1="40" y1="10" x2="40" y2="180" stroke="#e2e8f0" stroke-width="1" />
+                            <line x1="40" y1="180" x2="390" y2="180" stroke="#e2e8f0" stroke-width="1" />
+                            @for (gl of [0.25, 0.5, 0.75]; track gl) {
+                              <line [attr.x1]="40" [attr.y1]="180 - 170 * gl" [attr.x2]="390" [attr.y2]="180 - 170 * gl" stroke="#f1f5f9" stroke-width="1" />
+                            }
+                            @for (bar of getBarChartBars(widget); track $index) {
+                              <rect [attr.x]="bar.x" [attr.y]="bar.y" [attr.width]="bar.width" [attr.height]="bar.height" [attr.fill]="bar.color" rx="3" />
+                              <text [attr.x]="bar.x + bar.width / 2" [attr.y]="bar.y - 5" text-anchor="middle" class="chart-dot-label">{{ bar.val }}</text>
+                            }
+                            @for (lbl of getBarChartLabels(widget); track $index) {
+                              <text [attr.x]="lbl.x" y="196" text-anchor="middle" class="chart-axis-label">{{ lbl.text }}</text>
+                            }
+                          </svg>
+                        </div>
+                      }
+
+                      <!-- PIE CHART -->
+                      @if (widget.kind === 'pie-chart') {
+                        <div class="chart-container pie-container">
+                          <svg viewBox="0 0 300 220" class="pie-chart-svg" preserveAspectRatio="xMidYMid meet">
+                            @for (slice of getPieSlices(widget); track $index) {
+                              <path [attr.d]="slice.d" [attr.fill]="slice.color" stroke="white" stroke-width="2" />
+                            }
+                          </svg>
+                          <div class="pie-legend">
+                            @for (slice of getPieSlices(widget); track $index) {
+                              <div class="pie-legend-item">
+                                <span class="pie-dot" [style.background]="slice.color"></span>
+                                <span class="pie-label-text">{{ slice.label }}</span>
+                                <span class="pie-value-text">{{ slice.value }}</span>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
                     } @else {
                       <div class="no-data"><mat-icon>hourglass_empty</mat-icon> {{ 'shared.loading-data' | t }}</div>
                     }
@@ -137,6 +203,11 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                     </mat-icon>
                     <span class="field-title">{{ field.label || field.kind }}</span>
                     @if (field.required) { <span class="required-mark">*</span> }
+                    @if (field.dataSource) {
+                      <button mat-icon-button class="widget-refresh-btn" (click)="refreshFieldData(field)" matTooltip="Refresh data">
+                        <mat-icon>refresh</mat-icon>
+                      </button>
+                    }
                   </div>
                   <div class="field-preview">
                     @if (field.kind === 'text') {
@@ -156,9 +227,49 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                               (change)="setFieldValue(field.id, $any($event.target).value)">
                         <option value="" disabled selected>{{ field.placeholder || 'Select…' }}</option>
                         @for (opt of getSelectOptions(field); track $index) {
-                          <option [value]="opt">{{ opt }}</option>
+                          <option [value]="opt.value">{{ opt.display }}</option>
                         }
                       </select>
+                      @if (field.dataSource) {
+                        <span class="data-source-tag">
+                          <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
+                          {{ field.dataSource.moduleLabel }} › {{ field.dataSource.endpointLabel }}
+                        </span>
+                      }
+                    }
+                    @if (field.kind === 'datatable') {
+                      @if (field.dataSource) {
+                        <span class="data-source-tag">
+                          <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
+                          {{ field.dataSource.moduleLabel }} › {{ field.dataSource.endpointLabel }}
+                        </span>
+                      }
+                      @if (field.lastData) {
+                        <div class="table-container">
+                          <table class="data-table">
+                            <thead>
+                              <tr>
+                                @for (col of getFormTableColumns(field); track col) {
+                                  <th>{{ col }}</th>
+                                }
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (row of getFormTableRows(field); track $index) {
+                                <tr>
+                                  @for (col of getFormTableColumns(field); track col) {
+                                    <td>{{ row[col] }}</td>
+                                  }
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+                      } @else if (!field.dataSource) {
+                        <div class="no-data"><mat-icon>cloud_off</mat-icon> No data source</div>
+                      } @else {
+                        <div class="no-data"><mat-icon>hourglass_empty</mat-icon> Loading…</div>
+                      }
                     }
                   </div>
                 </div>
@@ -470,11 +581,29 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
     .badge-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; letter-spacing: .04em; }
     .chart-placeholder { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #64748b; font-size: 12px; }
     .chart-placeholder mat-icon { font-size: 32px; width: 32px; height: 32px; color: #94a3b8; }
-    .search-widget { display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 12px; }
+    .search-widget { display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 13px; padding: 0 4px; width: 100%; }
+    .search-widget mat-icon { font-size: 20px; width: 20px; height: 20px; color: #94a3b8; flex-shrink: 0; }
+    .search-widget .search-input { flex: 1; border: none; outline: none; background: transparent; font-size: 13px; color: #1e293b; padding: 6px 0; }
+    .search-widget .search-input::placeholder { color: #94a3b8; }
+    .search-widget .search-clear { display: flex; align-items: center; border: none; background: none; cursor: pointer; color: #94a3b8; padding: 0; }
+    .search-widget .search-clear mat-icon { font-size: 18px; width: 18px; height: 18px; }
     .table-container { width: 100%; overflow: auto; }
     .data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .data-table th { background: #f8fafc; font-weight: 600; text-align: left; padding: 6px 8px; border-bottom: 2px solid #e2e8f0; }
     .data-table td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; }
+
+    /* ── Charts ── */
+    .chart-container { width: 100%; display: flex; align-items: center; justify-content: center; }
+    .chart-container svg { width: 100%; height: auto; }
+    .chart-dot-label { font-size: 9px; fill: #334155; font-weight: 600; }
+    .chart-axis-label { font-size: 9px; fill: #94a3b8; }
+    .pie-container { flex-direction: row; gap: 8px; }
+    .pie-chart-svg { max-width: 180px; flex-shrink: 0; }
+    .pie-legend { display: flex; flex-direction: column; gap: 3px; font-size: 11px; overflow: hidden; }
+    .pie-legend-item { display: flex; align-items: center; gap: 5px; }
+    .pie-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .pie-label-text { color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pie-value-text { color: #64748b; margin-left: auto; flex-shrink: 0; }
 
     /* ── Form ── */
     .form-preview { flex: 1; overflow: auto; padding: 20px; }
@@ -496,6 +625,11 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
     .preview-select-input {
       width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;
       font-size: 13px; background: white;
+    }
+    .data-source-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; color: #64748b; background: #f1f5f9;
+      padding: 2px 8px; border-radius: 4px; margin-top: 4px;
     }
     .submit-row { display: flex; gap: 8px; padding: 12px 0; }
     .action-run-btn { min-width: 120px; }
@@ -616,6 +750,7 @@ export class SharedViewerComponent implements OnInit {
 
   // Dashboard
   readonly dashboardWidgets = signal<DashboardWidget[]>([]);
+  readonly searchFilter = signal('');
 
   // Form
   readonly formFields = signal<any[]>([]);
@@ -648,8 +783,13 @@ export class SharedViewerComponent implements OnInit {
           if (w.dataSource && w.lastData == null) this.fetchWidgetData(w);
         }
       } else if (result.itemType === 'form') {
-        this.formFields.set(d['fields'] || []);
+        const fields = (d['fields'] || []) as any[];
+        this.formFields.set(fields);
         this.formActions.set(d['submitActions'] || []);
+        // Fetch live data for select/datatable fields that have a dataSource
+        for (const f of fields) {
+          if (f.dataSource && f.lastData == null) this.fetchFieldData(f);
+        }
       } else if (result.itemType === 'workflow') {
         this.workflowSteps.set((d['steps'] || []) as WorkflowNode[]);
         this.wfInputs.set((d['inputs'] || []) as WorkflowInput[]);
@@ -704,7 +844,178 @@ export class SharedViewerComponent implements OnInit {
 
   private getItems(widget: DashboardWidget): Record<string, unknown>[] {
     if (!Array.isArray(widget.lastData)) return [];
-    return widget.lastData as Record<string, unknown>[];
+    const items = widget.lastData as Record<string, unknown>[];
+    const q = this.searchFilter().toLowerCase().trim();
+    if (!q) return items;
+    return items.filter(item =>
+      Object.values(item).some(v =>
+        v != null && String(v).toLowerCase().includes(q)
+      )
+    );
+  }
+
+  private extractField(item: unknown, field: string): unknown {
+    return this.getPath(item, field);
+  }
+
+  private formatNum(n: number): string {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+    if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+    return Number.isInteger(n) ? String(n) : n.toFixed(1);
+  }
+
+  private truncate(s: string, max: number): string {
+    return s.length > max ? s.slice(0, max - 1) + '…' : s;
+  }
+
+  // ── LINE CHART helpers ──
+
+  getLineChartPoints(widget: DashboardWidget): string {
+    const items = this.getItems(widget);
+    const valueField = widget.bindings['valueField'];
+    if (!valueField || items.length === 0) return '';
+    const values = items.map(item => Number(this.extractField(item, valueField)) || 0);
+    const max = Math.max(...values, 1);
+    const step = 350 / Math.max(items.length - 1, 1);
+    return values.map((v, i) => `${40 + i * step},${170 - (v / max) * 160}`).join(' ');
+  }
+
+  getLineChartArea(widget: DashboardWidget): string {
+    const items = this.getItems(widget);
+    const valueField = widget.bindings['valueField'];
+    if (!valueField || items.length === 0) return '';
+    const values = items.map(item => Number(this.extractField(item, valueField)) || 0);
+    const max = Math.max(...values, 1);
+    const step = 350 / Math.max(items.length - 1, 1);
+    const pts = values.map((v, i) => `${40 + i * step},${170 - (v / max) * 160}`);
+    const lastX = 40 + (items.length - 1) * step;
+    return pts.join(' ') + ` ${lastX},170 40,170`;
+  }
+
+  getLineChartDots(widget: DashboardWidget): { x: number; y: number; val: string }[] {
+    const items = this.getItems(widget);
+    const valueField = widget.bindings['valueField'];
+    if (!valueField || items.length === 0) return [];
+    const values = items.map(item => Number(this.extractField(item, valueField)) || 0);
+    const max = Math.max(...values, 1);
+    const step = 350 / Math.max(items.length - 1, 1);
+    const skip = Math.max(1, Math.floor(items.length / 12));
+    return values
+      .map((v, i) => ({ x: 40 + i * step, y: 170 - (v / max) * 160, val: this.formatNum(v) }))
+      .filter((_, i) => i % skip === 0 || i === items.length - 1);
+  }
+
+  getLineChartLabels(widget: DashboardWidget): { x: number; text: string }[] {
+    const items = this.getItems(widget);
+    const labelField = widget.bindings['labelField'];
+    if (!labelField || items.length === 0) return [];
+    const step = 350 / Math.max(items.length - 1, 1);
+    const skip = Math.max(1, Math.floor(items.length / 8));
+    return items
+      .map((item, i) => ({
+        x: 40 + i * step,
+        text: this.truncate(String(this.extractField(item, labelField) ?? ''), 10),
+      }))
+      .filter((_, i) => i % skip === 0 || i === items.length - 1);
+  }
+
+  // ── BAR CHART helpers ──
+
+  private readonly BAR_COLORS = [
+    '#0891b2', '#0e7490', '#155e75', '#164e63', '#083344',
+    '#06b6d4', '#22d3ee', '#67e8f9', '#a5f3fc', '#cffafe',
+  ];
+
+  getBarChartBars(widget: DashboardWidget): { x: number; y: number; width: number; height: number; color: string; val: string }[] {
+    const items = this.getItems(widget);
+    const valueField = widget.bindings['valueField'];
+    if (!valueField || items.length === 0) return [];
+    const values = items.map(item => Number(this.extractField(item, valueField)) || 0);
+    const max = Math.max(...values, 1);
+    const count = values.length;
+    const chartWidth = 350;
+    const gap = Math.max(2, Math.min(6, 60 / count));
+    const barWidth = Math.max(4, (chartWidth - gap * count) / count);
+    const totalWidth = count * barWidth + (count - 1) * gap;
+    const offsetX = 40 + (chartWidth - totalWidth) / 2;
+    const skip = Math.max(1, Math.ceil(count / 30));
+    return values
+      .map((v, i) => {
+        const h = (v / max) * 170;
+        return {
+          x: offsetX + i * (barWidth + gap),
+          y: 180 - h,
+          width: barWidth,
+          height: h,
+          color: this.BAR_COLORS[i % this.BAR_COLORS.length],
+          val: this.formatNum(v),
+        };
+      })
+      .filter((_, i) => i % skip === 0);
+  }
+
+  getBarChartLabels(widget: DashboardWidget): { x: number; text: string }[] {
+    const items = this.getItems(widget);
+    const labelField = widget.bindings['labelField'];
+    const valueField = widget.bindings['valueField'];
+    if (!labelField || !valueField || items.length === 0) return [];
+    const count = items.length;
+    const chartWidth = 350;
+    const gap = Math.max(2, Math.min(6, 60 / count));
+    const barWidth = Math.max(4, (chartWidth - gap * count) / count);
+    const totalWidth = count * barWidth + (count - 1) * gap;
+    const offsetX = 40 + (chartWidth - totalWidth) / 2;
+    const skip = Math.max(1, Math.ceil(count / 10));
+    return items
+      .map((item, i) => ({
+        x: offsetX + i * (barWidth + gap) + barWidth / 2,
+        text: this.truncate(String(this.extractField(item, labelField) ?? ''), 8),
+      }))
+      .filter((_, i) => i % skip === 0);
+  }
+
+  // ── PIE CHART helpers ──
+
+  private readonly PIE_COLORS = [
+    '#2563eb', '#d97706', '#16a34a', '#dc2626', '#7c3aed',
+    '#0891b2', '#ea580c', '#4f46e5', '#059669', '#be185d',
+    '#65a30d', '#0284c7', '#9333ea', '#e11d48', '#ca8a04',
+  ];
+
+  getPieSlices(widget: DashboardWidget): { d: string; color: string; label: string; value: string }[] {
+    const items = this.getItems(widget);
+    const labelField = widget.bindings['labelField'];
+    const valueField = widget.bindings['valueField'];
+    if (!valueField || items.length === 0) return [];
+    const map = new Map<string, number>();
+    for (const item of items) {
+      const label = labelField ? String(this.extractField(item, labelField) ?? 'Unknown') : 'Item';
+      const val = Number(this.extractField(item, valueField)) || 0;
+      map.set(label, (map.get(label) ?? 0) + val);
+    }
+    const entries = [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const total = entries.reduce((s, [, v]) => s + v, 0) || 1;
+    const cx = 100, cy = 100, r = 85;
+    let startAngle = -Math.PI / 2;
+    return entries.map(([label, value], i) => {
+      const angle = (value / total) * 2 * Math.PI;
+      const endAngle = startAngle + angle;
+      const largeArc = angle > Math.PI ? 1 : 0;
+      const x1 = cx + r * Math.cos(startAngle);
+      const y1 = cy + r * Math.sin(startAngle);
+      const x2 = cx + r * Math.cos(endAngle);
+      const y2 = cy + r * Math.sin(endAngle);
+      const d = entries.length === 1
+        ? `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx - 0.01} ${cy - r} Z`
+        : `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+      startAngle = endAngle;
+      return {
+        d,
+        color: this.PIE_COLORS[i % this.PIE_COLORS.length],
+        label: this.truncate(label, 18),
+        value: this.formatNum(value),
+      };
+    });
   }
 
   getTableColumns(widget: DashboardWidget): string[] {
@@ -719,14 +1030,24 @@ export class SharedViewerComponent implements OnInit {
   getTableRows(widget: DashboardWidget): Record<string, string>[] {
     const items = this.getItems(widget);
     const columns = this.getTableColumns(widget);
-    return items.slice(0, 50).map(item => {
-      const row: Record<string, string> = {};
-      for (const col of columns) {
-        const val = this.getPath(item, col);
-        row[col] = val == null ? '' : String(val);
-      }
-      return row;
-    });
+    const filter = this.searchFilter().toLowerCase();
+    return items
+      .filter(item => {
+        if (!filter) return true;
+        return columns.some(col => {
+          const val = this.getPath(item, col);
+          return val != null && String(val).toLowerCase().includes(filter);
+        });
+      })
+      .slice(0, 50)
+      .map(item => {
+        const row: Record<string, string> = {};
+        for (const col of columns) {
+          const val = this.getPath(item, col);
+          row[col] = val == null ? '' : String(val);
+        }
+        return row;
+      });
   }
 
   getBadgeValue(widget: DashboardWidget): string {
@@ -753,6 +1074,39 @@ export class SharedViewerComponent implements OnInit {
   }
 
   // ── Form helpers ──
+  refreshFieldData(field: any) {
+    this.fetchFieldData(field);
+  }
+
+  private async fetchFieldData(field: any) {
+    if (!field.dataSource) return;
+    const ds = field.dataSource;
+    try {
+      const res = await this.api.get(
+        ds.moduleApiPrefix,
+        ds.pathTemplate,
+        ds.pathParams || {},
+        ds.queryParams || {},
+      ).toPromise();
+      let data: unknown = res;
+      if (ds.dataPath) {
+        data = this.getPath(res, ds.dataPath);
+      }
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const obj = data as Record<string, unknown>;
+        if (Array.isArray(obj['data'])) {
+          data = obj['data'];
+        } else {
+          const firstArr = Object.values(obj).find(v => Array.isArray(v));
+          if (firstArr) data = firstArr;
+        }
+      }
+      this.formFields.update(fs =>
+        fs.map(f => f.id === field.id ? { ...f, lastData: data } : f)
+      );
+    } catch { /* ignore fetch errors in shared view */ }
+  }
+
   getFieldValue(fieldId: string): string {
     return String(this.fieldValues()[fieldId] ?? '');
   }
@@ -761,9 +1115,42 @@ export class SharedViewerComponent implements OnInit {
     this.fieldValues.update(v => ({ ...v, [fieldId]: value }));
   }
 
-  getSelectOptions(field: any): string[] {
-    if (field.options) return (field.options as string).split(',').map((o: string) => o.trim());
+  getSelectOptions(field: any): { display: string; value: string }[] {
+    const items = Array.isArray(field.lastData) ? field.lastData as Record<string, unknown>[] : [];
+    if (items.length > 0) {
+      const displayField = field.displayField || '';
+      const valueField = field.valueField || '';
+      return items.slice(0, 50).map((item: Record<string, unknown>) => ({
+        display: displayField ? String(this.getPath(item, displayField) ?? '') : JSON.stringify(item).slice(0, 60),
+        value: valueField ? String(this.getPath(item, valueField) ?? '') : '',
+      }));
+    }
+    if (field.options) {
+      return (field.options as string).split(',').map((o: string) => ({ display: o.trim(), value: o.trim() }));
+    }
     return [];
+  }
+
+  getFormTableColumns(field: any): string[] {
+    if (field.columns) {
+      return field.columns.split(',').map((c: string) => c.trim()).filter(Boolean);
+    }
+    const items = Array.isArray(field.lastData) ? field.lastData as Record<string, unknown>[] : [];
+    if (items.length > 0) return Object.keys(items[0]).slice(0, 8);
+    return [];
+  }
+
+  getFormTableRows(field: any): Record<string, string>[] {
+    const items = Array.isArray(field.lastData) ? field.lastData as Record<string, unknown>[] : [];
+    const columns = this.getFormTableColumns(field);
+    return items.slice(0, 50).map((item: Record<string, unknown>) => {
+      const row: Record<string, string> = {};
+      for (const col of columns) {
+        const val = this.getPath(item, col);
+        row[col] = val == null ? '' : String(val);
+      }
+      return row;
+    });
   }
 
   async executeFormAction(action: any) {
@@ -771,18 +1158,17 @@ export class SharedViewerComponent implements OnInit {
     this.formExecuting.set(true);
     this.formResponse.set(null);
     try {
-      const body: Record<string, unknown> = {};
-      for (const field of this.formFields()) {
-        body[field.label || field.id] = this.fieldValues()[field.id] ?? '';
-      }
+      const body = this.buildFormRequestBody(action);
       const method = (action.method || 'POST').toUpperCase();
       let result: unknown;
-      if (method === 'POST') {
-        result = await this.api.post(action.moduleApiPrefix, action.pathTemplate, action.pathParams || {}, body).toPromise();
+      if (method === 'DELETE') {
+        result = await this.api.delete(action.moduleApiPrefix, action.pathTemplate, action.pathParams || {}).toPromise();
       } else if (method === 'PUT') {
         result = await this.api.put(action.moduleApiPrefix, action.pathTemplate, action.pathParams || {}, body).toPromise();
       } else if (method === 'PATCH') {
         result = await this.api.patch(action.moduleApiPrefix, action.pathTemplate, action.pathParams || {}, body).toPromise();
+      } else {
+        result = await this.api.post(action.moduleApiPrefix, action.pathTemplate, action.pathParams || {}, body).toPromise();
       }
       this.formResponse.set({ status: 'success', data: result });
     } catch (e: any) {
@@ -790,6 +1176,55 @@ export class SharedViewerComponent implements OnInit {
     } finally {
       this.formExecuting.set(false);
     }
+  }
+
+  private buildFormRequestBody(action: any): unknown {
+    const mode = action.bodyMode ?? 'fields';
+    const values = this.fieldValues();
+    const hasKeys = action.bodyKeys && action.bodyKeys.length > 0;
+
+    if (mode === 'fields' || (!hasKeys && (action.rawBody ?? '{}').trim() === '{}')) {
+      const body: Record<string, unknown> = {};
+      if (hasKeys) {
+        for (const key of action.bodyKeys) {
+          const src = action.bodySources?.[key];
+          if (!src || src.type === 'hardcoded') {
+            const raw = src?.type === 'hardcoded' ? src.value : '';
+            body[key] = this.resolveFieldRefs(raw, values);
+          } else {
+            body[key] = values[src.fieldId] ?? '';
+          }
+        }
+      } else {
+        for (const field of this.formFields()) {
+          const val = values[field.id];
+          if (val !== undefined && val !== '') {
+            body[field.label || field.id] = val;
+          }
+        }
+      }
+      return body;
+    }
+
+    // text or form mode — resolve {{field.xxx}} references
+    const raw = action.rawBody ?? '{}';
+    const resolved = this.resolveFieldRefs(raw, values);
+    try {
+      return JSON.parse(resolved);
+    } catch {
+      try {
+        const fixed = resolved.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
+        return JSON.parse(fixed);
+      } catch {
+        return {};
+      }
+    }
+  }
+
+  private resolveFieldRefs(template: string, values: Record<string, unknown>): string {
+    return template.replace(/\{\{field\.([^}]+)\}\}/g, (_match: string, fieldId: string) => {
+      return String(values[fieldId] ?? '');
+    });
   }
 
   // ── Workflow helpers ──
