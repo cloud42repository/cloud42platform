@@ -716,6 +716,15 @@ export const EN = {
   'dashboard.share': 'Share',
   'form.share': 'Share',
   'workflow.share': 'Share',
+
+  // ── Appearance / Theme ────────────────────────────────────────────
+  'settings.tab-appearance': 'Appearance',
+  'settings.appearance-title': 'Appearance',
+  'settings.appearance-hint': 'Customize the look and feel of the platform. Changes are applied instantly and saved to your browser.',
+  'settings.theme-mode': 'Theme Mode',
+  'settings.theme-light': 'Light',
+  'settings.theme-dark': 'Dark',
+  'settings.theme-color': 'Accent Color',
 } as const;
 
 export type TranslationKey = keyof typeof EN;

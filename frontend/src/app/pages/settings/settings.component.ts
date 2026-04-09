@@ -15,6 +15,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 
 import { MODULES } from '../../config/endpoints';
 import {
@@ -26,6 +27,7 @@ import { ModuleVisibilityService } from '../../services/module-visibility.servic
 import { UserManagementService } from '../../services/user-management.service';
 import { UserRole, USER_ROLE_LABELS, StoredUser } from '../../config/user.types';
 import { TranslatePipe } from '../../i18n/translate.pipe';
+import { ThemeService, type ThemeMode, type ThemeColor } from '../../services/theme.service';
 
 export interface ServiceGroupState {
   group: ServiceConfigGroup;
@@ -43,7 +45,7 @@ export interface ServiceGroupState {
     MatExpansionModule, MatSelectModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatChipsModule, MatCardModule,
     MatTooltipModule, MatDividerModule, MatSnackBarModule, MatTabsModule,
-    MatSlideToggleModule, MatBadgeModule, TranslatePipe,
+    MatSlideToggleModule, MatBadgeModule, MatButtonToggleModule, TranslatePipe,
   ],
   template: `
     <div class="settings-root">
@@ -210,6 +212,65 @@ export interface ServiceGroupState {
                     color="primary" />
                 </div>
               }
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- ─────────── Tab: Appearance ─────────── -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">palette</mat-icon>
+            {{ 'settings.tab-appearance' | t }}
+          </ng-template>
+          <div class="general-section">
+            <h2 class="section-title">{{ 'settings.appearance-title' | t }}</h2>
+            <p class="section-hint">{{ 'settings.appearance-hint' | t }}</p>
+
+            <!-- Mode toggle -->
+            <h3 class="appearance-sub-title">{{ 'settings.theme-mode' | t }}</h3>
+            <div class="mode-toggle-row">
+              <button class="mode-btn" [class.mode-active]="themeSvc.mode() === 'light'" (click)="themeSvc.setMode('light')">
+                <mat-icon>light_mode</mat-icon>
+                <span>{{ 'settings.theme-light' | t }}</span>
+              </button>
+              <button class="mode-btn" [class.mode-active]="themeSvc.mode() === 'dark'" (click)="themeSvc.setMode('dark')">
+                <mat-icon>dark_mode</mat-icon>
+                <span>{{ 'settings.theme-dark' | t }}</span>
+              </button>
+            </div>
+
+            <!-- Color picker -->
+            <h3 class="appearance-sub-title">{{ 'settings.theme-color' | t }}</h3>
+            <div class="color-swatches">
+              @for (c of colorOptions; track c.id) {
+                <button class="color-swatch"
+                  [class.swatch-active]="themeSvc.color() === c.id"
+                  [style.background]="c.swatch"
+                  (click)="themeSvc.setColor(c.id)"
+                  [matTooltip]="c.label">
+                  @if (themeSvc.color() === c.id) {
+                    <mat-icon class="swatch-check">check</mat-icon>
+                  }
+                </button>
+              }
+            </div>
+
+            <!-- Preview -->
+            <div class="theme-preview">
+              <div class="preview-toolbar" [style.background]="previewToolbarBg()">
+                <span class="preview-title">☁️ Cloud42</span>
+              </div>
+              <div class="preview-body" [style.background]="previewBg()">
+                <div class="preview-sidebar" [style.background]="previewSidebarBg()">
+                  <div class="preview-nav-item active"></div>
+                  <div class="preview-nav-item"></div>
+                  <div class="preview-nav-item"></div>
+                </div>
+                <div class="preview-content">
+                  <div class="preview-card"></div>
+                  <div class="preview-card"></div>
+                </div>
+              </div>
             </div>
           </div>
         </mat-tab>
@@ -673,7 +734,130 @@ export interface ServiceGroupState {
       margin: 16px 0 8px;
       font-size: 0.95rem;
       font-weight: 600;
-      color: #0f172a;
+      color: var(--color-heading);
+    }
+
+    /* ── Appearance tab ── */
+    .appearance-sub-title {
+      margin: 20px 0 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--color-heading);
+    }
+    .appearance-sub-title:first-of-type {
+      margin-top: 8px;
+    }
+    .mode-toggle-row {
+      display: flex;
+      gap: 12px;
+    }
+    .mode-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      border: 2px solid var(--color-border);
+      border-radius: 12px;
+      background: var(--color-surface);
+      color: var(--color-text);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.18s;
+    }
+    .mode-btn:hover {
+      border-color: var(--color-primary);
+      background: var(--color-bg);
+    }
+    .mode-btn.mode-active {
+      border-color: var(--color-primary);
+      background: var(--color-primary);
+      color: #fff;
+    }
+    .mode-btn.mode-active mat-icon {
+      color: #fff;
+    }
+    .color-swatches {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .color-swatch {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.18s;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+    .color-swatch:hover {
+      transform: scale(1.12);
+    }
+    .color-swatch.swatch-active {
+      border-color: var(--color-text);
+      transform: scale(1.1);
+    }
+    .swatch-check {
+      color: #fff;
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+      text-shadow: 0 1px 3px rgba(0,0,0,.3);
+    }
+    .theme-preview {
+      margin-top: 24px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-card);
+      width: 320px;
+    }
+    .preview-toolbar {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+    }
+    .preview-title {
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .preview-body {
+      display: flex;
+      height: 100px;
+    }
+    .preview-sidebar {
+      width: 60px;
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .preview-nav-item {
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,.3);
+    }
+    .preview-nav-item.active {
+      background: rgba(255,255,255,.7);
+    }
+    .preview-content {
+      flex: 1;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .preview-card {
+      flex: 1;
+      border-radius: 6px;
+      background: var(--color-surface);
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
     }
   `],
 })
@@ -682,8 +866,34 @@ export class SettingsComponent implements OnInit {
   private readonly snack = inject(MatSnackBar);
   readonly visibility = inject(ModuleVisibilityService);
   readonly userMgmt = inject(UserManagementService);
+  readonly themeSvc = inject(ThemeService);
 
   readonly allModules = MODULES;
+
+  readonly colorOptions: { id: ThemeColor; label: string; swatch: string; toolbar: string; sidebar: string; bg: string }[] = [
+    { id: 'blue',   label: 'Blue',   swatch: '#0284c7', toolbar: 'linear-gradient(135deg, #0c4a6e, #0369a1)', sidebar: '#bae6fd', bg: '#f0f9ff' },
+    { id: 'green',  label: 'Green',  swatch: '#16a34a', toolbar: 'linear-gradient(135deg, #14532d, #15803d)', sidebar: '#bbf7d0', bg: '#f0fdf4' },
+    { id: 'purple', label: 'Purple', swatch: '#7c3aed', toolbar: 'linear-gradient(135deg, #3b0764, #6d28d9)', sidebar: '#e9d5ff', bg: '#faf5ff' },
+    { id: 'orange', label: 'Orange', swatch: '#ea580c', toolbar: 'linear-gradient(135deg, #7c2d12, #c2410c)', sidebar: '#fed7aa', bg: '#fff7ed' },
+    { id: 'rose',   label: 'Rose',   swatch: '#e11d48', toolbar: 'linear-gradient(135deg, #881337, #be123c)', sidebar: '#fecdd3', bg: '#fff1f2' },
+  ];
+
+  previewToolbarBg(): string {
+    const c = this.colorOptions.find(o => o.id === this.themeSvc.color());
+    return c?.toolbar ?? this.colorOptions[0].toolbar;
+  }
+
+  previewSidebarBg(): string {
+    if (this.themeSvc.mode() === 'dark') return '#1e293b';
+    const c = this.colorOptions.find(o => o.id === this.themeSvc.color());
+    return c?.sidebar ?? this.colorOptions[0].sidebar;
+  }
+
+  previewBg(): string {
+    if (this.themeSvc.mode() === 'dark') return '#0f172a';
+    const c = this.colorOptions.find(o => o.id === this.themeSvc.color());
+    return c?.bg ?? this.colorOptions[0].bg;
+  }
 
   /** Service-specific config groups (Zoho, ChatGPT, Impossible Cloud, Softvalue) */
   serviceGroups: ServiceGroupState[] = [];

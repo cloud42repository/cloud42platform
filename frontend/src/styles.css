@@ -14,13 +14,192 @@
   --color-bg:           #f0f9ff;
   --color-sidebar-from: #0c4a6e;
   --color-sidebar-to:   #075985;
+  --color-sidebar-bg:   linear-gradient(180deg, #e0f2fe 0%, #bae6fd 60%, #e0f2fe 100%);
+  --color-sidebar-border: #7dd3fc;
+  --color-sidebar-text: #0c4a6e;
+  --color-sidebar-icon: #0369a1;
+  --color-sidebar-hover: rgba(2,132,199,.15);
+  --color-sidebar-active: rgba(2,132,199,.2);
   --color-border:       #e0f2fe;
   --color-text:         #0c1a2e;
   --color-text-muted:   #64748b;
+  --color-toolbar-bg:   linear-gradient(135deg, #0c4a6e 0%, #0369a1 100%);
+  --color-toolbar-shadow: rgba(12,74,110,.35);
+  --color-heading:      #0f172a;
+  --color-agent-bg:     #fafafa;
+  --color-agent-border: #e0e0e0;
+  --color-code-bg:      #f8fafc;
+  --color-scrollbar:    #cbd5e1;
+  --color-scrollbar-hover: #94a3b8;
   --radius-card:        12px;
   --shadow-card:        0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
   --shadow-hover:       0 4px 20px rgba(2,132,199,.18);
   --transition:         .18s cubic-bezier(.4,0,.2,1);
+}
+
+/* ─── Color themes ─────────────────────────────────────────── */
+/* Blue (default) — already in :root */
+
+html.color-green {
+  --color-primary:      #16a34a;
+  --color-primary-dark: #15803d;
+  --color-primary-light:#4ade80;
+  --color-accent:       #10b981;
+  --color-bg:           #f0fdf4;
+  --color-sidebar-from: #14532d;
+  --color-sidebar-to:   #166534;
+  --color-sidebar-bg:   linear-gradient(180deg, #dcfce7 0%, #bbf7d0 60%, #dcfce7 100%);
+  --color-sidebar-border: #86efac;
+  --color-sidebar-text: #14532d;
+  --color-sidebar-icon: #15803d;
+  --color-sidebar-hover: rgba(22,163,74,.15);
+  --color-sidebar-active: rgba(22,163,74,.2);
+  --color-border:       #dcfce7;
+  --color-toolbar-bg:   linear-gradient(135deg, #14532d 0%, #15803d 100%);
+  --color-toolbar-shadow: rgba(20,83,45,.35);
+  --shadow-hover:       0 4px 20px rgba(22,163,74,.18);
+}
+
+html.color-purple {
+  --color-primary:      #7c3aed;
+  --color-primary-dark: #6d28d9;
+  --color-primary-light:#a78bfa;
+  --color-accent:       #8b5cf6;
+  --color-bg:           #faf5ff;
+  --color-sidebar-from: #3b0764;
+  --color-sidebar-to:   #4c1d95;
+  --color-sidebar-bg:   linear-gradient(180deg, #f3e8ff 0%, #e9d5ff 60%, #f3e8ff 100%);
+  --color-sidebar-border: #c4b5fd;
+  --color-sidebar-text: #3b0764;
+  --color-sidebar-icon: #6d28d9;
+  --color-sidebar-hover: rgba(124,58,237,.15);
+  --color-sidebar-active: rgba(124,58,237,.2);
+  --color-border:       #f3e8ff;
+  --color-toolbar-bg:   linear-gradient(135deg, #3b0764 0%, #6d28d9 100%);
+  --color-toolbar-shadow: rgba(59,7,100,.35);
+  --shadow-hover:       0 4px 20px rgba(124,58,237,.18);
+}
+
+html.color-orange {
+  --color-primary:      #ea580c;
+  --color-primary-dark: #c2410c;
+  --color-primary-light:#fb923c;
+  --color-accent:       #f97316;
+  --color-bg:           #fff7ed;
+  --color-sidebar-from: #7c2d12;
+  --color-sidebar-to:   #9a3412;
+  --color-sidebar-bg:   linear-gradient(180deg, #ffedd5 0%, #fed7aa 60%, #ffedd5 100%);
+  --color-sidebar-border: #fdba74;
+  --color-sidebar-text: #7c2d12;
+  --color-sidebar-icon: #c2410c;
+  --color-sidebar-hover: rgba(234,88,12,.15);
+  --color-sidebar-active: rgba(234,88,12,.2);
+  --color-border:       #ffedd5;
+  --color-toolbar-bg:   linear-gradient(135deg, #7c2d12 0%, #c2410c 100%);
+  --color-toolbar-shadow: rgba(124,45,18,.35);
+  --shadow-hover:       0 4px 20px rgba(234,88,12,.18);
+}
+
+html.color-rose {
+  --color-primary:      #e11d48;
+  --color-primary-dark: #be123c;
+  --color-primary-light:#fb7185;
+  --color-accent:       #f43f5e;
+  --color-bg:           #fff1f2;
+  --color-sidebar-from: #881337;
+  --color-sidebar-to:   #9f1239;
+  --color-sidebar-bg:   linear-gradient(180deg, #ffe4e6 0%, #fecdd3 60%, #ffe4e6 100%);
+  --color-sidebar-border: #fda4af;
+  --color-sidebar-text: #881337;
+  --color-sidebar-icon: #be123c;
+  --color-sidebar-hover: rgba(225,29,72,.15);
+  --color-sidebar-active: rgba(225,29,72,.2);
+  --color-border:       #ffe4e6;
+  --color-toolbar-bg:   linear-gradient(135deg, #881337 0%, #be123c 100%);
+  --color-toolbar-shadow: rgba(136,19,55,.35);
+  --shadow-hover:       0 4px 20px rgba(225,29,72,.18);
+}
+
+/* ─── Dark mode ────────────────────────────────────────────── */
+html.theme-dark {
+  --color-surface:      #1e293b;
+  --color-bg:           #0f172a;
+  --color-border:       #334155;
+  --color-text:         #e2e8f0;
+  --color-text-muted:   #94a3b8;
+  --color-heading:      #f1f5f9;
+  --color-agent-bg:     #1e293b;
+  --color-agent-border: #334155;
+  --color-code-bg:      #1e293b;
+  --color-scrollbar:    #475569;
+  --color-scrollbar-hover: #64748b;
+  --shadow-card:        0 1px 3px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+}
+html.theme-dark.color-blue {
+  --color-sidebar-bg:   linear-gradient(180deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
+  --color-sidebar-border: #1e3a5f;
+  --color-sidebar-text: #bae6fd;
+  --color-sidebar-icon: #38bdf8;
+  --color-sidebar-hover: rgba(56,189,248,.12);
+  --color-sidebar-active: rgba(56,189,248,.18);
+  --color-toolbar-bg:   linear-gradient(135deg, #0c4a6e 0%, #075985 100%);
+}
+html.theme-dark.color-green {
+  --color-sidebar-bg:   linear-gradient(180deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
+  --color-sidebar-border: #14532d;
+  --color-sidebar-text: #bbf7d0;
+  --color-sidebar-icon: #4ade80;
+  --color-sidebar-hover: rgba(74,222,128,.12);
+  --color-sidebar-active: rgba(74,222,128,.18);
+  --color-toolbar-bg:   linear-gradient(135deg, #14532d 0%, #166534 100%);
+}
+html.theme-dark.color-purple {
+  --color-sidebar-bg:   linear-gradient(180deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
+  --color-sidebar-border: #3b0764;
+  --color-sidebar-text: #e9d5ff;
+  --color-sidebar-icon: #a78bfa;
+  --color-sidebar-hover: rgba(167,139,250,.12);
+  --color-sidebar-active: rgba(167,139,250,.18);
+  --color-toolbar-bg:   linear-gradient(135deg, #3b0764 0%, #4c1d95 100%);
+}
+html.theme-dark.color-orange {
+  --color-sidebar-bg:   linear-gradient(180deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
+  --color-sidebar-border: #7c2d12;
+  --color-sidebar-text: #fed7aa;
+  --color-sidebar-icon: #fb923c;
+  --color-sidebar-hover: rgba(251,146,60,.12);
+  --color-sidebar-active: rgba(251,146,60,.18);
+  --color-toolbar-bg:   linear-gradient(135deg, #7c2d12 0%, #9a3412 100%);
+}
+html.theme-dark.color-rose {
+  --color-sidebar-bg:   linear-gradient(180deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
+  --color-sidebar-border: #881337;
+  --color-sidebar-text: #fecdd3;
+  --color-sidebar-icon: #fb7185;
+  --color-sidebar-hover: rgba(251,113,133,.12);
+  --color-sidebar-active: rgba(251,113,133,.18);
+  --color-toolbar-bg:   linear-gradient(135deg, #881337 0%, #9f1239 100%);
+}
+
+/* Dark mode overrides for Material components */
+html.theme-dark mat-card {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+html.theme-dark .mat-expansion-panel {
+  background: var(--color-surface) !important;
+}
+html.theme-dark .mat-mdc-tab-group,
+html.theme-dark .mat-mdc-tab-body-content {
+  background: transparent !important;
+}
+html.theme-dark .mdc-text-field--outlined .mdc-notched-outline__leading,
+html.theme-dark .mdc-text-field--outlined .mdc-notched-outline__notch,
+html.theme-dark .mdc-text-field--outlined .mdc-notched-outline__trailing {
+  border-color: var(--color-border) !important;
+}
+html.theme-dark .mat-mdc-form-field {
+  color: var(--color-text) !important;
 }
 
 /* ── Resets ── */
@@ -40,12 +219,12 @@ h1, h2, h3, h4 { font-weight: 600; letter-spacing: -.01em; }
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-thumb { background: var(--color-scrollbar); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-scrollbar-hover); }
 
 /* ── Code / Pre ── */
 pre {
-  background: #f8fafc;
+  background: var(--color-code-bg);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 14px;
@@ -62,25 +241,25 @@ mat-card {
 
 /* ── Light sidenav list items ── */
 .sidenav .mat-mdc-list-item {
-  color: #0c4a6e !important;
+  color: var(--color-sidebar-text) !important;
   border-radius: 8px !important;
   margin: 2px 8px !important;
   transition: background var(--transition);
 }
 .sidenav .mat-mdc-list-item:hover {
-  background: rgba(2,132,199,.15) !important;
-  color: #0284c7 !important;
+  background: var(--color-sidebar-hover) !important;
+  color: var(--color-primary) !important;
 }
 .sidenav .mat-icon {
-  color: #0369a1 !important;
+  color: var(--color-sidebar-icon) !important;
 }
 .sidenav .active-link {
-  background: rgba(2,132,199,.2) !important;
-  color: #0284c7 !important;
+  background: var(--color-sidebar-active) !important;
+  color: var(--color-primary) !important;
   font-weight: 600;
 }
 .sidenav .active-link .mat-icon {
-  color: #0284c7 !important;
+  color: var(--color-primary) !important;
 }
 
 /* ── Material Chip overrides (method badges in headers) ── */

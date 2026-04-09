@@ -716,4 +716,12 @@ export const FR: Record<TranslationKey, string> = {
   'dashboard.share': 'Partager',
   'form.share': 'Partager',
   'workflow.share': 'Partager',
+
+  'settings.tab-appearance': 'Apparence',
+  'settings.appearance-title': 'Apparence',
+  'settings.appearance-hint': 'Personnalisez l\'apparence de la plateforme. Les changements sont appliqués instantanément et sauvegardés dans votre navigateur.',
+  'settings.theme-mode': 'Mode du thème',
+  'settings.theme-light': 'Clair',
+  'settings.theme-dark': 'Sombre',
+  'settings.theme-color': 'Couleur d\'accent',
 };

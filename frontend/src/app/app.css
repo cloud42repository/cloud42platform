@@ -2,8 +2,8 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 100%) !important;
-  box-shadow: 0 2px 16px rgba(12,74,110,.35) !important;
+  background: var(--color-toolbar-bg) !important;
+  box-shadow: 0 2px 16px var(--color-toolbar-shadow) !important;
   height: 60px !important;
 }
 
@@ -21,8 +21,8 @@
 
 .sidenav {
   width: 248px;
-  background: linear-gradient(180deg, #e0f2fe 0%, #bae6fd 60%, #e0f2fe 100%);
-  border-right: 1px solid #7dd3fc;
+  background: var(--color-sidebar-bg);
+  border-right: 1px solid var(--color-sidebar-border);
   box-shadow: 2px 0 16px rgba(2,132,199,.12);
   overflow-y: auto;
   display: flex;
@@ -75,7 +75,7 @@
   padding: 16px 16px 12px;
 }
 .user-menu-info { display: flex; flex-direction: column; gap: 2px; }
-.user-full-name { font-weight: 600; font-size: 14px; color: #0c4a6e; }
+.user-full-name { font-weight: 600; font-size: 14px; color: var(--color-sidebar-from, #0c4a6e); }
 .user-email { font-size: 12px; color: #64748b; }
 
 /* ── Module sub-navigation ───────────────────────────── */
@@ -86,7 +86,7 @@
 }
 
 .nav-modules-label {
-  color: #0369a1;
+  color: var(--color-sidebar-icon);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -121,11 +121,11 @@
 }
 
 .nav-expansion-panel .mat-expansion-panel-header:hover {
-  background: rgba(3, 105, 161, 0.08) !important;
+  background: var(--color-sidebar-hover) !important;
 }
 
 .nav-expansion-panel.mat-expanded .mat-expansion-panel-header {
-  background: rgba(3, 105, 161, 0.12) !important;
+  background: var(--color-sidebar-active) !important;
 }
 
 .nav-expansion-panel .mat-expansion-panel-body {
@@ -136,7 +136,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #0c4a6e;
+  color: var(--color-sidebar-text);
   font-size: 12.5px;
   font-weight: 500;
   overflow: hidden;
@@ -152,13 +152,13 @@
   font-size: 20px;
   width: 20px;
   height: 20px;
-  color: #0369a1;
+  color: var(--color-sidebar-icon);
   flex-shrink: 0;
 }
 
 /* Indicator arrow color */
 .nav-expansion-panel .mat-expansion-indicator::after {
-  color: #0369a1;
+  color: var(--color-sidebar-icon);
 }
 
 .nav-sub-list {
@@ -170,31 +170,31 @@
   height: 34px !important;
   min-height: 34px !important;
   font-size: 12px !important;
-  color: #0c4a6e !important;
+  color: var(--color-sidebar-text) !important;
 }
 
 .nav-sub-item mat-icon {
   font-size: 18px !important;
   width: 18px !important;
   height: 18px !important;
-  color: #0284c7 !important;
+  color: var(--color-primary) !important;
 }
 
 .nav-sub-item.active-link {
-  background: rgba(3, 105, 161, 0.14) !important;
-  color: #0c4a6e !important;
+  background: var(--color-sidebar-active) !important;
+  color: var(--color-sidebar-text) !important;
   font-weight: 600 !important;
 }
 
 .nav-sub-item.active-link mat-icon {
-  color: #0369a1 !important;
+  color: var(--color-sidebar-icon) !important;
 }
 
 /* ── Agent right-side panel ─────────────────────────────── */
 .agent-sidenav {
   width: 420px;
-  background: #fafafa;
-  border-left: 1px solid #e0e0e0;
+  background: var(--color-agent-bg);
+  border-left: 1px solid var(--color-agent-border);
   box-shadow: -2px 0 16px rgba(2,132,199,.10);
   overflow: hidden;
   display: flex;

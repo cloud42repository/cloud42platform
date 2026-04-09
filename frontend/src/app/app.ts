@@ -18,6 +18,7 @@ import { UserManagementService } from './services/user-management.service';
 import { USER_ROLE_LABELS } from './config/user.types';
 import { TranslateService, type Lang } from './services/translate.service';
 import { TranslatePipe } from './i18n/translate.pipe';
+import { ThemeService } from './services/theme.service';
 
 interface ModuleSubViews {
   dashboard?: { route: string; label: string };
@@ -66,6 +67,9 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
       <span class="app-title">☁️ {{ 'app.title' | t }}</span>
       <span class="toolbar-spacer"></span>
       @if (auth.isLoggedIn()) {
+        <button mat-icon-button (click)="theme.toggleMode()" [matTooltip]="'settings.theme-mode' | t" style="color:white">
+          <mat-icon>{{ theme.mode() === 'light' ? 'dark_mode' : 'light_mode' }}</mat-icon>
+        </button>
         <button mat-icon-button (click)="agentOpen.set(!agentOpen())" [matTooltip]="'app.agent' | t" style="color:white" [class.agent-btn-active]="agentOpen()">
           <mat-icon>smart_toy</mat-icon>
         </button>
@@ -235,6 +239,7 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
 })
 export class App {
   private readonly visibilitySvc = inject(ModuleVisibilityService);
+  readonly theme = inject(ThemeService);
   readonly userMgmt = inject(UserManagementService);
   readonly i18n = inject(TranslateService);
   readonly modules = this.visibilitySvc.enabledModules;
