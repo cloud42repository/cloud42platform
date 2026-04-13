@@ -265,15 +265,15 @@ interface FieldTypeRef {
                   </div>
                 }
                 @if (field.kind === 'select') {
-                  <select class="preview-select-input"
-                          [value]="getFieldValue(field.id)"
-                          (change)="setFieldValue(field.id, $any($event.target).value)"
-                          (click)="$event.stopPropagation()">
-                    <option value="" disabled selected>{{ field.placeholder || 'Select…' }}</option>
-                    @for (opt of getSelectOptions(field); track $index) {
-                      <option [value]="opt.value">{{ opt.display }}</option>
-                    }
-                  </select>
+                  <mat-form-field appearance="outline" class="preview-select-field" (click)="$event.stopPropagation()">
+                    <mat-select [value]="getFieldValue(field.id)"
+                                (selectionChange)="setFieldValue(field.id, $event.value)"
+                                [placeholder]="field.placeholder || 'Select…'">
+                      @for (opt of getSelectOptions(field); track $index) {
+                        <mat-option [value]="opt.value">{{ opt.display }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
                   @if (field.dataSource) {
                     <span class="data-source-tag">
                       <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
@@ -1003,13 +1003,20 @@ interface FieldTypeRef {
     .action-config-btn:hover mat-icon { color: #0891b2; }
 
     /* ── Select input ── */
-    .preview-select-input {
-      width: 100%; border: 1px solid #e2e8f0; border-radius: 6px;
-      padding: 8px 12px; background: #f8fafc; font-size: 12px;
-      color: #1e293b; cursor: pointer; outline: none;
-      appearance: auto;
+    .preview-select-field {
+      width: 100%; font-size: 12px;
     }
-    .preview-select-input:focus { border-color: #0891b2; }
+    .preview-select-field .mat-mdc-form-field-subscript-wrapper { display: none; }
+    .preview-select-field .mdc-notched-outline__leading,
+    .preview-select-field .mdc-notched-outline__notch,
+    .preview-select-field .mdc-notched-outline__trailing {
+      border-color: #e2e8f0 !important;
+    }
+    .preview-select-field:hover .mdc-notched-outline__leading,
+    .preview-select-field:hover .mdc-notched-outline__notch,
+    .preview-select-field:hover .mdc-notched-outline__trailing {
+      border-color: #0891b2 !important;
+    }
 
     /* ── Response panel ── */
     .response-panel {
@@ -1268,6 +1275,10 @@ export class FormBuilderComponent implements OnInit {
         this.formName.set(existing.name);
         this.fields.set([...existing.fields]);
         this.submitActions.set([...existing.submitActions]);
+        // Auto-fetch data for fields with a dataSource but no cached data
+        for (const f of this.fields()) {
+          if (f.dataSource && f.lastData == null) this.fetchFieldData(f);
+        }
       } else {
         this.router.navigate(['/forms']);
       }
@@ -1776,7 +1787,7 @@ export class FormBuilderComponent implements OnInit {
     const form: FormDefinition = {
       id: this.formId(),
       name: this.formName() || 'Untitled Form',
-      fields: this.fields().map(f => ({ ...f, lastData: undefined })),
+      fields: this.fields(),
       submitActions: this.submitActions(),
       status: 'draft',
       createdAt: new Date().toISOString(),

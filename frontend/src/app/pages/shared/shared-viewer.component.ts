@@ -7,6 +7,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { ShareService, SharedItemData } from '../../services/share.service';
 import { WorkflowService } from '../../services/workflow.service';
 import { TranslatePipe } from '../../i18n/translate.pipe';
@@ -19,6 +21,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
   imports: [
     CommonModule, FormsModule,
     MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatDividerModule, MatTooltipModule,
+    MatFormFieldModule, MatSelectModule,
     TranslatePipe,
   ],
   template: `
@@ -222,14 +225,15 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                              (input)="setFieldValue(field.id, $any($event.target).value)" />
                     }
                     @if (field.kind === 'select') {
-                      <select class="preview-select-input"
-                              [value]="getFieldValue(field.id)"
-                              (change)="setFieldValue(field.id, $any($event.target).value)">
-                        <option value="" disabled selected>{{ field.placeholder || 'Select…' }}</option>
-                        @for (opt of getSelectOptions(field); track $index) {
-                          <option [value]="opt.value">{{ opt.display }}</option>
-                        }
-                      </select>
+                      <mat-form-field appearance="outline" class="preview-select-field">
+                        <mat-select [value]="getFieldValue(field.id)"
+                                    (selectionChange)="setFieldValue(field.id, $event.value)"
+                                    [placeholder]="field.placeholder || 'Select…'">
+                          @for (opt of getSelectOptions(field); track $index) {
+                            <mat-option [value]="opt.value">{{ opt.display }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
                       @if (field.dataSource) {
                         <span class="data-source-tag">
                           <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
@@ -574,7 +578,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
     .widget-refresh-btn { width: 24px !important; height: 24px !important; line-height: 24px !important; opacity: 0.4; }
     .widget-refresh-btn:hover { opacity: 1; }
     .widget-refresh-btn mat-icon { font-size: 15px; width: 15px; height: 15px; }
-    .widget-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px 12px; overflow: auto; }
+    .widget-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px 12px; overflow: hidden; min-height: 0; }
     .no-data { display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 12px; }
     .badge-vis { text-align: center; }
     .badge-value { font-size: 28px; font-weight: 800; color: #1e293b; }
@@ -593,8 +597,8 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
     .data-table td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; }
 
     /* ── Charts ── */
-    .chart-container { width: 100%; display: flex; align-items: center; justify-content: center; }
-    .chart-container svg { width: 100%; height: auto; }
+    .chart-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .chart-container svg { width: 100%; height: 100%; max-height: 100%; }
     .chart-dot-label { font-size: 9px; fill: #334155; font-weight: 600; }
     .chart-axis-label { font-size: 9px; fill: #94a3b8; }
     .pie-container { flex-direction: row; gap: 8px; }
@@ -622,10 +626,10 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
       font-size: 13px; outline: none; box-sizing: border-box;
     }
     .preview-text-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
-    .preview-select-input {
-      width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;
-      font-size: 13px; background: white;
+    .preview-select-field {
+      width: 100%; font-size: 13px;
     }
+    .preview-select-field .mat-mdc-form-field-subscript-wrapper { display: none; }
     .data-source-tag {
       display: inline-flex; align-items: center; gap: 4px;
       font-size: 10px; color: #64748b; background: #f1f5f9;
@@ -786,10 +790,6 @@ export class SharedViewerComponent implements OnInit {
         const fields = (d['fields'] || []) as any[];
         this.formFields.set(fields);
         this.formActions.set(d['submitActions'] || []);
-        // Fetch live data for select/datatable fields that have a dataSource
-        for (const f of fields) {
-          if (f.dataSource && f.lastData == null) this.fetchFieldData(f);
-        }
       } else if (result.itemType === 'workflow') {
         this.workflowSteps.set((d['steps'] || []) as WorkflowNode[]);
         this.wfInputs.set((d['inputs'] || []) as WorkflowInput[]);
