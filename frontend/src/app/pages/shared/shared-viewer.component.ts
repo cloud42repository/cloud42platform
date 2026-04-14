@@ -280,8 +280,8 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
               }
 
               <!-- Submit actions -->
-              @if (formActions().length > 0) {
-                <div class="submit-row" [style.grid-column]="'1 / -1'">
+              <div class="submit-row" [style.grid-column]="'1 / -1'">
+                @if (formActions().length > 0) {
                   @for (action of formActions(); track action.id) {
                     <button mat-flat-button [color]="action.color || 'primary'"
                             (click)="executeFormAction(action)"
@@ -292,8 +292,17 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                       {{ action.label || action.method }}
                     </button>
                   }
-                </div>
-              }
+                } @else {
+                  <button mat-flat-button color="primary"
+                          (click)="submitForm()"
+                          [disabled]="formExecuting()"
+                          class="action-run-btn">
+                    @if (formExecuting()) { <mat-spinner diameter="16" /> }
+                    @else { <mat-icon>send</mat-icon> }
+                    Submit
+                  </button>
+                }
+              </div>
 
               <!-- Form response -->
               @if (formResponse(); as resp) {
@@ -1173,6 +1182,26 @@ export class SharedViewerComponent implements OnInit {
       this.formResponse.set({ status: 'success', data: result });
     } catch (e: any) {
       this.formResponse.set({ status: 'error', data: e?.error || e?.message || 'Error' });
+    } finally {
+      this.formExecuting.set(false);
+    }
+  }
+
+  submitForm() {
+    this.formExecuting.set(true);
+    this.formResponse.set(null);
+    try {
+      const values = this.fieldValues();
+      const body: Record<string, unknown> = {};
+      for (const field of this.formFields()) {
+        const val = values[field.id];
+        if (val !== undefined && val !== '') {
+          body[field.label || field.id] = val;
+        }
+      }
+      this.formResponse.set({ status: 'success', data: body });
+    } catch (e: any) {
+      this.formResponse.set({ status: 'error', data: e?.message || 'Error' });
     } finally {
       this.formExecuting.set(false);
     }
