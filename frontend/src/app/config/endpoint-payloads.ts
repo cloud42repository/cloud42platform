@@ -598,7 +598,7 @@ const PAYLOAD_MAP: Record<string, Record<string, unknown>> = {
  * Returns a deep-cloned object so callers can mutate freely,
  * or null if no template is defined.
  */
-export function getEndpointPayload(moduleId: string, endpointId: string): unknown | null {
+export function getEndpointPayload(moduleId: string, endpointId: string): unknown {
   const template = PAYLOAD_MAP[moduleId]?.[endpointId];
-  return template ? JSON.parse(JSON.stringify(template)) : null;
+  return template ? structuredClone(template) : null;
 }

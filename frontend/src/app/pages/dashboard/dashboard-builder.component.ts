@@ -27,7 +27,6 @@ import {
   Dashboard,
   DashboardWidget,
   WidgetKind,
-  WidgetDataSource,
   AggregateFunction,
 } from '../../config/dashboard.types';
 import { MODULES, ModuleDef, EndpointDef } from '../../config/endpoints';
@@ -1102,8 +1101,8 @@ export class DashboardBuilderComponent implements OnInit {
         label: '',
         x: 0,
         y: 0,
-        width: data.kind === 'data-table' ? 12 : data.kind === 'badge' ? 3 : data.kind === 'search-text' ? 12 : 6,
-        height: data.kind === 'search-text' ? 1 : data.kind === 'badge' ? 2 : data.kind === 'data-table' ? 4 : data.kind === 'bar-chart' ? 4 : 3,
+        width: this.getDefaultWidth(data.kind),
+        height: this.getDefaultHeight(data.kind),
         bindings: {},
       };
       this.widgets.update(ws => {
@@ -1269,6 +1268,33 @@ export class DashboardBuilderComponent implements OnInit {
     return this.svc.getPath(item, field);
   }
 
+  /** Safely convert unknown value to string without [object Object] */
+  private safeStr(val: unknown, fallback = ''): string {
+    if (val == null) return fallback;
+    if (typeof val === 'string') return val;
+    if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+    return JSON.stringify(val);
+  }
+
+  /** Default widget width based on kind */
+  private getDefaultWidth(kind: WidgetKind): number {
+    switch (kind) {
+      case 'data-table': case 'search-text': return 12;
+      case 'badge': return 3;
+      default: return 6;
+    }
+  }
+
+  /** Default widget height based on kind */
+  private getDefaultHeight(kind: WidgetKind): number {
+    switch (kind) {
+      case 'search-text': return 1;
+      case 'badge': return 2;
+      case 'data-table': case 'bar-chart': return 4;
+      default: return 3;
+    }
+  }
+
   /** Get array items from widget lastData, filtered by global search text */
   private getItems(widget: DashboardWidget): Record<string, unknown>[] {
     if (!Array.isArray(widget.lastData)) return [];
@@ -1277,7 +1303,7 @@ export class DashboardBuilderComponent implements OnInit {
     if (!q) return items;
     return items.filter(item =>
       Object.values(item).some(v =>
-        v != null && String(v).toLowerCase().includes(q)
+        v != null && this.safeStr(v).toLowerCase().includes(q)
       )
     );
   }
@@ -1329,7 +1355,7 @@ export class DashboardBuilderComponent implements OnInit {
     return items
       .map((item, i) => ({
         x: 40 + i * step,
-        text: this.truncate(String(this.extractField(item, labelField) ?? ''), 10),
+        text: this.truncate(this.safeStr(this.extractField(item, labelField)), 10),
       }))
       .filter((_, i) => i % skip === 0 || i === items.length - 1);
   }
@@ -1385,7 +1411,7 @@ export class DashboardBuilderComponent implements OnInit {
     return items
       .map((item, i) => ({
         x: offsetX + i * (barWidth + gap) + barWidth / 2,
-        text: this.truncate(String(this.extractField(item, labelField) ?? ''), 8),
+        text: this.truncate(this.safeStr(this.extractField(item, labelField)), 8),
       }))
       .filter((_, i) => i % skip === 0);
   }
@@ -1407,7 +1433,7 @@ export class DashboardBuilderComponent implements OnInit {
     // Aggregate: group by label, sum values
     const map = new Map<string, number>();
     for (const item of items) {
-      const label = labelField ? String(this.extractField(item, labelField) ?? 'Unknown') : `Item`;
+      const label = labelField ? this.safeStr(this.extractField(item, labelField), 'Unknown') : 'Item';
       const val = Number(this.extractField(item, valueField)) || 0;
       map.set(label, (map.get(label) ?? 0) + val);
     }
@@ -1464,7 +1490,7 @@ export class DashboardBuilderComponent implements OnInit {
       const row: Record<string, string> = {};
       for (const col of columns) {
         const val = this.extractField(item, col);
-        row[col] = val == null ? '' : String(val);
+        row[col] = this.safeStr(val);
       }
       return row;
     });
@@ -1482,7 +1508,7 @@ export class DashboardBuilderComponent implements OnInit {
       if (agg === 'count') return '1';
       if (field) {
         const v = this.extractField(data, field);
-        return v != null ? this.formatNum(Number(v)) : '–';
+        return v == null ? '–' : this.formatNum(Number(v));
       }
       return '–';
     }
@@ -1493,7 +1519,7 @@ export class DashboardBuilderComponent implements OnInit {
     if (agg === 'count') return String(items.length);
 
     if (!field) return '–';
-    const nums = items.map(it => Number(this.extractField(it, field))).filter(n => !isNaN(n));
+    const nums = items.map(it => Number(this.extractField(it, field))).filter(n => !Number.isNaN(n));
     if (nums.length === 0) return '–';
 
     switch (agg) {
@@ -1510,7 +1536,7 @@ export class DashboardBuilderComponent implements OnInit {
   private formatNum(n: number): string {
     if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
     if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
-    return n % 1 !== 0 ? n.toFixed(2) : String(n);
+    return n % 1 === 0 ? String(n) : n.toFixed(2);
   }
 
   private truncate(s: string, max: number): string {
@@ -1747,7 +1773,7 @@ export class DashboardBuilderComponent implements OnInit {
 
       const buffer = await wb.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      saveAs(blob, (dashName + '.xlsx').replace(/[\\/:*?"<>|]/g, '_'));
+      saveAs(blob, (dashName + '.xlsx').replaceAll(/[\\/:*?"<>|]/g, '_'));
     } finally {
       this.exportingExcel.set(false);
     }
@@ -1755,7 +1781,7 @@ export class DashboardBuilderComponent implements OnInit {
 
   private sanitizeSheetName(name: string, wb: import('exceljs').Workbook): string {
     // Excel sheet names: max 31 chars, no special chars
-    let clean = name.replace(/[\\/:*?\[\]]/g, '').substring(0, 28);
+    let clean = name.replaceAll(/[\\/:*?[\]]/g, '').substring(0, 28);
     if (!clean) clean = 'Sheet';
     // Ensure unique
     let suffix = 1;
@@ -1798,12 +1824,12 @@ export class DashboardBuilderComponent implements OnInit {
 
     // Add Excel table for filtering/sorting
     if (rows.length > 0) {
-      const lastCol = String.fromCharCode(64 + columns.length); // A, B, C...
+      const lastCol = String.fromCodePoint(64 + columns.length); // A, B, C...
       const ref = columns.length <= 26
         ? `A1:${lastCol}${rows.length + 1}`
         : `A1:${this.colLetter(columns.length)}${rows.length + 1}`;
       ws.addTable({
-        name: 'Table_' + ws.name.replace(/[^a-zA-Z0-9]/g, ''),
+        name: 'Table_' + ws.name.replaceAll(/[^a-zA-Z0-9]/g, ''),
         ref,
         headerRow: true,
         style: { theme: 'TableStyleMedium2', showRowStripes: true },
@@ -1843,8 +1869,7 @@ export class DashboardBuilderComponent implements OnInit {
       headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF475569' } };
 
       for (const item of items.slice(0, 200)) {
-        const row = ws.addRow(keys.map(k => this.extractField(item, k) ?? ''));
-        row; // suppress unused
+        ws.addRow(keys.map(k => this.extractField(item, k) ?? ''));
       }
     }
   }
@@ -1860,7 +1885,7 @@ export class DashboardBuilderComponent implements OnInit {
     ];
     for (const item of items) {
       ws.addRow({
-        label: labelField ? String(this.extractField(item, labelField) ?? '') : '',
+        label: labelField ? this.safeStr(this.extractField(item, labelField)) : '',
         value: valueField ? (Number(this.extractField(item, valueField)) || 0) : 0,
       });
     }
@@ -1883,7 +1908,7 @@ export class DashboardBuilderComponent implements OnInit {
     ];
     for (const item of items) {
       ws.addRow({
-        label: labelField ? String(this.extractField(item, labelField) ?? '') : '',
+        label: labelField ? this.safeStr(this.extractField(item, labelField)) : '',
         value: valueField ? (Number(this.extractField(item, valueField)) || 0) : 0,
       });
     }
@@ -1902,7 +1927,7 @@ export class DashboardBuilderComponent implements OnInit {
     // For pie charts, aggregate by label like the UI does
     const map = new Map<string, number>();
     for (const item of items) {
-      const label = labelField ? String(this.extractField(item, labelField) ?? 'Unknown') : 'Item';
+      const label = labelField ? this.safeStr(this.extractField(item, labelField), 'Unknown') : 'Item';
       const val = valueField ? (Number(this.extractField(item, valueField)) || 0) : 0;
       map.set(label, (map.get(label) ?? 0) + val);
     }
@@ -1924,7 +1949,8 @@ export class DashboardBuilderComponent implements OnInit {
 
   private addExcelChart(ws: import('exceljs').Worksheet, type: 'line' | 'bar' | 'pie', sheetName: string, title: string, dataCount: number) {
     const lastRow = dataCount + 1;
-    const chartType = type === 'line' ? 'line' as const : type === 'bar' ? 'bar' as const : 'pie' as const;
+    const chartTypeMap = { line: 'line' as const, bar: 'bar' as const, pie: 'pie' as const };
+    const chartType = chartTypeMap[type];
 
     (ws as any).addChart?.({
       type: chartType,
@@ -1948,7 +1974,7 @@ export class DashboardBuilderComponent implements OnInit {
     let s = '';
     while (n > 0) {
       n--;
-      s = String.fromCharCode(65 + (n % 26)) + s;
+      s = String.fromCodePoint(65 + (n % 26)) + s;
       n = Math.floor(n / 26);
     }
     return s;
@@ -2016,9 +2042,9 @@ export class DashboardBuilderComponent implements OnInit {
     if (url) this.clipboardCopy(url);
   }
 
-  private clipboardCopy(text: string) {
+  private async clipboardCopy(text: string) {
     try {
-      navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(text);
     } catch {
       // Fallback for non-secure contexts
       const ta = document.createElement('textarea');
@@ -2027,8 +2053,8 @@ export class DashboardBuilderComponent implements OnInit {
       ta.style.opacity = '0';
       document.body.appendChild(ta);
       ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
+      (document as unknown as { execCommand(cmd: string): boolean }).execCommand('copy');
+      ta.remove();
     }
     this.shareCopied.set(true);
     setTimeout(() => this.shareCopied.set(false), 2500);

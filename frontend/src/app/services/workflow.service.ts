@@ -20,8 +20,8 @@ export class WorkflowService {
   readonly workflows = this._workflows.asReadonly();
 
   constructor() {
-    // Load workflows from backend API (replaces localStorage when available)
-    this.loadFromApi();
+    // Load workflows from backend API outside constructor to satisfy async rules
+    queueMicrotask(() => this.loadFromApi());
     // Poll every 30 seconds to fire scheduled workflows
     setInterval(() => this.checkScheduled(), 30_000);
   }
@@ -201,183 +201,235 @@ export class WorkflowService {
   ): Promise<boolean> {
     for (const node of nodes) {
       const kind = node.kind ?? 'endpoint';
-
-      if (kind === 'endpoint') {
-        const step = node as WorkflowStep;
-        const ok = await this.executeEndpoint(step, stepResults, log);
-        if (!ok) return false;
-
-      } else if (kind === 'try-catch') {
-        const block = node as TryCatchBlock;
-        const tryLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
-        const tryOk = await this.executeNodes(block.trySteps, stepResults, tryLog);
-        log.steps.push(...tryLog.steps);
-        if (!tryOk) {
-          const catchLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
-          await this.executeNodes(block.catchSteps, stepResults, catchLog);
-          log.steps.push(...catchLog.steps);
-        }
-
-      } else if (kind === 'loop') {
-        const block = node as LoopBlock;
-        const mode = block.loopMode ?? 'count';
-
-        if (mode === 'for-each' && block.loopSourceStepId) {
-          // Resolve the source array from a previous step's response
-          const srcResult = stepResults.get(block.loopSourceStepId);
-          const items = this.resolveArray(srcResult, block.loopSourceField);
-
-          // Log the loop block itself so the user can see how many items were resolved
-          log.steps.push({
-            stepId: block.id,
-            label: block.label || 'Loop (for-each)',
-            startedAt: new Date().toISOString(),
-            finishedAt: new Date().toISOString(),
-            resolvedParams: { sourceStepId: block.loopSourceStepId, sourceField: block.loopSourceField ?? '(root)', itemCount: String(items.length) },
-            response: items,
-            success: true,
-          });
-
-          for (let i = 0; i < items.length; i++) {
-            // Store current element so body steps can reference it via "from-step" → this loop block's id
-            stepResults.set(block.id, items[i]);
-            const iterLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
-            const ok = await this.executeNodes(block.bodySteps, stepResults, iterLog);
-            log.steps.push(...iterLog.steps);
-            if (!ok) return false;
-          }
-          // After iteration, store the full array as the block result
-          stepResults.set(block.id, items);
-        } else {
-          // count mode — repeat N times
-          const count = block.loopCount ?? 1;
-          for (let i = 0; i < count; i++) {
-            const iterLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
-            const ok = await this.executeNodes(block.bodySteps, stepResults, iterLog);
-            log.steps.push(...iterLog.steps);
-            if (!ok) return false;
-          }
-        }
-
-      } else if (kind === 'if-else') {
-        const block = node as IfElseBlock;
-        const condMet = this.evaluateCondition(block, stepResults);
-        const branch = condMet ? block.thenSteps : block.elseSteps;
-        const branchLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
-        const ok = await this.executeNodes(branch, stepResults, branchLog);
-        log.steps.push(...branchLog.steps);
-        if (!ok) return false;
-
-      } else if (kind === 'mapper') {
-        const block = node as MapperBlock;
-        const result: Record<string, unknown> = {};
-        for (const mapping of block.mappings) {
-          if (mapping.source.type === 'from-step') {
-            const srcResult = stepResults.get(mapping.source.stepId);
-            result[mapping.outputField] = srcResult != null
-              ? this.getPath(srcResult, mapping.source.field)
-              : '';
-          } else {
-            result[mapping.outputField] = mapping.source.value;
-          }
-        }
-        stepResults.set(node.id, result);
-        log.steps.push({
-          stepId: node.id,
-          label: block.label || 'Mapper',
-          startedAt: new Date().toISOString(),
-          finishedAt: new Date().toISOString(),
-          resolvedParams: {},
-          response: result,
-          success: true,
-        });
-
-      } else if (kind === 'filter') {
-        const block = node as FilterBlock;
-        // Resolve the source array
-        let items: unknown[] = [];
-        if (block.sourceStepId) {
-          const srcResult = stepResults.get(block.sourceStepId);
-          items = this.resolveArray(srcResult, block.sourceField);
-        }
-        // Apply filter condition
-        const field = block.filterField ?? '';
-        const op = block.filterOperator ?? '==';
-        const expected = block.filterValue ?? '';
-        const filtered = field
-          ? items.filter(item => {
-              const actual = this.getPath(item, field);
-              switch (op) {
-                case '==': return actual === expected;
-                case '!=': return actual !== expected;
-                case '>':  return Number(actual) > Number(expected);
-                case '<':  return Number(actual) < Number(expected);
-                case 'contains': return actual.includes(expected);
-                default: return true;
-              }
-            })
-          : items;
-        stepResults.set(node.id, filtered);
-        log.steps.push({
-          stepId: node.id,
-          label: block.label || 'Filter',
-          startedAt: new Date().toISOString(),
-          finishedAt: new Date().toISOString(),
-          resolvedParams: {},
-          response: filtered,
-          success: true,
-        });
-
-      } else if (kind === 'sub-workflow') {
-        const block = node as SubWorkflowBlock;
-        if (!block.workflowId) {
-          log.steps.push({
-            stepId: block.id,
-            label: block.label || 'Sub-Workflow',
-            startedAt: new Date().toISOString(),
-            finishedAt: new Date().toISOString(),
-            resolvedParams: {},
-            error: 'No workflow selected',
-            success: false,
-          });
-          return false;
-        }
-        // Resolve input bindings
-        const inputValues: Record<string, string> = {};
-        for (const [inputName, source] of Object.entries(block.inputBindings)) {
-          const raw = this.resolveRaw(source, stepResults);
-          inputValues[inputName] = typeof raw === 'string' ? raw : JSON.stringify(raw);
-        }
-        try {
-          const subLog = await this.execute(block.workflowId, inputValues);
-          const subOutputs = (subLog as WorkflowRunLog & { outputs?: unknown }).outputs ?? {};
-          stepResults.set(block.id, subOutputs);
-          log.steps.push({
-            stepId: block.id,
-            label: block.label || block.workflowName || 'Sub-Workflow',
-            startedAt: subLog.startedAt,
-            finishedAt: subLog.finishedAt,
-            resolvedParams: inputValues,
-            response: subOutputs,
-            success: subLog.success,
-            error: subLog.error,
-          });
-          if (!subLog.success) return false;
-        } catch (err: unknown) {
-          log.steps.push({
-            stepId: block.id,
-            label: block.label || block.workflowName || 'Sub-Workflow',
-            startedAt: new Date().toISOString(),
-            finishedAt: new Date().toISOString(),
-            resolvedParams: inputValues,
-            error: err instanceof Error ? err.message : String(err),
-            success: false,
-          });
-          return false;
-        }
-      }
+      const ok = await this.executeNodeByKind(kind, node, stepResults, log);
+      if (!ok) return false;
     }
     return true;
+  }
+
+  private async executeNodeByKind(
+    kind: string,
+    node: WorkflowNode,
+    stepResults: Map<string, unknown>,
+    log: WorkflowRunLog,
+  ): Promise<boolean> {
+    switch (kind) {
+      case 'endpoint':
+        return this.executeEndpoint(node as WorkflowStep, stepResults, log);
+      case 'try-catch':
+        return this.executeTryCatchNode(node as TryCatchBlock, stepResults, log);
+      case 'loop':
+        return this.executeLoopNode(node as LoopBlock, stepResults, log);
+      case 'if-else':
+        return this.executeIfElseNode(node as IfElseBlock, stepResults, log);
+      case 'mapper':
+        return this.executeMapperNode(node as MapperBlock, stepResults, log);
+      case 'filter':
+        return this.executeFilterNode(node as FilterBlock, stepResults, log);
+      case 'sub-workflow':
+        return this.executeSubWorkflowNode(node as SubWorkflowBlock, stepResults, log);
+      default:
+        return true;
+    }
+  }
+
+  private async executeTryCatchNode(
+    block: TryCatchBlock,
+    stepResults: Map<string, unknown>,
+    log: WorkflowRunLog,
+  ): Promise<boolean> {
+    const tryLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
+    const tryOk = await this.executeNodes(block.trySteps, stepResults, tryLog);
+    log.steps.push(...tryLog.steps);
+    if (!tryOk) {
+      const catchLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
+      await this.executeNodes(block.catchSteps, stepResults, catchLog);
+      log.steps.push(...catchLog.steps);
+    }
+    return true;
+  }
+
+  private async executeLoopNode(
+    block: LoopBlock,
+    stepResults: Map<string, unknown>,
+    log: WorkflowRunLog,
+  ): Promise<boolean> {
+    const mode = block.loopMode ?? 'count';
+
+    if (mode === 'for-each' && block.loopSourceStepId) {
+      return this.executeForEachLoop(block, stepResults, log);
+    }
+
+    // count mode — repeat N times
+    const count = block.loopCount ?? 1;
+    for (let i = 0; i < count; i++) {
+      const iterLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
+      const ok = await this.executeNodes(block.bodySteps, stepResults, iterLog);
+      log.steps.push(...iterLog.steps);
+      if (!ok) return false;
+    }
+    return true;
+  }
+
+  private async executeForEachLoop(
+    block: LoopBlock,
+    stepResults: Map<string, unknown>,
+    log: WorkflowRunLog,
+  ): Promise<boolean> {
+    const srcResult = stepResults.get(block.loopSourceStepId!);
+    const items = this.resolveArray(srcResult, block.loopSourceField);
+
+    log.steps.push({
+      stepId: block.id,
+      label: block.label || 'Loop (for-each)',
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+      resolvedParams: { sourceStepId: block.loopSourceStepId!, sourceField: block.loopSourceField ?? '(root)', itemCount: String(items.length) },
+      response: items,
+      success: true,
+    });
+
+    for (const item of items) {
+      stepResults.set(block.id, item);
+      const iterLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
+      const ok = await this.executeNodes(block.bodySteps, stepResults, iterLog);
+      log.steps.push(...iterLog.steps);
+      if (!ok) return false;
+    }
+    stepResults.set(block.id, items);
+    return true;
+  }
+
+  private async executeIfElseNode(
+    block: IfElseBlock,
+    stepResults: Map<string, unknown>,
+    log: WorkflowRunLog,
+  ): Promise<boolean> {
+    const condMet = this.evaluateCondition(block, stepResults);
+    const branch = condMet ? block.thenSteps : block.elseSteps;
+    const branchLog: WorkflowRunLog = { startedAt: new Date().toISOString(), steps: [], success: false };
+    const ok = await this.executeNodes(branch, stepResults, branchLog);
+    log.steps.push(...branchLog.steps);
+    return ok;
+  }
+
+  private executeMapperNode(
+    block: MapperBlock,
+    stepResults: Map<string, unknown>,
+    log: WorkflowRunLog,
+  ): boolean {
+    const result: Record<string, unknown> = {};
+    for (const mapping of block.mappings) {
+      if (mapping.source.type === 'from-step') {
+        const srcResult = stepResults.get(mapping.source.stepId);
+        result[mapping.outputField] = srcResult == null
+          ? ''
+          : this.getPath(srcResult, mapping.source.field);
+      } else {
+        result[mapping.outputField] = mapping.source.value;
+      }
+    }
+    stepResults.set(block.id, result);
+    log.steps.push({
+      stepId: block.id,
+      label: block.label || 'Mapper',
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+      resolvedParams: {},
+      response: result,
+      success: true,
+    });
+    return true;
+  }
+
+  private executeFilterNode(
+    block: FilterBlock,
+    stepResults: Map<string, unknown>,
+    log: WorkflowRunLog,
+  ): boolean {
+    let items: unknown[] = [];
+    if (block.sourceStepId) {
+      const srcResult = stepResults.get(block.sourceStepId);
+      items = this.resolveArray(srcResult, block.sourceField);
+    }
+    const field = block.filterField ?? '';
+    const op = block.filterOperator ?? '==';
+    const expected = block.filterValue ?? '';
+    const filtered = field
+      ? items.filter(item => {
+          const actual = this.getPath(item, field);
+          switch (op) {
+            case '==': return actual === expected;
+            case '!=': return actual !== expected;
+            case '>':  return Number(actual) > Number(expected);
+            case '<':  return Number(actual) < Number(expected);
+            case 'contains': return actual.includes(expected);
+            default: return true;
+          }
+        })
+      : items;
+    stepResults.set(block.id, filtered);
+    log.steps.push({
+      stepId: block.id,
+      label: block.label || 'Filter',
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+      resolvedParams: {},
+      response: filtered,
+      success: true,
+    });
+    return true;
+  }
+
+  private async executeSubWorkflowNode(
+    block: SubWorkflowBlock,
+    stepResults: Map<string, unknown>,
+    log: WorkflowRunLog,
+  ): Promise<boolean> {
+    if (!block.workflowId) {
+      log.steps.push({
+        stepId: block.id,
+        label: block.label || 'Sub-Workflow',
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        resolvedParams: {},
+        error: 'No workflow selected',
+        success: false,
+      });
+      return false;
+    }
+    const inputValues: Record<string, string> = {};
+    for (const [inputName, source] of Object.entries(block.inputBindings)) {
+      const raw = this.resolveRaw(source, stepResults);
+      inputValues[inputName] = typeof raw === 'string' ? raw : JSON.stringify(raw);
+    }
+    try {
+      const subLog = await this.execute(block.workflowId, inputValues);
+      const subOutputs = (subLog as WorkflowRunLog & { outputs?: unknown }).outputs ?? {};
+      stepResults.set(block.id, subOutputs);
+      log.steps.push({
+        stepId: block.id,
+        label: block.label || block.workflowName || 'Sub-Workflow',
+        startedAt: subLog.startedAt,
+        finishedAt: subLog.finishedAt,
+        resolvedParams: inputValues,
+        response: subOutputs,
+        success: subLog.success,
+        error: subLog.error,
+      });
+      return subLog.success;
+    } catch (err: unknown) {
+      log.steps.push({
+        stepId: block.id,
+        label: block.label || block.workflowName || 'Sub-Workflow',
+        startedAt: new Date().toISOString(),
+        finishedAt: new Date().toISOString(),
+        resolvedParams: inputValues,
+        error: err instanceof Error ? err.message : String(err),
+        success: false,
+      });
+      return false;
+    }
   }
 
   private async executeEndpoint(
@@ -395,58 +447,13 @@ export class WorkflowService {
     };
 
     try {
-      // Resolve path params
-      const pathParams: Record<string, string> = {};
-      for (const paramName of step.pathParamNames) {
-        const src = step.paramSources[paramName] ?? { type: 'hardcoded', value: '' };
-        pathParams[paramName] = this.resolve(src, stepResults, allSteps);
-      }
+      const pathParams = this.resolvePathParams(step, stepResults, allSteps);
       stepLog.resolvedParams = pathParams;
 
-      // Resolve body
-      let body: Record<string, unknown> | undefined;
-      const bodyMode = step.bodyMode ?? 'fields';
-      if (step.hasBody && (bodyMode === 'text' || bodyMode === 'form') && step.rawBody) {
-        // Raw JSON body — interpolate {{steps.N.path}} tokens first
-        try {
-          const interpolated = this.interpolateStepRefs(step.rawBody, allSteps ?? this.executingSteps, stepResults);
-          body = JSON.parse(interpolated);
-        } catch (parseErr) {
-          console.warn('[Workflow] JSON parse failed after interpolation:', parseErr);
-          body = {};
-        }
-      } else if (step.hasBody && step.bodyKeys.length > 0) {
-        body = {};
-        for (const key of step.bodyKeys) {
-          const src = step.bodySources[key] ?? { type: 'hardcoded', value: '' };
-          const resolved = this.resolve(src, stepResults, allSteps);
-          body[key] = resolved;
-        }
-      }
+      const body = this.resolveStepBody(step, stepResults, allSteps);
       stepLog.resolvedBody = body;
 
-      // Call the API
-      const method = step.method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
-      let response: unknown;
-
-      if (method === 'get' || method === 'delete') {
-        response = await firstValueFrom(
-          this.api[method](step.moduleApiPrefix, step.pathTemplate, pathParams)
-        );
-      } else if (method === 'post') {
-        response = await firstValueFrom(
-          this.api.post(step.moduleApiPrefix, step.pathTemplate, pathParams, body ?? {})
-        );
-      } else if (method === 'put') {
-        response = await firstValueFrom(
-          this.api.put(step.moduleApiPrefix, step.pathTemplate, pathParams, body ?? {})
-        );
-      } else {
-        response = await firstValueFrom(
-          this.api.patch(step.moduleApiPrefix, step.pathTemplate, pathParams, body ?? {})
-        );
-      }
-
+      const response = await this.callApi(step, pathParams, body);
       stepLog.response = response;
       stepLog.success = true;
       stepResults.set(step.id, response);
@@ -462,6 +469,66 @@ export class WorkflowService {
       log.error = `Step "${stepLog.label}" failed: ${stepLog.error}`;
     }
     return stepLog.success;
+  }
+
+  private resolvePathParams(
+    step: WorkflowStep,
+    stepResults: Map<string, unknown>,
+    allSteps?: WorkflowNode[],
+  ): Record<string, string> {
+    const pathParams: Record<string, string> = {};
+    for (const paramName of step.pathParamNames) {
+      const src = step.paramSources[paramName] ?? { type: 'hardcoded', value: '' };
+      pathParams[paramName] = this.resolve(src, stepResults, allSteps);
+    }
+    return pathParams;
+  }
+
+  private resolveStepBody(
+    step: WorkflowStep,
+    stepResults: Map<string, unknown>,
+    allSteps?: WorkflowNode[],
+  ): Record<string, unknown> | undefined {
+    const bodyMode = step.bodyMode ?? 'fields';
+    if (step.hasBody && (bodyMode === 'text' || bodyMode === 'form') && step.rawBody) {
+      try {
+        const interpolated = this.interpolateStepRefs(step.rawBody, allSteps ?? this.executingSteps, stepResults);
+        return JSON.parse(interpolated);
+      } catch {
+        return {};
+      }
+    }
+    if (step.hasBody && step.bodyKeys.length > 0) {
+      const body: Record<string, unknown> = {};
+      for (const key of step.bodyKeys) {
+        const src = step.bodySources[key] ?? { type: 'hardcoded', value: '' };
+        body[key] = this.resolve(src, stepResults, allSteps);
+      }
+      return body;
+    }
+    return undefined;
+  }
+
+  private async callApi(
+    step: WorkflowStep,
+    pathParams: Record<string, string>,
+    body?: Record<string, unknown>,
+  ): Promise<unknown> {
+    const method = step.method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
+    if (method === 'get' || method === 'delete') {
+      return firstValueFrom(
+        this.api[method](step.moduleApiPrefix, step.pathTemplate, pathParams)
+      );
+    }
+    const apiCallMap: Record<string, typeof this.api.post> = {
+      post: this.api.post,
+      put: this.api.put,
+      patch: this.api.patch,
+    };
+    const call = apiCallMap[method] ?? this.api.post;
+    return firstValueFrom(
+      call.call(this.api, step.moduleApiPrefix, step.pathTemplate, pathParams, body ?? {})
+    );
   }
 
   private evaluateCondition(
@@ -516,41 +583,60 @@ export class WorkflowService {
     stepResults: Map<string, unknown>,
   ): string {
     // Match all {{...}} tokens
-    return raw.replace(/\{\{([^}]+)\}\}/g, (_match, tokenBody: string) => {
+    return raw.replaceAll(/\{\{([^}]+)\}\}/g, (_match, tokenBody: string) => {
       const token = tokenBody.trim();
 
-      // {{steps.N}} or {{steps.N.path}} or {{steps.N[0].path}}
-      const stepMatch = token.match(/^steps\.(\d+)((?:[.\[])[^]*)?$/);
-      if (stepMatch) {
-        const idx = Number(stepMatch[1]) - 1; // Convert to 0-based
-        const step = allSteps[idx];
-        if (!step) return '';
-        const result = stepResults.get(step.id);
-        if (result == null) return '';
-        const path = stepMatch[2]
-          ? stepMatch[2].replace(/\[(\d+)\]/g, '.$1').replace(/^\./, '')
-          : '';
-        if (!path) {
-          return typeof result === 'object' ? JSON.stringify(result) : String(result);
-        }
-        const resolved = this.getPathRaw(result, path);
-        if (resolved == null) return '';
-        return typeof resolved === 'object' ? JSON.stringify(resolved) : String(resolved);
-      }
+      const stepResolved = this.resolveStepToken(token, allSteps, stepResults);
+      if (stepResolved !== undefined) return stepResolved;
 
-      // {{input.paramName}} or {{input.paramName.subPath}}
-      const inputMatch = token.match(/^input\.(.+)$/);
-      if (inputMatch) {
-        const inputData = stepResults.get('__input__');
-        if (inputData == null) return '';
-        const resolved = this.getPathRaw(inputData, inputMatch[1]);
-        if (resolved == null) return '';
-        return typeof resolved === 'object' ? JSON.stringify(resolved) : String(resolved);
-      }
+      const inputResolved = this.resolveInputToken(token, stepResults);
+      if (inputResolved !== undefined) return inputResolved;
 
       // Unrecognised token — leave as-is
       return _match;
     });
+  }
+
+  private resolveStepToken(
+    token: string,
+    allSteps: WorkflowNode[],
+    stepResults: Map<string, unknown>,
+  ): string | undefined {
+    const stepMatch = /^steps\.(\d+)((?:[.[])[\s\S]*)?$/.exec(token);
+    if (!stepMatch) return undefined;
+    const idx = Number(stepMatch[1]) - 1;
+    const step = allSteps[idx];
+    if (!step) return '';
+    const result = stepResults.get(step.id);
+    if (result == null) return '';
+    const path = stepMatch[2]
+      ? stepMatch[2].replaceAll(/\[(\d+)\]/g, '.$1').replace(/^\./, '')
+      : '';
+    if (!path) return this.safeStringify(result);
+    const resolved = this.getPathRaw(result, path);
+    if (resolved == null) return '';
+    return this.safeStringify(resolved);
+  }
+
+  private resolveInputToken(
+    token: string,
+    stepResults: Map<string, unknown>,
+  ): string | undefined {
+    const inputMatch = /^input\.(.+)$/.exec(token);
+    if (!inputMatch) return undefined;
+    const inputData = stepResults.get('__input__');
+    if (inputData == null) return '';
+    const resolved = this.getPathRaw(inputData, inputMatch[1]);
+    if (resolved == null) return '';
+    return this.safeStringify(resolved);
+  }
+
+  private safeStringify(val: unknown): string {
+    if (val == null) return '';
+    if (typeof val === 'string') return val;
+    if (typeof val === 'number' || typeof val === 'boolean') return `${val}`;
+    if (typeof val === 'object') return JSON.stringify(val);
+    return JSON.stringify(val);
   }
 
   private resolve(source: PayloadSource, stepResults: Map<string, unknown>, allSteps?: WorkflowNode[]): string {
@@ -580,20 +666,20 @@ export class WorkflowService {
   }
 
   getPath(obj: unknown, path: string): string {
-    if (!path) return obj != null ? String(obj) : '';
-    const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.').filter(Boolean);
+    if (!path) return obj == null ? '' : this.safeStringify(obj);
+    const parts = path.replaceAll(/\[(\d+)\]/g, '.$1').split('.').filter(Boolean);
     let cur: unknown = obj;
     for (const part of parts) {
       if (cur == null || typeof cur !== 'object') return '';
       cur = (cur as Record<string, unknown>)[part];
     }
-    return cur != null ? String(cur) : '';
+    return cur == null ? '' : this.safeStringify(cur);
   }
 
   /** Like getPath but returns the raw value (not stringified) — useful for arrays/objects */
   private getPathRaw(obj: unknown, path: string): unknown {
     if (!path) return obj;
-    const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.').filter(Boolean);
+    const parts = path.replaceAll(/\[(\d+)\]/g, '.$1').split('.').filter(Boolean);
     let cur: unknown = obj;
     for (const part of parts) {
       if (cur == null || typeof cur !== 'object') return undefined;

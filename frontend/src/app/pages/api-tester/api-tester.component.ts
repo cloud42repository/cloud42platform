@@ -12,7 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatChipsModule } from '@angular/material/chips';
 import { ApiService } from '../../services/api.service';
-import { MODULES, ModuleDef, EndpointDef } from '../../config/endpoints';
+import { MODULES, EndpointDef } from '../../config/endpoints';
 import { getEndpointPayload } from '../../config/endpoint-payloads';
 import { getEndpointInputSchema } from '../../config/endpoint-schemas';
 import { TranslatePipe } from '../../i18n/translate.pipe';
@@ -524,9 +524,12 @@ export class ApiTesterComponent {
       } else {
         let body: unknown;
         try { body = JSON.parse(this.bodyText); } catch { body = this.bodyText; }
-        const call = m === 'PUT' ? this.api.put
-          : m === 'PATCH' ? this.api.patch
-          : this.api.post;
+        const apiCallMap: Record<string, typeof this.api.post> = {
+          PUT: this.api.put,
+          PATCH: this.api.patch,
+          POST: this.api.post,
+        };
+        const call = apiCallMap[m] ?? this.api.post;
         res = await firstValueFrom(
           call.call(this.api, this.selectedModulePrefix, this.selectedPathTemplate, this.pathParams, body)
         );
@@ -600,8 +603,8 @@ export class ApiTesterComponent {
         this.bodyAcIndex.set(0);
         const rect = textarea.getBoundingClientRect();
         const lineNumber = textBefore.split('\n').length;
-        const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 18;
-        const paddingTop = parseFloat(getComputedStyle(textarea).paddingTop) || 8;
+        const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight) || 18;
+        const paddingTop = Number.parseFloat(getComputedStyle(textarea).paddingTop) || 8;
         let top = rect.top + paddingTop + lineNumber * lineHeight + 4;
         const maxTop = window.innerHeight - 240;
         if (top > maxTop) top = maxTop;
@@ -622,39 +625,38 @@ export class ApiTesterComponent {
     const ep = this.filteredEndpoints().find(e => e.id === this.selectedEndpointId);
     if (!mod || !ep) return [];
 
-    const suggestions: { label: string; insertText: string; detail: string; icon: string }[] = [];
-
-    // Try input schema first
     const inputSchema = getEndpointInputSchema(mod.id, ep.id);
-    if (inputSchema) {
-      for (const [key, val] of Object.entries(inputSchema)) {
-        if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
-        const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
-          : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
-        const defaultVal = val === null ? 'null' : typeof val === 'string' ? '""'
-          : typeof val === 'number' ? '0' : typeof val === 'boolean' ? 'false'
-          : JSON.stringify(val, null, 2);
-        suggestions.push({ label: key, insertText: `"${key}": ${defaultVal}`, detail: type, icon: 'data_object' });
-      }
-    }
-
-    // Fall back to payload templates
-    if (suggestions.length === 0) {
+    const entries = inputSchema ? Object.entries(inputSchema) : [];
+    if (entries.length === 0) {
       const payload = getEndpointPayload(mod.id, ep.id) as Record<string, unknown> | null;
-      if (payload) {
-        for (const [key, val] of Object.entries(payload)) {
-          if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
-          const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
-            : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
-          const defaultVal = val === null ? 'null' : typeof val === 'string' ? '""'
-            : typeof val === 'number' ? '0' : typeof val === 'boolean' ? 'false'
-            : JSON.stringify(val, null, 2);
-          suggestions.push({ label: key, insertText: `"${key}": ${defaultVal}`, detail: type, icon: 'data_object' });
-        }
-      }
+      if (payload) entries.push(...Object.entries(payload));
     }
 
-    return suggestions.slice(0, 20);
+    return entries
+      .filter(([key]) => !filter || key.toLowerCase().includes(filter.toLowerCase()))
+      .map(([key, val]) => ({
+        label: key,
+        insertText: `"${key}": ${this.jsonDefaultValue(val)}`,
+        detail: this.jsonTypeName(val),
+        icon: 'data_object',
+      }))
+      .slice(0, 20);
+  }
+
+  private jsonTypeName(val: unknown): string {
+    if (Array.isArray(val)) return 'array';
+    if (typeof val === 'object' && val !== null) return 'object';
+    if (typeof val === 'number') return 'number';
+    if (typeof val === 'boolean') return 'boolean';
+    return 'string';
+  }
+
+  private jsonDefaultValue(val: unknown): string {
+    if (val === null) return 'null';
+    if (typeof val === 'string') return '""';
+    if (typeof val === 'number') return '0';
+    if (typeof val === 'boolean') return 'false';
+    return JSON.stringify(val, null, 2);
   }
 
   onBodyAcKeydown(event: KeyboardEvent) {
@@ -683,7 +685,7 @@ export class ApiTesterComponent {
     const text = ta.value;
     const before = text.substring(0, pos);
     const lineStart = before.lastIndexOf('\n') + 1;
-    const indent = before.substring(lineStart).match(/^(\s*)/)?.[1] ?? '';
+    const indent = /^(\s*)/.exec(before.substring(lineStart))?.[1] ?? '';
     const after = text.substring(pos);
 
     // Replace current line content from the opening quote
@@ -710,6 +712,6 @@ export class ApiTesterComponent {
   formatJson(data: unknown): string {
     if (data == null) return '';
     if (typeof data === 'string') return data;
-    try { return JSON.stringify(data, null, 2); } catch { return String(data); }
+    try { return JSON.stringify(data, null, 2); } catch { return '[unserializable]'; }
   }
 }

@@ -30,13 +30,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     // In mock mode, skip JWT verification and inject a synthetic user
     if (this.isMockMode) {
       const request = context.switchToHttp().getRequest<{ user?: JwtPayload }>();
-      if (!request.user) {
-        request.user = {
-          sub: 'mock@cloud42.dev',
-          name: 'Mock User',
-          role: 'admin',
-        };
-      }
+      request.user ??= {
+        sub: 'mock@cloud42.dev',
+        name: 'Mock User',
+        role: 'admin',
+      };
       return true;
     }
 

@@ -133,7 +133,7 @@ export const DE: Record<TranslationKey, string> = {
   'workflow.loop-for-each': 'Für jedes Element',
   'workflow.loop-source-hint': 'Schritt, dessen Antwort das zu durchlaufende Array enthält',
   'workflow.loop-field-hint': 'Punkt-Pfad zum Array (leer lassen, wenn Root ein Array ist)',
-  'workflow.loop-item-hint': 'Body-Schritte können das aktuelle Element über \"Aus Schritt\" → diesen Schleifenblock referenzieren',
+  'workflow.loop-item-hint': 'Body-Schritte können das aktuelle Element über "Aus Schritt" → diesen Schleifenblock referenzieren',
   'workflow.body-steps': 'Body-Schritte',
   'workflow.add-endpoint-body': 'Endpunkt zum Body hinzufügen',
   'workflow.condition': 'Bedingung',

@@ -54,7 +54,7 @@ export class WorkflowEntity {
 
   /** Last execution log, stored as JSONB */
   @Column({ type: 'jsonb', nullable: true })
-  lastRunLog!: unknown | null;
+  lastRunLog!: unknown;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;

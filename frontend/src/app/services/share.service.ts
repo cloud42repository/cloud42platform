@@ -42,7 +42,7 @@ export class ShareService {
 
   /** Get the shareable URL for a token */
   getShareUrl(token: string): string {
-    return `${window.location.origin}/shared/${token}`;
+    return `${globalThis.location.origin}/shared/${token}`;
   }
 
   /** Revoke a share link */

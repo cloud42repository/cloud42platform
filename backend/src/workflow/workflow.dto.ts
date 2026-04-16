@@ -24,7 +24,7 @@ export interface UpdateWorkflowDto {
   outputs?: unknown[];
   status?: WorkflowStatus;
   scheduledAt?: string | null;
-  lastRunLog?: unknown | null;
+  lastRunLog?: unknown;
 }
 
 /* ── Response DTO ── */
@@ -39,7 +39,7 @@ export interface WorkflowResponseDto {
   outputs: unknown[];
   status: WorkflowStatus;
   scheduledAt: string | null;
-  lastRunLog: unknown | null;
+  lastRunLog: unknown;
   createdAt: string;
   updatedAt: string;
 }

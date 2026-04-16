@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import { ShareEntity } from './share.entity';
 import { DashboardEntity } from '../dashboard/dashboard.entity';
 import { FormEntity } from '../form/form.entity';

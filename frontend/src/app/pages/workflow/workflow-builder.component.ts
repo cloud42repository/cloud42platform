@@ -1,6 +1,6 @@
 import {
-  Component, OnInit, signal, computed, inject, ViewChild, ElementRef,
-  ChangeDetectorRef, HostListener,
+  Component, OnInit, signal, computed, inject,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,11 +27,11 @@ import { getEndpointInputSchema, getEndpointOutputSchema, getEndpointOutputLabel
 import { WorkflowService } from '../../services/workflow.service';
 import { ShareService } from '../../services/share.service';
 import {
-  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FilterBlock, SubWorkflowBlock, WorkflowInput, WorkflowOutput, FieldMapping, PayloadSource, StepKind, BodyMode,
+  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FilterBlock, SubWorkflowBlock, WorkflowInput, WorkflowOutput, FieldMapping, PayloadSource, BodyMode,
 } from '../../config/workflow.types';
 import { FormViewComponent, StepRefSuggestion } from '../../shared/form-view/form-view.component';
 import { TranslatePipe } from '../../i18n/translate.pipe';
-import { SchemaService, FieldSchema } from '../../services/schema.service';
+import { SchemaService } from '../../services/schema.service';
 
 interface AutocompleteSuggestion {
   label: string;       // Display label
@@ -2297,7 +2297,7 @@ export class WorkflowBuilderComponent implements OnInit {
         // Migrate legacy steps that lack a kind (old localStorage data)
         this.steps.set(wf.steps.map(s => ({
           ...s,
-          kind: (s as WorkflowNode).kind ?? 'endpoint',
+          kind: s.kind ?? 'endpoint',
         })) as WorkflowNode[]);
         this.wfInputs.set(wf.inputs ?? []);
         this.wfOutputs.set(wf.outputs ?? []);
@@ -2329,7 +2329,7 @@ export class WorkflowBuilderComponent implements OnInit {
       this.steps.set(arr);
     } else if (this.isWorkflowNode(event.item.data)) {
       // Moved from a branch zone → canvas (cdkDropListGroup cross-container)
-      const node = event.item.data as WorkflowNode;
+      const node = event.item.data;
       this.removeNodeFromContainer(event.previousContainer.id, node.id);
       const arr = [...this.steps()];
       arr.splice(event.currentIndex, 0, node);
@@ -2340,7 +2340,7 @@ export class WorkflowBuilderComponent implements OnInit {
       const data = event.item.data as EndpointRef | ControlFlowRef;
       let newNode: WorkflowNode;
       if ('kind' in data && data.kind !== undefined && !('endpoint' in data)) {
-        newNode = this.makeBlock(data as ControlFlowRef);
+        newNode = this.makeBlock(data);
       } else {
         newNode = this.makeStep(data as EndpointRef);
       }
@@ -2400,7 +2400,7 @@ export class WorkflowBuilderComponent implements OnInit {
       }));
     } else if (this.isWorkflowNode(event.item.data)) {
       // Moved from canvas or another branch (cdkDropListGroup cross-container)
-      const node = event.item.data as WorkflowNode;
+      const node = event.item.data;
       this.removeNodeFromContainer(event.previousContainer.id, node.id);
       this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
         const blk = n as unknown as Record<string, unknown>;
@@ -2413,7 +2413,7 @@ export class WorkflowBuilderComponent implements OnInit {
       const data = event.item.data as EndpointRef | ControlFlowRef;
       let newStep: WorkflowNode;
       if ('kind' in data && !('endpoint' in data)) {
-        newStep = this.makeBlock(data as ControlFlowRef);
+        newStep = this.makeBlock(data);
       } else {
         newStep = this.makeStep(data as EndpointRef);
       }
@@ -2439,7 +2439,7 @@ export class WorkflowBuilderComponent implements OnInit {
       this.steps.update(ss => ss.filter(s => s.id !== nodeId));
     } else {
       // container IDs are 'block-{blockId}-(try|catch|body|then|else)'
-      const match = containerId.match(/^block-(.+)-(try|catch|body|then|else)$/);
+      const match = /^block-(.+)-(try|catch|body|then|else)$/.exec(containerId);
       if (!match) return;
       const [, blockId, suffix] = match;
       const branchMap: Record<string, string> = {
@@ -2470,18 +2470,21 @@ export class WorkflowBuilderComponent implements OnInit {
     if (!id) return null;
     for (const node of nodes) {
       if (node.id === id) return node;
-      if (node.kind === 'try-catch') {
-        const b = node as TryCatchBlock;
-        const found = this.findNodeById(b.trySteps, id) ?? this.findNodeById(b.catchSteps, id);
-        if (found) return found;
-      } else if (node.kind === 'loop') {
-        const found = this.findNodeById((node as LoopBlock).bodySteps, id);
-        if (found) return found;
-      } else if (node.kind === 'if-else') {
-        const b = node as IfElseBlock;
-        const found = this.findNodeById(b.thenSteps, id) ?? this.findNodeById(b.elseSteps, id);
-        if (found) return found;
-      }
+      const found = this.findNodeInBranches(node, n => this.findNodeById(n, id));
+      if (found) return found;
+    }
+    return null;
+  }
+
+  private findNodeInBranches(node: WorkflowNode, search: (nodes: WorkflowNode[]) => WorkflowNode | null): WorkflowNode | null {
+    if (node.kind === 'try-catch') {
+      return search(node.trySteps) ?? search(node.catchSteps);
+    }
+    if (node.kind === 'loop') {
+      return search(node.bodySteps);
+    }
+    if (node.kind === 'if-else') {
+      return search(node.thenSteps) ?? search(node.elseSteps);
     }
     return null;
   }
@@ -2490,19 +2493,22 @@ export class WorkflowBuilderComponent implements OnInit {
   private findParentLoop(nodes: WorkflowNode[], targetId: string): LoopBlock | null {
     for (const node of nodes) {
       if (node.kind === 'loop') {
-        const loop = node as LoopBlock;
-        if (loop.bodySteps.some(s => s.id === targetId)) return loop;
-        const deeper = this.findParentLoop(loop.bodySteps, targetId);
+        if (node.bodySteps.some(s => s.id === targetId)) return node;
+        const deeper = this.findParentLoop(node.bodySteps, targetId);
         if (deeper) return deeper;
-      } else if (node.kind === 'try-catch') {
-        const b = node as TryCatchBlock;
-        const found = this.findParentLoop(b.trySteps, targetId) ?? this.findParentLoop(b.catchSteps, targetId);
-        if (found) return found;
-      } else if (node.kind === 'if-else') {
-        const b = node as IfElseBlock;
-        const found = this.findParentLoop(b.thenSteps, targetId) ?? this.findParentLoop(b.elseSteps, targetId);
-        if (found) return found;
       }
+      const found = this.findLoopInBranches(node, targetId);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  private findLoopInBranches(node: WorkflowNode, targetId: string): LoopBlock | null {
+    if (node.kind === 'try-catch') {
+      return this.findParentLoop(node.trySteps, targetId) ?? this.findParentLoop(node.catchSteps, targetId);
+    }
+    if (node.kind === 'if-else') {
+      return this.findParentLoop(node.thenSteps, targetId) ?? this.findParentLoop(node.elseSteps, targetId);
     }
     return null;
   }
@@ -2528,13 +2534,13 @@ export class WorkflowBuilderComponent implements OnInit {
   asSubWorkflow(node: WorkflowNode): SubWorkflowBlock { return node as SubWorkflowBlock; }
 
   getNodeLabel(node: WorkflowNode): string {
-    if (node.kind === 'endpoint') return (node as WorkflowStep).endpointLabel;
-    if (node.kind === 'try-catch') return (node as TryCatchBlock).label || 'Try / Catch';
-    if (node.kind === 'loop') return (node as LoopBlock).label || 'Loop';
-    if (node.kind === 'if-else') return (node as IfElseBlock).label || 'If / Else';
-    if (node.kind === 'mapper') return (node as MapperBlock).label || 'Mapper';
-    if (node.kind === 'filter') return (node as FilterBlock).label || 'Filter';
-    if (node.kind === 'sub-workflow') return (node as SubWorkflowBlock).label || (node as SubWorkflowBlock).workflowName || 'Sub-Workflow';
+    if (node.kind === 'endpoint') return node.endpointLabel;
+    if (node.kind === 'try-catch') return node.label || 'Try / Catch';
+    if (node.kind === 'loop') return node.label || 'Loop';
+    if (node.kind === 'if-else') return node.label || 'If / Else';
+    if (node.kind === 'mapper') return node.label || 'Mapper';
+    if (node.kind === 'filter') return node.label || 'Filter';
+    if (node.kind === 'sub-workflow') return node.label || node.workflowName || 'Sub-Workflow';
     return 'Step';
   }
 
@@ -2551,17 +2557,14 @@ export class WorkflowBuilderComponent implements OnInit {
     const collect = (nodes: WorkflowNode[]) => {
       for (const node of nodes) {
         if (node.kind === 'try-catch') {
-          const b = node as TryCatchBlock;
           ids.push(`block-${node.id}-try`, `block-${node.id}-catch`);
-          collect(b.trySteps); collect(b.catchSteps);
+          collect(node.trySteps); collect(node.catchSteps);
         } else if (node.kind === 'loop') {
-          const b = node as LoopBlock;
           ids.push(`block-${node.id}-body`);
-          collect(b.bodySteps);
+          collect(node.bodySteps);
         } else if (node.kind === 'if-else') {
-          const b = node as IfElseBlock;
           ids.push(`block-${node.id}-then`, `block-${node.id}-else`);
-          collect(b.thenSteps); collect(b.elseSteps);
+          collect(node.thenSteps); collect(node.elseSteps);
         }
       }
     };
@@ -2576,14 +2579,11 @@ export class WorkflowBuilderComponent implements OnInit {
     return nodes.map(n => {
       if (n.id === id) return fn(n);
       if (n.kind === 'try-catch') {
-        const b = n as TryCatchBlock;
-        return { ...b, trySteps: this.updateNodeDeep(b.trySteps, id, fn), catchSteps: this.updateNodeDeep(b.catchSteps, id, fn) };
+        return { ...n, trySteps: this.updateNodeDeep(n.trySteps, id, fn), catchSteps: this.updateNodeDeep(n.catchSteps, id, fn) };
       } else if (n.kind === 'loop') {
-        const b = n as LoopBlock;
-        return { ...b, bodySteps: this.updateNodeDeep(b.bodySteps, id, fn) };
+        return { ...n, bodySteps: this.updateNodeDeep(n.bodySteps, id, fn) };
       } else if (n.kind === 'if-else') {
-        const b = n as IfElseBlock;
-        return { ...b, thenSteps: this.updateNodeDeep(b.thenSteps, id, fn), elseSteps: this.updateNodeDeep(b.elseSteps, id, fn) };
+        return { ...n, thenSteps: this.updateNodeDeep(n.thenSteps, id, fn), elseSteps: this.updateNodeDeep(n.elseSteps, id, fn) };
       }
       return n;
     });
@@ -2600,7 +2600,7 @@ export class WorkflowBuilderComponent implements OnInit {
 
   addToBranch(blockId: string, branch: string, ref: EndpointRef | ControlFlowRef) {
     const newNode = ('kind' in ref && !('endpoint' in ref))
-      ? this.makeBlock(ref as ControlFlowRef)
+      ? this.makeBlock(ref)
       : this.makeStep(ref as EndpointRef);
     this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
       const blk = n as unknown as Record<string, unknown>;
@@ -2613,7 +2613,7 @@ export class WorkflowBuilderComponent implements OnInit {
     this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
       const blk = n as unknown as Record<string, unknown>;
       const existing = (blk[branch] as WorkflowNode[]) ?? [];
-      return { ...n, [branch]: existing.filter(c => (c as WorkflowNode).id !== stepId) };
+      return { ...n, [branch]: existing.filter(c => c.id !== stepId) };
     }));
   }
 
@@ -2662,7 +2662,7 @@ export class WorkflowBuilderComponent implements OnInit {
   // convenience accessor for the selected step as an endpoint step
   private selEp(): WorkflowStep | null {
     const s = this.selectedStep();
-    return s?.kind === 'endpoint' ? (s as WorkflowStep) : null;
+    return s?.kind === 'endpoint' ? s : null;
   }
 
   // Param sources
@@ -2827,8 +2827,8 @@ export class WorkflowBuilderComponent implements OnInit {
       const pos = savedCursorPos ?? ta.selectionStart ?? 0;
       const textBefore = ta.value.substring(0, pos);
       const lineNumber = textBefore.split('\n').length;
-      const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 18;
-      const paddingTop = parseFloat(getComputedStyle(ta).paddingTop) || 8;
+      const lineHeight = Number.parseFloat(getComputedStyle(ta).lineHeight) || 18;
+      const paddingTop = Number.parseFloat(getComputedStyle(ta).paddingTop) || 8;
       top = rect.top + paddingTop + lineNumber * lineHeight + 4;
     }
 
@@ -2848,119 +2848,191 @@ export class WorkflowBuilderComponent implements OnInit {
     const suggestions: AutocompleteSuggestion[] = [];
     const prev = this.previousSteps();
     const log = this.runLog();
+
     for (const ps of prev) {
-      const idx = this.getStepIndex(ps.id) + 1;
-      const label = ps.kind === 'endpoint'
-        ? `Step ${idx}: ${(ps as WorkflowStep).endpointLabel}`
-        : `Step ${idx}: ${this.getNodeLabel(ps)}`;
-
-      // Look up last-run response for this step
-      const stepLog = log?.steps.find(sl => sl.stepId === ps.id);
-      const resp = stepLog?.response;
-
-      // Whole step output
-      const ref = `{{steps.${idx}}}`;
-      if (!filter || ref.toLowerCase().includes(filter.toLowerCase()) || label.toLowerCase().includes(filter.toLowerCase())) {
-        // Show run-data type preview, or fall back to schema-derived label
-        let stepDetail = label;
-        let stepTypeHint = this.detectType(resp);
-        if (resp != null) {
-          stepDetail += this.typePreview(resp);
-        } else if (ps.kind === 'endpoint') {
-          const outLabel = getEndpointOutputLabel((ps as WorkflowStep).moduleId, (ps as WorkflowStep).endpointId);
-          const outSchema = getEndpointOutputSchema((ps as WorkflowStep).moduleId, (ps as WorkflowStep).endpointId);
-          if (outLabel) {
-            stepDetail += ` — ${outLabel}`;
-          }
-          if (outSchema) {
-            stepTypeHint = Array.isArray(outSchema) ? 'array' : 'object';
-          }
-        }
-        suggestions.push({ label: `steps.${idx}`, insertText: ref, detail: stepDetail, icon: 'link', typeHint: stepTypeHint });
-      }
-
-      if (ps.kind === 'endpoint') {
-        const step = ps as WorkflowStep;
-        // Schema-derived sub-paths
-        const stepFields = this.schemaService.getFields(step.moduleApiPrefix, step.endpointId);
-        for (const f of stepFields) {
-          const subRef = `{{steps.${idx}.${f.key}}}`;
-          if (!filter || subRef.toLowerCase().includes(filter.toLowerCase()) || f.key.toLowerCase().includes(filter.toLowerCase())) {
-            const subVal = resp != null ? this.resolvePath(resp, f.key) : undefined;
-            suggestions.push({ label: `steps.${idx}.${f.key}`, insertText: subRef, detail: `${label} → ${f.key}${this.typePreview(subVal)}`, icon: 'link', typeHint: this.detectType(subVal) });
-          }
-        }
-
-        // Output schema-derived sub-paths (when no schema service fields)
-        if (stepFields.length === 0) {
-          const outSchema = getEndpointOutputSchema(step.moduleId, step.endpointId);
-          if (outSchema) {
-            const schemaPaths = flattenSchemaKeys(outSchema);
-            for (const sp of schemaPaths.slice(0, 15)) {
-              const subRef = `{{steps.${idx}.${sp}}}`;
-              if (suggestions.find(s => s.insertText === subRef)) continue;
-              if (filter && !subRef.toLowerCase().includes(filter.toLowerCase()) && !sp.toLowerCase().includes(filter.toLowerCase())) continue;
-              const subVal = resp != null ? this.resolvePath(resp, sp) : undefined;
-              suggestions.push({ label: `steps.${idx}.${sp}`, insertText: subRef, detail: `${label} → ${sp}${this.typePreview(subVal)}`, icon: 'link', typeHint: this.detectType(subVal) });
-            }
-          }
-        }
-      }
-
-      // Common response paths
-      for (const common of ['data', 'data.id', 'data.name', 'id', 'message']) {
-        const subRef = `{{steps.${idx}.${common}}}`;
-        if (!filter || subRef.toLowerCase().includes(filter.toLowerCase()) || common.includes(filter.toLowerCase())) {
-          if (!suggestions.find(s => s.insertText === subRef)) {
-            const subVal = resp != null ? this.resolvePath(resp, common) : undefined;
-            suggestions.push({ label: `steps.${idx}.${common}`, insertText: subRef, detail: `${label} → ${common}${this.typePreview(subVal)}`, icon: 'link', typeHint: this.detectType(subVal) });
-          }
-        }
-      }
+      this.addStepSuggestions(ps, suggestions, filter, log);
     }
 
-    // ── Loop current-item suggestions ──────────────────────────────────────
-    const loop = this.parentLoop();
-    if (loop && loop.loopMode === 'for-each') {
-      const loopIdx = this.getStepIndex(loop.id) + 1;
-      const loopLabel = loop.label || `Step ${loopIdx}: Loop`;
-      const loopLog = log?.steps.find(sl => sl.stepId === loop.id);
-
-      // Resolve a sample item from the last-run array (first element)
-      let sampleItem: unknown;
-      if (loopLog?.response) {
-        const arr = Array.isArray(loopLog.response) ? loopLog.response : [];
-        sampleItem = arr[0];
-      }
-
-      // Whole current item
-      const itemRef = `{{steps.${loopIdx}}}`;
-      const itemLabel = `🔄 ${loopLabel} — current item`;
-      if (!suggestions.find(s => s.insertText === itemRef)) {
-        if (!filter || itemRef.toLowerCase().includes(filter.toLowerCase()) || 'current item'.includes(filter.toLowerCase())) {
-          suggestions.unshift({ label: `loop item`, insertText: itemRef, detail: itemLabel + this.typePreview(sampleItem), icon: 'loop', typeHint: this.detectType(sampleItem) });
-        }
-      }
-
-      // If sample item is an object, suggest its fields
-      if (sampleItem && typeof sampleItem === 'object' && !Array.isArray(sampleItem)) {
-        const keys = Object.keys(sampleItem as Record<string, unknown>);
-        for (const key of keys.slice(0, 12)) {
-          const fieldRef = `{{steps.${loopIdx}.${key}}}`;
-          if (suggestions.find(s => s.insertText === fieldRef)) continue;
-          if (filter && !fieldRef.toLowerCase().includes(filter.toLowerCase()) && !key.toLowerCase().includes(filter.toLowerCase())) continue;
-          const fieldVal = (sampleItem as Record<string, unknown>)[key];
-          suggestions.splice(1, 0, { label: `loop.${key}`, insertText: fieldRef, detail: `${itemLabel} → ${key}${this.typePreview(fieldVal)}`, icon: 'loop', typeHint: this.detectType(fieldVal) });
-        }
-      }
-    }
+    this.addLoopItemSuggestions(suggestions, filter, log);
 
     return suggestions.slice(0, 20);
   }
 
+  private addStepSuggestions(
+    ps: WorkflowNode,
+    suggestions: AutocompleteSuggestion[],
+    filter: string,
+    log: { steps: { stepId: string; response?: unknown }[] } | null | undefined,
+  ): void {
+    const idx = this.getStepIndex(ps.id) + 1;
+    const label = ps.kind === 'endpoint'
+      ? `Step ${idx}: ${ps.endpointLabel}`
+      : `Step ${idx}: ${this.getNodeLabel(ps)}`;
+
+    const stepLog = log?.steps.find(sl => sl.stepId === ps.id);
+    const resp = stepLog?.response;
+
+    this.addWholeStepSuggestion(ps, idx, label, resp, suggestions, filter);
+
+    if (ps.kind === 'endpoint') {
+      this.addEndpointFieldSuggestions(ps, idx, label, resp, suggestions, filter);
+    }
+
+    this.addCommonPathSuggestions(idx, label, resp, suggestions, filter);
+  }
+
+  private addWholeStepSuggestion(
+    ps: WorkflowNode,
+    idx: number,
+    label: string,
+    resp: unknown,
+    suggestions: AutocompleteSuggestion[],
+    filter: string,
+  ): void {
+    const ref = `{{steps.${idx}}}`;
+    if (filter && !ref.toLowerCase().includes(filter.toLowerCase()) && !label.toLowerCase().includes(filter.toLowerCase())) return;
+
+    let stepDetail = label;
+    let stepTypeHint = this.detectType(resp);
+    if (resp != null) {
+      stepDetail += this.typePreview(resp);
+    } else if (ps.kind === 'endpoint') {
+      const outLabel = getEndpointOutputLabel(ps.moduleId, ps.endpointId);
+      const outSchema = getEndpointOutputSchema(ps.moduleId, ps.endpointId);
+      if (outLabel) stepDetail += ` — ${outLabel}`;
+      if (outSchema) stepTypeHint = Array.isArray(outSchema) ? 'array' : 'object';
+    }
+    suggestions.push({ label: `steps.${idx}`, insertText: ref, detail: stepDetail, icon: 'link', typeHint: stepTypeHint });
+  }
+
+  private addEndpointFieldSuggestions(
+    ps: WorkflowStep,
+    idx: number,
+    label: string,
+    resp: unknown,
+    suggestions: AutocompleteSuggestion[],
+    filter: string,
+  ): void {
+    const stepFields = this.schemaService.getFields(ps.moduleApiPrefix, ps.endpointId);
+    this.addSchemaFieldRefs(stepFields, idx, label, resp, suggestions, filter);
+
+    if (stepFields.length === 0) {
+      this.addOutputSchemaFieldRefs(ps, idx, label, resp, suggestions, filter);
+    }
+  }
+
+  private addSchemaFieldRefs(
+    stepFields: { key: string }[],
+    idx: number,
+    label: string,
+    resp: unknown,
+    suggestions: AutocompleteSuggestion[],
+    filter: string,
+  ): void {
+    for (const f of stepFields) {
+      const subRef = `{{steps.${idx}.${f.key}}}`;
+      if (filter && !subRef.toLowerCase().includes(filter.toLowerCase()) && !f.key.toLowerCase().includes(filter.toLowerCase())) continue;
+      const subVal = resp == null ? undefined : this.resolvePath(resp, f.key);
+      suggestions.push({ label: `steps.${idx}.${f.key}`, insertText: subRef, detail: `${label} → ${f.key}${this.typePreview(subVal)}`, icon: 'link', typeHint: this.detectType(subVal) });
+    }
+  }
+
+  private addOutputSchemaFieldRefs(
+    ps: WorkflowStep,
+    idx: number,
+    label: string,
+    resp: unknown,
+    suggestions: AutocompleteSuggestion[],
+    filter: string,
+  ): void {
+    const outSchema = getEndpointOutputSchema(ps.moduleId, ps.endpointId);
+    if (!outSchema) return;
+    const schemaPaths = flattenSchemaKeys(outSchema);
+    for (const sp of schemaPaths.slice(0, 15)) {
+      const subRef = `{{steps.${idx}.${sp}}}`;
+      if (suggestions.some(s => s.insertText === subRef)) continue;
+      if (filter && !subRef.toLowerCase().includes(filter.toLowerCase()) && !sp.toLowerCase().includes(filter.toLowerCase())) continue;
+      const subVal = resp == null ? undefined : this.resolvePath(resp, sp);
+      suggestions.push({ label: `steps.${idx}.${sp}`, insertText: subRef, detail: `${label} → ${sp}${this.typePreview(subVal)}`, icon: 'link', typeHint: this.detectType(subVal) });
+    }
+  }
+
+  private addCommonPathSuggestions(
+    idx: number,
+    label: string,
+    resp: unknown,
+    suggestions: AutocompleteSuggestion[],
+    filter: string,
+  ): void {
+    for (const common of ['data', 'data.id', 'data.name', 'id', 'message']) {
+      const subRef = `{{steps.${idx}.${common}}}`;
+      if (!filter || subRef.toLowerCase().includes(filter.toLowerCase()) || common.includes(filter.toLowerCase())) {
+        if (!suggestions.some(s => s.insertText === subRef)) {
+          const subVal = resp == null ? undefined : this.resolvePath(resp, common);
+          suggestions.push({ label: `steps.${idx}.${common}`, insertText: subRef, detail: `${label} → ${common}${this.typePreview(subVal)}`, icon: 'link', typeHint: this.detectType(subVal) });
+        }
+      }
+    }
+  }
+
+  private addLoopItemSuggestions(
+    suggestions: AutocompleteSuggestion[],
+    filter: string,
+    log: { steps: { stepId: string; response?: unknown }[] } | null | undefined,
+  ): void {
+    const loop = this.parentLoop();
+    if (!loop?.loopMode || loop.loopMode !== 'for-each') return;
+
+    const loopIdx = this.getStepIndex(loop.id) + 1;
+    const loopLabel = loop.label || `Step ${loopIdx}: Loop`;
+    const loopLog = log?.steps.find(sl => sl.stepId === loop.id);
+
+    const sampleItem = this.resolveSampleItem(loopLog?.response);
+    this.addLoopWholeItemSuggestion(loopIdx, loopLabel, sampleItem, suggestions, filter);
+    this.addSampleItemFieldSuggestions(sampleItem, loopIdx, `🔄 ${loopLabel} — current item`, suggestions, filter);
+  }
+
+  private addLoopWholeItemSuggestion(
+    loopIdx: number,
+    loopLabel: string,
+    sampleItem: unknown,
+    suggestions: AutocompleteSuggestion[],
+    filter: string,
+  ): void {
+    const itemRef = `{{steps.${loopIdx}}}`;
+    const itemLabel = `🔄 ${loopLabel} — current item`;
+    if (suggestions.some(s => s.insertText === itemRef)) return;
+    if (filter && !itemRef.toLowerCase().includes(filter.toLowerCase()) && !'current item'.includes(filter.toLowerCase())) return;
+    suggestions.unshift({ label: `loop item`, insertText: itemRef, detail: itemLabel + this.typePreview(sampleItem), icon: 'loop', typeHint: this.detectType(sampleItem) });
+  }
+
+  private resolveSampleItem(response: unknown): unknown {
+    if (!response) return undefined;
+    const arr = Array.isArray(response) ? response : [];
+    return arr[0];
+  }
+
+  private addSampleItemFieldSuggestions(
+    sampleItem: unknown,
+    loopIdx: number,
+    itemLabel: string,
+    suggestions: AutocompleteSuggestion[],
+    filter: string,
+  ): void {
+    if (!sampleItem || typeof sampleItem !== 'object' || Array.isArray(sampleItem)) return;
+    const keys = Object.keys(sampleItem as Record<string, unknown>);
+    for (const key of keys.slice(0, 12)) {
+      const fieldRef = `{{steps.${loopIdx}.${key}}}`;
+      if (suggestions.some(s => s.insertText === fieldRef)) continue;
+      if (filter && !fieldRef.toLowerCase().includes(filter.toLowerCase()) && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+      const fieldVal = (sampleItem as Record<string, unknown>)[key];
+      suggestions.splice(1, 0, { label: `loop.${key}`, insertText: fieldRef, detail: `${itemLabel} → ${key}${this.typePreview(fieldVal)}`, icon: 'loop', typeHint: this.detectType(fieldVal) });
+    }
+  }
+
   /** Traverse dot-notation path on an object to get the raw value */
   private resolvePath(obj: unknown, path: string): unknown {
-    const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.').filter(Boolean);
+    const parts = path.replaceAll(/\[(\d+)\]/g, '.$1').split('.').filter(Boolean);
     let cur: unknown = obj;
     for (const part of parts) {
       if (cur == null || typeof cur !== 'object') return undefined;
@@ -2986,97 +3058,102 @@ export class WorkflowBuilderComponent implements OnInit {
     if (Array.isArray(v)) return ` — Array[${v.length}]`;
     if (typeof v === 'object') return ` — {${Object.keys(v).slice(0, 3).join(', ')}${Object.keys(v).length > 3 ? ', …' : ''}}`;
     if (typeof v === 'string') return v.length <= 30 ? ` — "${v}"` : ` — "${v.substring(0, 27)}…"`;
-    return ` — ${v}`;
+    if (typeof v === 'number' || typeof v === 'boolean') return ` — ${v}`;
+    return '';
   }
 
   /** Build field + step-ref suggestions for the raw JSON body textarea */
   private buildJsonSuggestions(ep: WorkflowStep, trigger: 'field' | 'value', filter: string): AutocompleteSuggestion[] {
-    if (trigger === 'field') {
-      const suggestions: AutocompleteSuggestion[] = [];
-      const fields = this.schemaService.getFields(ep.moduleApiPrefix, ep.endpointId);
+    if (trigger === 'value') {
+      return this.buildStepRefSuggestions(filter);
+    }
+    const suggestions: AutocompleteSuggestion[] = [];
 
-      // Get payload template for type-aware defaults
-      const payload = getEndpointPayload(ep.moduleId, ep.endpointId) as Record<string, unknown> | null;
+    this.addSchemaFieldSuggestions(ep, filter, suggestions);
+    if (suggestions.length === 0) this.addPayloadFieldSuggestions(ep, filter, suggestions);
+    if (suggestions.length === 0) this.addInputSchemaFieldSuggestions(ep, filter, suggestions);
+    if (suggestions.length === 0) this.addRawBodyFieldSuggestions(ep, filter, suggestions);
 
-      if (fields.length > 0) {
-        for (const f of fields) {
-          if (filter && !f.key.toLowerCase().includes(filter.toLowerCase())) continue;
-          const templateVal = payload?.[f.key];
-          const defaultVal = this.jsonDefaultValue(templateVal, f.type);
-          suggestions.push({
-            label: f.key,
-            insertText: `"${f.key}": ${defaultVal}`,
-            detail: `${f.type}${f.required ? ' (required)' : ''}`,
-            icon: 'data_object',
-            typeHint: templateVal !== undefined ? this.detectType(templateVal) : 'string',
-          });
-        }
-      } else if (payload) {
-        // Fallback: use payload template keys when schema is empty
-        for (const [key, val] of Object.entries(payload)) {
-          if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
-          const defaultVal = this.jsonDefaultValue(val);
-          const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
-            : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
-          suggestions.push({
-            label: key,
-            insertText: `"${key}": ${defaultVal}`,
-            detail: type,
-            icon: 'data_object',
-            typeHint: type as AutocompleteSuggestion['typeHint'],
-          });
-        }
-      }
-
-      // Fallback: use input schema from endpoint-schemas config
-      if (suggestions.length === 0) {
-        const inputSchema = getEndpointInputSchema(ep.moduleId, ep.endpointId);
-        if (inputSchema) {
-          for (const [key, val] of Object.entries(inputSchema)) {
-            if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
-            const defaultVal = this.jsonDefaultValue(val);
-            const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
-              : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
-            suggestions.push({
-              label: key,
-              insertText: `"${key}": ${defaultVal}`,
-              detail: type + ' (schema)',
-              icon: 'data_object',
-              typeHint: type as AutocompleteSuggestion['typeHint'],
-            });
-          }
-        }
-      }
-
-      // Last fallback: parse existing rawBody JSON for key suggestions
-      if (suggestions.length === 0 && ep.rawBody) {
-        try {
-          const obj = JSON.parse(ep.rawBody);
-          if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
-            for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
-              if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
-              suggestions.push({
-                label: key,
-                insertText: `"${key}": ${this.jsonDefaultValue(val)}`,
-                detail: typeof val === 'string' ? 'string' : typeof val === 'number' ? 'number' : 'object',
-                icon: 'data_object',
-              });
-            }
-          }
-        } catch { /* not valid JSON yet, skip */ }
-      }
-
-      // Also add step ref suggestions for quick access
-      if (this.previousSteps().length > 0) {
-        const refs = this.buildStepRefSuggestions(filter);
-        suggestions.push(...refs.slice(0, 5));
-      }
-
-      return suggestions.slice(0, 25);
+    if (this.previousSteps().length > 0) {
+      suggestions.push(...this.buildStepRefSuggestions(filter).slice(0, 5));
     }
 
-    // Value trigger — show step refs
-    return this.buildStepRefSuggestions(filter);
+    return suggestions.slice(0, 25);
+  }
+
+  private jsonTypeName(val: unknown): string {
+    if (Array.isArray(val)) return 'array';
+    if (typeof val === 'object' && val !== null) return 'object';
+    if (typeof val === 'number') return 'number';
+    if (typeof val === 'boolean') return 'boolean';
+    return 'string';
+  }
+
+  private addSchemaFieldSuggestions(ep: WorkflowStep, filter: string, suggestions: AutocompleteSuggestion[]): void {
+    const fields = this.schemaService.getFields(ep.moduleApiPrefix, ep.endpointId);
+    const payload = getEndpointPayload(ep.moduleId, ep.endpointId) as Record<string, unknown> | null;
+
+    for (const f of fields) {
+      if (filter && !f.key.toLowerCase().includes(filter.toLowerCase())) continue;
+      const templateVal = payload?.[f.key];
+      const defaultVal = this.jsonDefaultValue(templateVal, f.type);
+      suggestions.push({
+        label: f.key,
+        insertText: `"${f.key}": ${defaultVal}`,
+        detail: `${f.type}${f.required ? ' (required)' : ''}`,
+        icon: 'data_object',
+        typeHint: templateVal === undefined ? 'string' : this.detectType(templateVal),
+      });
+    }
+  }
+
+  private addPayloadFieldSuggestions(ep: WorkflowStep, filter: string, suggestions: AutocompleteSuggestion[]): void {
+    const payload = getEndpointPayload(ep.moduleId, ep.endpointId) as Record<string, unknown> | null;
+    if (!payload) return;
+    for (const [key, val] of Object.entries(payload)) {
+      if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+      const type = this.jsonTypeName(val);
+      suggestions.push({
+        label: key,
+        insertText: `"${key}": ${this.jsonDefaultValue(val)}`,
+        detail: type,
+        icon: 'data_object',
+        typeHint: type as AutocompleteSuggestion['typeHint'],
+      });
+    }
+  }
+
+  private addInputSchemaFieldSuggestions(ep: WorkflowStep, filter: string, suggestions: AutocompleteSuggestion[]): void {
+    const inputSchema = getEndpointInputSchema(ep.moduleId, ep.endpointId);
+    if (!inputSchema) return;
+    for (const [key, val] of Object.entries(inputSchema)) {
+      if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+      const type = this.jsonTypeName(val);
+      suggestions.push({
+        label: key,
+        insertText: `"${key}": ${this.jsonDefaultValue(val)}`,
+        detail: type + ' (schema)',
+        icon: 'data_object',
+        typeHint: type as AutocompleteSuggestion['typeHint'],
+      });
+    }
+  }
+
+  private addRawBodyFieldSuggestions(ep: WorkflowStep, filter: string, suggestions: AutocompleteSuggestion[]): void {
+    if (!ep.rawBody) return;
+    try {
+      const obj = JSON.parse(ep.rawBody);
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return;
+      for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
+        if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
+        suggestions.push({
+          label: key,
+          insertText: `"${key}": ${this.jsonDefaultValue(val)}`,
+          detail: this.jsonTypeName(val),
+          icon: 'data_object',
+        });
+      }
+    } catch { /* not valid JSON yet, skip */ }
   }
 
   /** Produce a sensible JSON default for insertion based on template value or field type */
@@ -3134,8 +3211,8 @@ export class WorkflowBuilderComponent implements OnInit {
   /** Generate the default JSON template for the current endpoint step */
   generateWfTextTemplate() {
     const step = this.selectedStep();
-    if (!step || step.kind !== 'endpoint') return;
-    const ep = step as WorkflowStep;
+    if (!step?.kind || step.kind !== 'endpoint') return;
+    const ep = step;
     const payload = getEndpointPayload(ep.moduleId, ep.endpointId);
     if (payload && typeof payload === 'object') {
       const json = JSON.stringify(payload, null, 2);
@@ -3191,7 +3268,7 @@ export class WorkflowBuilderComponent implements OnInit {
     }
 
     // Check if typing a JSON value (cursor after colon) → show step ref suggestions
-    const colonMatch = line.match(/^"[^"]+"\s*:\s*"?(.*)$/);
+    const colonMatch = /^"[^"]+"\s*:\s*"?(.*)$/.exec(line);
     if (colonMatch) {
       const ep = this.selectedStep() as WorkflowStep | undefined;
       if (ep?.kind === 'endpoint' && this.previousSteps().length > 0) {
@@ -3251,85 +3328,93 @@ export class WorkflowBuilderComponent implements OnInit {
     const before = text.substring(0, pos);
 
     if (suggestion.icon === 'link') {
-      // Step reference — replace from {{ onwards, or insert at cursor if no {{ found
-      const openIdx = before.lastIndexOf('{{');
-      const closeIdx = before.lastIndexOf('}}');
-      if (openIdx >= 0 && openIdx > closeIdx) {
-        const afterCursor = text.substring(pos);
-        const closeMatch = afterCursor.match(/^[^}]*}}/);
-        const replaceEnd = closeMatch ? pos + closeMatch[0].length : pos;
-        const newText = text.substring(0, openIdx) + suggestion.insertText + text.substring(replaceEnd);
-        input.value = newText;
-        const cursorPos = openIdx + suggestion.insertText.length;
-        input.setSelectionRange(cursorPos, cursorPos);
-      } else {
-        // No {{ in text — insert the full token at cursor position
-        // If cursor is inside quotes (after : "...), replace partial text to end of value
-        const lineStart = before.lastIndexOf('\n') + 1;
-        const lineText = before.substring(lineStart);
-        const colonQuoteMatch = lineText.match(/^(\s*"[^"]+"\s*:\s*")(.*)$/);
-        if (colonQuoteMatch) {
-          const insertAt = lineStart + colonQuoteMatch[1].length;
-          const afterCursor = text.substring(pos);
-          // Find closing quote of the value
-          const closeQuoteIdx = afterCursor.indexOf('"');
-          const replaceEnd = closeQuoteIdx >= 0 ? pos + closeQuoteIdx : pos;
-          const newText = text.substring(0, insertAt) + suggestion.insertText + text.substring(replaceEnd);
-          input.value = newText;
-          const cursorPos = insertAt + suggestion.insertText.length;
-          input.setSelectionRange(cursorPos, cursorPos);
-        } else {
-          // Fallback: just insert at cursor
-          const newText = before + suggestion.insertText + text.substring(pos);
-          input.value = newText;
-          const cursorPos = pos + suggestion.insertText.length;
-          input.setSelectionRange(cursorPos, cursorPos);
-        }
-      }
+      this.insertRefSuggestion(input, suggestion, text, before, pos);
     } else if (this.acMode === 'json') {
-      // JSON field suggestion — smart insertion based on context
-      const lineStart = before.lastIndexOf('\n') + 1;
-      const lineText = before.substring(lineStart);
-      const quoteIdx = lineText.indexOf('"');
-      if (quoteIdx >= 0) {
-        const replaceFrom = lineStart + quoteIdx;
-        const afterCursor = text.substring(pos);
-        // Check if the rest of the line already has ": <value>" (existing key-value line)
-        const hasExistingColon = /^\s*"?\s*:/.test(afterCursor.split('\n')[0] ?? '');
-
-        if (hasExistingColon) {
-          // Only replace the key portion (from opening " to just before the closing " or :)
-          // Find the end of the current key: next unescaped " after cursor, or the : 
-          const restOfLine = afterCursor.split('\n')[0] ?? '';
-          const keyEndMatch = restOfLine.match(/^[^"]*"/);
-          const replaceEnd = keyEndMatch ? pos + keyEndMatch[0].length : pos;
-          // Extract just the key name from insertText (strip surrounding quotes and `: value`)
-          const keyOnly = suggestion.label;
-          const newText = text.substring(0, replaceFrom) + '"' + keyOnly + '"' + text.substring(replaceEnd);
-          input.value = newText;
-          const cursorPos = replaceFrom + keyOnly.length + 2; // after closing "
-          input.setSelectionRange(cursorPos, cursorPos);
-        } else {
-          // Fresh line — insert full "key": defaultValue
-          const insertText = suggestion.insertText.includes(': ') ? suggestion.insertText : suggestion.insertText + ': ';
-          const newText = text.substring(0, replaceFrom) + insertText + text.substring(pos);
-          input.value = newText;
-          const cursorPos = replaceFrom + insertText.length;
-          input.setSelectionRange(cursorPos, cursorPos);
-        }
-      }
+      this.insertJsonFieldSuggestion(input, suggestion, text, before, pos);
     }
 
     if (this.acCallback) {
-      // Cancel debounce and save immediately
       if (this.rawBodyTimer) { clearTimeout(this.rawBodyTimer); this.rawBodyTimer = null; }
       const savedPos = input.selectionStart ?? 0;
       this.acCallback(input.value);
-      // Restore cursor after Angular change detection may reset it via [value] binding
       input.setSelectionRange(savedPos, savedPos);
     }
     this.acSuggestions.set([]);
     input.focus();
+  }
+
+  private insertRefSuggestion(
+    input: HTMLInputElement | HTMLTextAreaElement,
+    suggestion: AutocompleteSuggestion,
+    text: string,
+    before: string,
+    pos: number,
+  ): void {
+    const openIdx = before.lastIndexOf('{{');
+    const closeIdx = before.lastIndexOf('}}');
+    if (openIdx >= 0 && openIdx > closeIdx) {
+      const afterCursor = text.substring(pos);
+      const closeMatch = /^[^}]*}}/.exec(afterCursor);
+      const replaceEnd = closeMatch ? pos + closeMatch[0].length : pos;
+      const newText = text.substring(0, openIdx) + suggestion.insertText + text.substring(replaceEnd);
+      input.value = newText;
+      const cursorPos = openIdx + suggestion.insertText.length;
+      input.setSelectionRange(cursorPos, cursorPos);
+      return;
+    }
+
+    const lineStart = before.lastIndexOf('\n') + 1;
+    const lineText = before.substring(lineStart);
+    const colonQuoteMatch = /^(\s*"[^"]+"\s*:\s*")(.*)$/.exec(lineText);
+    if (colonQuoteMatch) {
+      const insertAt = lineStart + colonQuoteMatch[1].length;
+      const afterCursor = text.substring(pos);
+      const closeQuoteIdx = afterCursor.indexOf('"');
+      const replaceEnd = closeQuoteIdx >= 0 ? pos + closeQuoteIdx : pos;
+      const newText = text.substring(0, insertAt) + suggestion.insertText + text.substring(replaceEnd);
+      input.value = newText;
+      const cursorPos = insertAt + suggestion.insertText.length;
+      input.setSelectionRange(cursorPos, cursorPos);
+    } else {
+      const newText = before + suggestion.insertText + text.substring(pos);
+      input.value = newText;
+      const cursorPos = pos + suggestion.insertText.length;
+      input.setSelectionRange(cursorPos, cursorPos);
+    }
+  }
+
+  private insertJsonFieldSuggestion(
+    input: HTMLInputElement | HTMLTextAreaElement,
+    suggestion: AutocompleteSuggestion,
+    text: string,
+    before: string,
+    pos: number,
+  ): void {
+    const lineStart = before.lastIndexOf('\n') + 1;
+    const lineText = before.substring(lineStart);
+    const quoteIdx = lineText.indexOf('"');
+    if (quoteIdx < 0) return;
+
+    const replaceFrom = lineStart + quoteIdx;
+    const afterCursor = text.substring(pos);
+    const hasExistingColon = /^\s*"?\s*:/.test(afterCursor.split('\n')[0] ?? '');
+
+    if (hasExistingColon) {
+      const restOfLine = afterCursor.split('\n')[0] ?? '';
+      const keyEndMatch = /^[^"]*"/.exec(restOfLine);
+      const replaceEnd = keyEndMatch ? pos + keyEndMatch[0].length : pos;
+      const keyOnly = suggestion.label;
+      const newText = text.substring(0, replaceFrom) + '"' + keyOnly + '"' + text.substring(replaceEnd);
+      input.value = newText;
+      const cursorPos = replaceFrom + keyOnly.length + 2;
+      input.setSelectionRange(cursorPos, cursorPos);
+    } else {
+      const insertText = suggestion.insertText.includes(': ') ? suggestion.insertText : suggestion.insertText + ': ';
+      const newText = text.substring(0, replaceFrom) + insertText + text.substring(pos);
+      input.value = newText;
+      const cursorPos = replaceFrom + insertText.length;
+      input.setSelectionRange(cursorPos, cursorPos);
+    }
   }
 
   closeAutocomplete() {
@@ -3560,7 +3645,8 @@ export class WorkflowBuilderComponent implements OnInit {
   cellText(v: unknown): string {
     if (v === null || v === undefined) return '';
     if (typeof v === 'object') return JSON.stringify(v);
-    return String(v);
+    if (typeof v === 'number' || typeof v === 'boolean') return `${v}`;
+    return typeof v === 'string' ? v : JSON.stringify(v);
   }
 
   /** Find top-level keys whose value is an array (for the list path selector) */

@@ -37,9 +37,9 @@ export class AuthService {
    * JWT access token — persisted in sessionStorage so it survives page
    * refreshes within the same tab.  Also sent as Bearer header.
    */
-  private _accessToken = signal<string | null>(this.loadToken(this.TOKEN_KEY));
+  private readonly _accessToken = signal<string | null>(this.loadToken(this.TOKEN_KEY));
 
-  private _user = signal<CloudUser | null>(this.loadProfileFromStorage());
+  private readonly _user = signal<CloudUser | null>(this.loadProfileFromStorage());
 
   readonly user = this._user.asReadonly();
   readonly isLoggedIn = computed(() => !!this._user());

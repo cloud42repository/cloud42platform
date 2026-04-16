@@ -27,12 +27,11 @@ import {
   FormDefinition,
   FormField,
   FormFieldKind,
-  FormFieldDataSource,
   FormSubmitAction,
   BodyMode,
   BodyFieldSource,
 } from '../../config/form.types';
-import { MODULES, ModuleDef, EndpointDef } from '../../config/endpoints';
+import { MODULES, EndpointDef } from '../../config/endpoints';
 import { getEndpointPayload } from '../../config/endpoint-payloads';
 import { getEndpointInputSchema } from '../../config/endpoint-schemas';
 import { TranslatePipe } from '../../i18n/translate.pipe';
@@ -1486,30 +1485,11 @@ export class FormBuilderComponent implements OnInit {
     const mod = MODULES.find(m => m.apiPrefix === action.moduleApiPrefix);
     const ep = mod?.endpoints.find(e => e.pathTemplate === pathTemplate);
     if (!ep) return;
-    const hasBody = ep.hasBody ?? ['POST', 'PUT', 'PATCH'].includes(ep.method);
 
-    // Auto-generate payload from endpoint template
-    let rawBody = hasBody ? '{}' : '';
-    let bodyKeys: string[] = hasBody ? action.bodyKeys : [];
-    let bodySources: Record<string, BodyFieldSource> = hasBody ? action.bodySources : {};
+    const { rawBody, bodyKeys, bodySources } = this.resolveActionBody(action, mod, ep);
 
-    if (hasBody && mod) {
-      const payload = getEndpointPayload(mod.id, ep.id);
-      if (payload && typeof payload === 'object') {
-        rawBody = JSON.stringify(payload, null, 2);
-        const keys = Object.keys(payload as Record<string, unknown>);
-        bodyKeys = keys;
-        bodySources = {};
-        for (const key of keys) {
-          const val = (payload as Record<string, unknown>)[key];
-          bodySources[key] = { type: 'hardcoded', value: typeof val === 'string' ? val : JSON.stringify(val) };
-        }
-      }
-    }
-
-    this.submitActions.update(as => as.map(a => {
-      if (a.id !== actionId) return a;
-      return {
+    this.submitActions.update(as => as.map(a =>
+      a.id === actionId ? {
         ...a,
         method: ep.method as FormSubmitAction['method'],
         pathTemplate: ep.pathTemplate,
@@ -1519,8 +1499,37 @@ export class FormBuilderComponent implements OnInit {
         rawBody,
         bodyKeys,
         bodySources,
-      };
-    }));
+      } : a
+    ));
+  }
+
+  private resolveActionBody(action: FormSubmitAction, mod: typeof MODULES[number] | undefined, ep: EndpointDef) {
+    const hasBody = ep.hasBody ?? ['POST', 'PUT', 'PATCH'].includes(ep.method);
+    let rawBody = hasBody ? '{}' : '';
+    let bodyKeys: string[] = hasBody ? action.bodyKeys : [];
+    let bodySources: Record<string, BodyFieldSource> = hasBody ? action.bodySources : {};
+
+    if (hasBody && mod) {
+      ({ rawBody, bodyKeys, bodySources } = this.generateEndpointBody(mod.id, ep.id, rawBody, bodyKeys, bodySources));
+    }
+    return { rawBody, bodyKeys, bodySources };
+  }
+
+  private generateEndpointBody(
+    modId: string, epId: string,
+    rawBody: string, bodyKeys: string[], bodySources: Record<string, BodyFieldSource>,
+  ): { rawBody: string; bodyKeys: string[]; bodySources: Record<string, BodyFieldSource> } {
+    const payload = getEndpointPayload(modId, epId);
+    if (!payload || typeof payload !== 'object') return { rawBody, bodyKeys, bodySources };
+    rawBody = JSON.stringify(payload, null, 2);
+    const keys = Object.keys(payload as Record<string, unknown>);
+    bodyKeys = keys;
+    bodySources = {};
+    for (const key of keys) {
+      const val = (payload as Record<string, unknown>)[key];
+      bodySources[key] = { type: 'hardcoded', value: typeof val === 'string' ? val : JSON.stringify(val) };
+    }
+    return { rawBody, bodyKeys, bodySources };
   }
 
   updateActionPathParam(actionId: string, param: string, value: string) {
@@ -1662,13 +1671,31 @@ export class FormBuilderComponent implements OnInit {
     return Array.isArray(data) ? data : [];
   }
 
+  /** Safely convert unknown value to string without [object Object] */
+  private safeStr(val: unknown, fallback = ''): string {
+    if (val == null) return fallback;
+    if (typeof val === 'string') return val;
+    if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+    return JSON.stringify(val);
+  }
+
+  /** Get Material icon for a field kind */
+  private getFieldIcon(kind: FormFieldKind): string {
+    switch (kind) {
+      case 'text': return 'text_fields';
+      case 'date': return 'calendar_today';
+      case 'select': return 'arrow_drop_down_circle';
+      default: return 'table_chart';
+    }
+  }
+
   getSelectOptions(field: FormField): { display: string; value: string }[] {
     const items = Array.isArray(field.lastData) ? field.lastData as Record<string, unknown>[] : [];
     const displayField = field.displayField || '';
     const valueField = field.valueField || '';
     return items.slice(0, 10).map(item => ({
-      display: displayField ? String(this.svc.getPath(item, displayField) ?? '') : JSON.stringify(item).slice(0, 60),
-      value: valueField ? String(this.svc.getPath(item, valueField) ?? '') : '',
+      display: displayField ? this.safeStr(this.svc.getPath(item, displayField)) : JSON.stringify(item).slice(0, 60),
+      value: valueField ? this.safeStr(this.svc.getPath(item, valueField)) : '',
     }));
   }
 
@@ -1688,7 +1715,7 @@ export class FormBuilderComponent implements OnInit {
       const row: Record<string, string> = {};
       for (const col of columns) {
         const val = this.svc.getPath(item, col);
-        row[col] = val == null ? '' : String(val);
+        row[col] = this.safeStr(val);
       }
       return row;
     });
@@ -1813,7 +1840,7 @@ export class FormBuilderComponent implements OnInit {
   // ── Field values (runtime) ─────────────────────────────────────────────
 
   getFieldValue(fieldId: string): string {
-    return String(this.fieldValues()[fieldId] ?? '');
+    return this.safeStr(this.fieldValues()[fieldId]);
   }
 
   setFieldValue(fieldId: string, value: unknown) {
@@ -1855,9 +1882,12 @@ export class FormBuilderComponent implements OnInit {
           this.api.delete(action.moduleApiPrefix, action.pathTemplate, action.pathParams)
         );
       } else {
-        const apiCall = method === 'put' ? this.api.put
-          : method === 'patch' ? this.api.patch
-          : this.api.post;
+        const apiCallMap: Record<string, typeof this.api.post> = {
+          put: this.api.put,
+          patch: this.api.patch,
+          post: this.api.post,
+        };
+        const apiCall = apiCallMap[method] ?? this.api.post;
         res = await firstValueFrom(
           apiCall.call(this.api, action.moduleApiPrefix, action.pathTemplate, action.pathParams, body)
         );
@@ -1877,78 +1907,66 @@ export class FormBuilderComponent implements OnInit {
   private buildRequestBody(action: FormSubmitAction): unknown {
     const mode = this.getBodyMode(action);
     const values = this.fieldValues();
-
-    console.log('[FormBuilder] buildRequestBody:', {
-      mode,
-      rawBody: action.rawBody,
-      bodyKeys: action.bodyKeys,
-      fieldValues: values,
-      fields: this.fields().map(f => ({ id: f.id, label: f.label, kind: f.kind })),
-    });
-
     const isEmptyDefault = (action.rawBody ?? '{}').trim() === '{}' && action.bodyKeys.length === 0;
 
     if (mode === 'fields' || isEmptyDefault) {
-      // Fields mode OR text/form mode with default empty body → auto-build from fields
-      const body: Record<string, unknown> = {};
-      if (action.bodyKeys.length > 0) {
-        for (const key of action.bodyKeys) {
-          const src = action.bodySources[key];
-          if (!src || src.type === 'hardcoded') {
-            const raw = src?.type === 'hardcoded' ? src.value : '';
-            body[key] = this.resolveFieldRefs(raw, values);
-          } else {
-            body[key] = values[src.fieldId] ?? '';
-          }
-        }
-      } else {
-        for (const field of this.fields()) {
-          const val = values[field.id];
-          if (val !== undefined && val !== '') {
-            const key = field.label || field.id;
-            body[key] = val;
-          }
-        }
-      }
-      return body;
+      return this.buildFieldsBody(action, values);
     }
 
-    if (mode === 'text') {
-      // Resolve {{field.xxx}} references before parsing JSON
-      const resolved = this.resolveFieldRefs(action.rawBody ?? '{}', values);
-      try {
-        return JSON.parse(resolved);
-      } catch {
-        try {
-          const fixed = resolved.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
-          return JSON.parse(fixed);
-        } catch {
-          console.warn('[FormBuilder] Invalid JSON in text body:', resolved);
-          return {};
-        }
-      }
-    }
-
-    // form mode — replace {{field.xxx}} references
     const raw = action.rawBody ?? '{}';
     const resolved = this.resolveFieldRefs(raw, values);
+    return this.parseJsonWithFixup(resolved, mode);
+  }
+
+  private buildFieldsBody(action: FormSubmitAction, values: Record<string, unknown>): Record<string, unknown> {
+    if (action.bodyKeys.length > 0) {
+      return this.buildFromBodyKeys(action, values);
+    }
+    return this.buildFromFormFields(values);
+  }
+
+  private buildFromBodyKeys(action: FormSubmitAction, values: Record<string, unknown>): Record<string, unknown> {
+    const body: Record<string, unknown> = {};
+    for (const key of action.bodyKeys) {
+      const src = action.bodySources[key];
+      if (!src || src.type === 'hardcoded') {
+        const raw = src?.type === 'hardcoded' ? src.value : '';
+        body[key] = this.resolveFieldRefs(raw, values);
+      } else {
+        body[key] = values[src.fieldId] ?? '';
+      }
+    }
+    return body;
+  }
+
+  private buildFromFormFields(values: Record<string, unknown>): Record<string, unknown> {
+    const body: Record<string, unknown> = {};
+    for (const field of this.fields()) {
+      const val = values[field.id];
+      if (val !== undefined && val !== '') {
+        body[field.label || field.id] = val;
+      }
+    }
+    return body;
+  }
+
+  private parseJsonWithFixup(resolved: string, mode: string): unknown {
     try {
       return JSON.parse(resolved);
     } catch {
-      // Try fixing unquoted keys: {key: "val"} → {"key": "val"}
       try {
-        const fixed = resolved.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
+        const fixed = resolved.replaceAll(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
         return JSON.parse(fixed);
       } catch {
-        console.warn('[FormBuilder] Invalid JSON in form body after resolving refs:', resolved);
+        console.warn(`[FormBuilder] Invalid JSON in ${mode} body:`, resolved);
         return {};
       }
     }
   }
 
   private resolveFieldRefs(template: string, values: Record<string, unknown>): string {
-    return template.replace(/\{\{field\.([^}]+)\}\}/g, (_match, fieldId) => {
-      return String(values[fieldId] ?? '');
+    return template.replaceAll(/\{\{field\.([^}]+)\}\}/g, (_match, fieldId) => {
+      return this.safeStr(values[fieldId]);
     });
   }
 
@@ -1958,7 +1976,7 @@ export class FormBuilderComponent implements OnInit {
     try {
       return JSON.stringify(data, null, 2);
     } catch {
-      return String(data);
+      return this.safeStr(data);
     }
   }
 
@@ -1983,14 +2001,18 @@ export class FormBuilderComponent implements OnInit {
     for (const f of this.fields()) {
       const ref = `{{field.${f.id}}}`;
       const label = f.label || f.kind;
-      const val = values[f.id];
-      const preview = val !== undefined && val !== '' ? ` = "${String(val).slice(0, 30)}"` : '';
-      if (!filter || ref.toLowerCase().includes(filter) || label.toLowerCase().includes(filter) || f.id.toLowerCase().includes(filter)) {
+      const matchesFilter = !filter
+        || ref.toLowerCase().includes(filter)
+        || label.toLowerCase().includes(filter)
+        || f.id.toLowerCase().includes(filter);
+      if (matchesFilter) {
+        const val = values[f.id];
+        const preview = val !== undefined && val !== '' ? ` = "${this.safeStr(val).slice(0, 30)}"` : '';
         suggestions.push({
           label: `field.${f.id}`,
           insertText: ref,
           detail: `${label} (${f.kind})${preview}`,
-          icon: f.kind === 'text' ? 'text_fields' : f.kind === 'date' ? 'calendar_today' : f.kind === 'select' ? 'arrow_drop_down_circle' : 'table_chart',
+          icon: this.getFieldIcon(f.kind),
         });
       }
     }
@@ -2030,8 +2052,8 @@ export class FormBuilderComponent implements OnInit {
       const pos = ta.selectionStart ?? 0;
       const textBefore = ta.value.substring(0, pos);
       const lineNumber = textBefore.split('\n').length;
-      const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 18;
-      const paddingTop = parseFloat(getComputedStyle(ta).paddingTop) || 8;
+      const lineHeight = Number.parseFloat(getComputedStyle(ta).lineHeight) || 18;
+      const paddingTop = Number.parseFloat(getComputedStyle(ta).paddingTop) || 8;
       top = rect.top + paddingTop + lineNumber * lineHeight + 4;
     }
 
@@ -2092,37 +2114,38 @@ export class FormBuilderComponent implements OnInit {
     const ep = mod?.endpoints.find(e => e.pathTemplate === action.pathTemplate && e.method === action.method);
     if (!mod || !ep) return [];
 
-    const suggestions: { label: string; insertText: string; detail: string; icon: string }[] = [];
-
     const inputSchema = getEndpointInputSchema(mod.id, ep.id);
-    if (inputSchema) {
-      for (const [key, val] of Object.entries(inputSchema)) {
-        if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
-        const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
-          : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
-        const defaultVal = val === null ? 'null' : typeof val === 'string' ? '""'
-          : typeof val === 'number' ? '0' : typeof val === 'boolean' ? 'false'
-          : JSON.stringify(val, null, 2);
-        suggestions.push({ label: key, insertText: `"${key}": ${defaultVal}`, detail: type, icon: 'data_object' });
-      }
-    }
-
-    if (suggestions.length === 0) {
+    const entries = inputSchema ? Object.entries(inputSchema) : [];
+    if (entries.length === 0) {
       const payload = getEndpointPayload(mod.id, ep.id) as Record<string, unknown> | null;
-      if (payload) {
-        for (const [key, val] of Object.entries(payload)) {
-          if (filter && !key.toLowerCase().includes(filter.toLowerCase())) continue;
-          const type = Array.isArray(val) ? 'array' : typeof val === 'object' && val !== null ? 'object'
-            : typeof val === 'number' ? 'number' : typeof val === 'boolean' ? 'boolean' : 'string';
-          const defaultVal = val === null ? 'null' : typeof val === 'string' ? '""'
-            : typeof val === 'number' ? '0' : typeof val === 'boolean' ? 'false'
-            : JSON.stringify(val, null, 2);
-          suggestions.push({ label: key, insertText: `"${key}": ${defaultVal}`, detail: type, icon: 'data_object' });
-        }
-      }
+      if (payload) entries.push(...Object.entries(payload));
     }
 
-    return suggestions.slice(0, 20);
+    return entries
+      .filter(([key]) => !filter || key.toLowerCase().includes(filter.toLowerCase()))
+      .map(([key, val]) => ({
+        label: key,
+        insertText: `"${key}": ${this.jsonDefaultValue(val)}`,
+        detail: this.jsonTypeName(val),
+        icon: 'data_object',
+      }))
+      .slice(0, 20);
+  }
+
+  private jsonTypeName(val: unknown): string {
+    if (Array.isArray(val)) return 'array';
+    if (typeof val === 'object' && val !== null) return 'object';
+    if (typeof val === 'number') return 'number';
+    if (typeof val === 'boolean') return 'boolean';
+    return 'string';
+  }
+
+  private jsonDefaultValue(val: unknown): string {
+    if (val === null) return 'null';
+    if (typeof val === 'string') return '""';
+    if (typeof val === 'number') return '0';
+    if (typeof val === 'boolean') return 'false';
+    return JSON.stringify(val, null, 2);
   }
 
   onAcKeydown(event: KeyboardEvent) {
@@ -2155,7 +2178,7 @@ export class FormBuilderComponent implements OnInit {
     if (openIdx >= 0 && !before.substring(openIdx).includes('}}')) {
       // {{ reference insertion
       const after = text.substring(pos);
-      const closeMatch = after.match(/^[^}]*}}/);
+      const closeMatch = /^[^}]*}}/.exec(after);
       const replaceEnd = closeMatch ? pos + closeMatch[0].length : pos;
       const newText = text.substring(0, openIdx) + suggestion.insertText + text.substring(replaceEnd);
       input.value = newText;
@@ -2164,7 +2187,7 @@ export class FormBuilderComponent implements OnInit {
     } else if (suggestion.insertText.startsWith('"') && suggestion.insertText.includes(':')) {
       // JSON field insertion — replace the current line from the opening quote
       const lineStart = before.lastIndexOf('\n') + 1;
-      const indent = before.substring(lineStart).match(/^(\s*)/)?.[1] ?? '';
+      const indent = /^(\s*)/.exec(before.substring(lineStart))?.[1] ?? '';
       const quoteStart = before.lastIndexOf('"', pos - 1);
       const after = text.substring(pos);
       const lineEnd = after.indexOf('\n');
@@ -2224,23 +2247,28 @@ export class FormBuilderComponent implements OnInit {
       if (links.length > 0) {
         const url = this.shareSvc.getShareUrl(links[0].token);
         this.shareUrl.set(url);
-        this.clipboardCopy(url);
+        await this.clipboardCopy(url);
       }
     } catch { /* ignore */ }
   }
 
-  copyShareUrl() {
+  async copyShareUrl() {
     const url = this.shareUrl();
-    if (url) this.clipboardCopy(url);
+    if (url) await this.clipboardCopy(url);
   }
 
-  private clipboardCopy(text: string) {
-    try { navigator.clipboard.writeText(text); }
-    catch {
+  private async clipboardCopy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
       const ta = document.createElement('textarea');
-      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-      document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      (document as unknown as { execCommand(cmd: string): boolean }).execCommand('copy');
+      ta.remove();
     }
     this.shareCopied.set(true);
     setTimeout(() => this.shareCopied.set(false), 2500);

@@ -10,7 +10,6 @@ import { CommonModule } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { MODULES } from './config/endpoints';
 import { AuthService } from './services/auth.service';
 import { AgentComponent } from './pages/agent/agent.component';
 import { ModuleVisibilityService } from './services/module-visibility.service';

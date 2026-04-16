@@ -133,7 +133,7 @@ export const FR: Record<TranslationKey, string> = {
   'workflow.loop-for-each': 'Pour chaque élément',
   'workflow.loop-source-hint': 'Étape dont la réponse contient le tableau à parcourir',
   'workflow.loop-field-hint': 'Chemin pointé vers le tableau (laisser vide si la racine est un tableau)',
-  'workflow.loop-item-hint': 'Les étapes du corps peuvent référencer l\'élément courant via \"Depuis l\'\u00e9tape\" → ce bloc boucle',
+  'workflow.loop-item-hint': 'Les étapes du corps peuvent référencer l\'élément courant via "Depuis l\'étape" → ce bloc boucle',
   'workflow.body-steps': 'Étapes du corps',
   'workflow.add-endpoint-body': 'Ajouter un endpoint au corps',
   'workflow.condition': 'Condition',

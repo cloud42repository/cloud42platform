@@ -117,7 +117,7 @@ export class ImpossibleCloudClient {
           (data as { message?: string } | undefined)?.message ??
           err.message ??
           "Unknown error";
-        return Promise.reject(new ImpossibleCloudApiError(message, status, data));
+        throw new ImpossibleCloudApiError(message, status, data);
       }
     );
   }

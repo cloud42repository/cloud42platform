@@ -14,7 +14,7 @@ export class FormService {
   readonly forms = this._forms.asReadonly();
 
   constructor() {
-    this.loadFromApi();
+    queueMicrotask(() => this.loadFromApi());
   }
 
   // ── Backend API ─────────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ export class FormService {
   /** Resolve a dot-notation path in an object */
   getPath(obj: unknown, path: string): unknown {
     if (!path) return obj;
-    const parts = path.replace(/\[(\w+)\]/g, '.$1').replace(/^\./, '').split('.').filter(Boolean);
+    const parts = path.replaceAll(/\[(\w+)\]/g, '.$1').replace(/^\./, '').split('.').filter(Boolean);
     let cur = obj;
     for (const part of parts) {
       if (cur == null || typeof cur !== 'object') return undefined;

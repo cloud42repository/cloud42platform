@@ -9,7 +9,6 @@ import {
   BooksItem, CreateBooksItemDTO, UpdateBooksItemDTO,
   BooksListParams,
 } from "./zoho-books.dto";
-import { ZohoListWrapper, ZohoBulkResponse } from "../shared/shared.dto";
 
 export interface ZohoBooksConfig extends ZohoCredentials {
   organizationId: string;

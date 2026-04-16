@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
 import type { JwtPayload } from './jwt.strategy';
 import type { UserResponseDto } from '../user/user.dto';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 
 // Google token verifier — dynamic import for ESM compatibility
 let _verifyGoogleToken: ((idToken: string, clientId: string) => Promise<Record<string, unknown>>) | null = null;

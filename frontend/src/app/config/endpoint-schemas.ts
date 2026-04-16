@@ -1333,7 +1333,7 @@ const SCHEMA_MAP: Record<string, Record<string, EndpointIOSchema>> = {
  */
 export function getEndpointSchema(moduleId: string, endpointId: string): EndpointIOSchema | null {
   const schema = SCHEMA_MAP[moduleId]?.[endpointId];
-  return schema ? JSON.parse(JSON.stringify(schema)) : null;
+  return schema ? structuredClone(schema) : null;
 }
 
 /**
@@ -1342,7 +1342,7 @@ export function getEndpointSchema(moduleId: string, endpointId: string): Endpoin
  */
 export function getEndpointOutputSchema(moduleId: string, endpointId: string): Record<string, unknown> | unknown[] | null {
   const schema = SCHEMA_MAP[moduleId]?.[endpointId];
-  return schema?.output ? JSON.parse(JSON.stringify(schema.output)) : null;
+  return schema?.output ? structuredClone(schema.output) : null;
 }
 
 /**
@@ -1351,7 +1351,7 @@ export function getEndpointOutputSchema(moduleId: string, endpointId: string): R
  */
 export function getEndpointInputSchema(moduleId: string, endpointId: string): Record<string, unknown> | null {
   const schema = SCHEMA_MAP[moduleId]?.[endpointId];
-  return schema?.input ? JSON.parse(JSON.stringify(schema.input)) : null;
+  return schema?.input ? structuredClone(schema.input) : null;
 }
 
 /**

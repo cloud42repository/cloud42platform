@@ -65,7 +65,7 @@ export abstract class ZohoBaseClient {
     this.http = axios.create({
       baseURL: config.apiBaseUrl ?? (MOCK_MODE ? 'http://mock.local' : undefined),
       headers: { "Content-Type": "application/json;charset=UTF-8" },
-      params: { ...(config.defaultParams ?? {}) },
+      params: config.defaultParams ?? {},
     });
 
     this.attachInterceptors();
@@ -107,7 +107,7 @@ export abstract class ZohoBaseClient {
           req.headers.set("Authorization", `Zoho-oauthtoken ${token}`);
           return this.http(req);
         }
-        return Promise.reject(err);
+        throw err;
       }
     );
   }

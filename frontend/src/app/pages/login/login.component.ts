@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, inject } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
@@ -8,18 +8,20 @@ interface GisCredentialResponse {
   credential: string;
 }
 
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize(config: object): void;
-          renderButton(el: HTMLElement, conf: object): void;
-          prompt(): void;
-        };
-      };
+interface GoogleGsi {
+  accounts: {
+    id: {
+      initialize(config: object): void;
+      renderButton(el: HTMLElement, conf: object): void;
+      prompt(): void;
     };
-  }
+  };
+}
+
+declare global {
+  interface Window { google?: GoogleGsi; }
+  // eslint-disable-next-line no-var
+  var google: GoogleGsi | undefined;
 }
 
 @Component({
@@ -154,9 +156,9 @@ export class LoginComponent implements OnInit, AfterViewInit {
   isMockMode = environment.mockMode ?? false;
 
   constructor(
-    private authService: AuthService,
-    private router: Router,
-    private route: ActivatedRoute,
+    private readonly authService: AuthService,
+    private readonly router: Router,
+    private readonly route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
@@ -192,7 +194,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
   }
 
   private loadGoogleScript(): Promise<void> {
-    if (window.google?.accounts) {
+    if (globalThis.google?.accounts) {
       return Promise.resolve();
     }
     return new Promise((resolve, reject) => {
@@ -207,7 +209,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
   }
 
   private renderGoogleButton(): void {
-    const gis = window.google?.accounts?.id;
+    const gis = globalThis.google?.accounts?.id;
     if (!gis || !this.googleBtnRef) return;
 
     gis.initialize({

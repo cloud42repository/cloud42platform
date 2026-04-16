@@ -27,7 +27,7 @@ import { ModuleVisibilityService } from '../../services/module-visibility.servic
 import { UserManagementService } from '../../services/user-management.service';
 import { UserRole, USER_ROLE_LABELS, StoredUser } from '../../config/user.types';
 import { TranslatePipe } from '../../i18n/translate.pipe';
-import { ThemeService, type ThemeMode, type ThemeColor } from '../../services/theme.service';
+import { ThemeService, type ThemeColor } from '../../services/theme.service';
 
 export interface ServiceGroupState {
   group: ServiceConfigGroup;
@@ -139,7 +139,7 @@ export interface ServiceGroupState {
                             matInput
                             [type]="serviceFieldInputType(field, sg)"
                             [placeholder]="field.placeholder || ''"
-                            [value]="sg.values[field.key] ?? ''"
+                            [value]="sg.values[field.key]"
                             (input)="onServiceFieldChange(sg, field.key, $any($event.target).value)"
                           />
                           @if (field.secret) {
@@ -982,24 +982,30 @@ export class SettingsComponent implements OnInit {
     let count = 0;
     for (const sg of this.serviceGroups) {
       if (sg.dirty) {
-        try {
-          const config: Record<string, unknown> = { type: 'none' };
-          for (const field of sg.group.fields) {
-            const val = sg.values[field.key];
-            if (val !== undefined && val !== '') {
-              config[field.key] = field.type === 'number' ? Number(val) : val;
-            }
-          }
-          await this.svc.saveConfig(sg.group.configId, config as unknown as AuthConfig);
-          sg.dirty = false;
-          sg.hasValue = sg.group.fields.some(f => !!sg.values[f.key]);
-          count++;
-        } catch {
-          this.snack.open(`✗ Failed to save ${sg.group.label}`, '', { duration: 3000 });
-        }
+        const saved = await this.trySaveGroup(sg);
+        if (saved) count++;
       }
     }
-    this.snack.open(`✓ Saved ${count} configuration${count !== 1 ? 's' : ''}`, '', { duration: 3000 });
+    this.snack.open(`✓ Saved ${count} configuration${count === 1 ? '' : 's'}`, '', { duration: 3000 });
+  }
+
+  private async trySaveGroup(sg: ServiceGroupState): Promise<boolean> {
+    try {
+      const config: Record<string, unknown> = { type: 'none' };
+      for (const field of sg.group.fields) {
+        const val = sg.values[field.key];
+        if (val !== undefined && val !== '') {
+          config[field.key] = field.type === 'number' ? Number(val) : val;
+        }
+      }
+      await this.svc.saveConfig(sg.group.configId, config as unknown as AuthConfig);
+      sg.dirty = false;
+      sg.hasValue = sg.group.fields.some(f => !!sg.values[f.key]);
+      return true;
+    } catch {
+      this.snack.open(`✗ Failed to save ${sg.group.label}`, '', { duration: 3000 });
+      return false;
+    }
   }
 
   async clearServiceConfig(sg: ServiceGroupState): Promise<void> {
