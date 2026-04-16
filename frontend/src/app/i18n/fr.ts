@@ -724,4 +724,18 @@ export const FR: Record<TranslationKey, string> = {
   'settings.theme-light': 'Clair',
   'settings.theme-dark': 'Sombre',
   'settings.theme-color': 'Couleur d\'accent',
+
+  /* ── Shared Views ── */
+  'nav.shares': 'Vues partagées',
+  'shares.list-title': 'Vues partagées',
+  'shares.list-subtitle': 'Gérez vos liens de partage et consultez les éléments partagés avec vous',
+  'shares.my-shares': 'Mes partages',
+  'shares.shared-with-me': 'Partagés avec moi',
+  'shares.no-my-shares': 'Vous n\'avez encore partagé aucun élément.',
+  'shares.no-shared-with-me': 'Aucun élément n\'a encore été partagé avec vous.',
+  'shares.public': 'Public',
+  'shares.copy-link': 'Copier le lien',
+  'shares.open': 'Ouvrir',
+  'shares.revoke': 'Révoquer',
+  'shares.copied': 'Lien copié dans le presse-papiers',
 };

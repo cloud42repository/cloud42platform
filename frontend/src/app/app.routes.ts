@@ -23,6 +23,7 @@ import { FormListComponent } from './pages/form/form-list.component';
 import { FormBuilderComponent } from './pages/form/form-builder.component';
 import { ApiTesterComponent } from './pages/api-tester/api-tester.component';
 import { SharedViewerComponent } from './pages/shared/shared-viewer.component';
+import { SharedListComponent } from './pages/shared/shared-list.component';
 import { authGuard } from './guards/auth.guard';
 import { MODULES } from './config/endpoints';
 
@@ -68,6 +69,7 @@ export const routes: Routes = [
   { path: 'invoice-management', component: InvoiceManagementComponent, canActivate: [authGuard], title: 'Invoice Management' },
   { path: 'agent', component: AgentComponent, canActivate: [authGuard], title: 'Agent' },
   { path: 'api-tester', component: ApiTesterComponent, canActivate: [authGuard], title: 'API Tester' },
+  { path: 'shares', component: SharedListComponent, canActivate: [authGuard], title: 'Shared Views' },
   { path: 'shared/:token', component: SharedViewerComponent, title: 'Shared View' },
   ...MODULES.map(m => ({
     path: m.id,

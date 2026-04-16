@@ -724,4 +724,18 @@ export const DE: Record<TranslationKey, string> = {
   'settings.theme-light': 'Hell',
   'settings.theme-dark': 'Dunkel',
   'settings.theme-color': 'Akzentfarbe',
+
+  /* ── Shared Views ── */
+  'nav.shares': 'Geteilte Ansichten',
+  'shares.list-title': 'Geteilte Ansichten',
+  'shares.list-subtitle': 'Verwalten Sie Ihre Freigabelinks und sehen Sie mit Ihnen geteilte Elemente',
+  'shares.my-shares': 'Meine Freigaben',
+  'shares.shared-with-me': 'Mit mir geteilt',
+  'shares.no-my-shares': 'Sie haben noch keine Elemente geteilt.',
+  'shares.no-shared-with-me': 'Es wurden noch keine Elemente mit Ihnen geteilt.',
+  'shares.public': 'Öffentlich',
+  'shares.copy-link': 'Link kopieren',
+  'shares.open': 'Öffnen',
+  'shares.revoke': 'Widerrufen',
+  'shares.copied': 'Link in die Zwischenablage kopiert',
 };

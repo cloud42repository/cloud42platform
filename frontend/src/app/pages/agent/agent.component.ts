@@ -20,6 +20,7 @@ import { ApiService } from '../../services/api.service';
 import { WorkflowService } from '../../services/workflow.service';
 import { MODULES, extractPathParams } from '../../config/endpoints';
 import { Workflow, WorkflowStep } from '../../config/workflow.types';
+import { NluEngine } from '../../services/nlu-engine';
 
 export interface AgentMessage {
   role: 'user' | 'agent';
@@ -57,6 +58,7 @@ export class AgentComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly workflowSvc = inject(WorkflowService);
   private readonly api = inject(ApiService);
+  private readonly nlu = inject(NluEngine);
 
   readonly messages = signal<AgentMessage[]>([]);
   readonly thinking = signal(false);
@@ -75,7 +77,7 @@ export class AgentComponent implements OnInit {
     { keywords: ['ic dashboard', 'impossible cloud dashboard', 'ic dash'], route: '/ic-dashboard', label: 'IC Dashboard'      },
     { keywords: ['settings', 'configuration', 'config', 'auth'],    route: '/settings',            label: 'Settings'          },
     ...MODULES.map(m => ({
-      keywords: [m.label.toLowerCase(), m.id.replace(/-/g, ' '), m.id],
+      keywords: [m.label.toLowerCase(), m.id.replaceAll('-', ' '), m.id],
       route: `/${m.id}`,
       label: m.label,
     })),
@@ -192,85 +194,139 @@ Type <code>exit chat</code> or toggle off to return to Agent mode.`,
     }, 80);
   }
 
-  // ── Core NLP dispatcher ─────────────────────────────────────────────────────
+  // ── Core NLU-powered dispatcher ──────────────────────────────────────────────
   private processInput(input: string): AgentMessage | null {
-    const lower = input.toLowerCase().trim();
+    const result = this.nlu.classify(input);
 
-    // Help
-    if (/^(help|\?|what can you do|capabilities|commands?)/.test(lower)) {
-      return this.helpMessage();
-    }
-
-    // List modules
-    if (/\b(list|show|what are).*(module|service|api|integration)/i.test(lower)) {
-      return this.listModules();
-    }
-
-    // Workflow creation
-    if (/\b(create|build|make|generate|new)\b/.test(lower) && /\bworkflow\b/.test(lower)) {
-      return this.createWorkflow(input);
-    }
-
-    // Explicit navigation verb
-    if (/\b(go to|navigate to|open|show me|take me to|switch to|jump to)\b/.test(lower)) {
-      return this.doNavigate(lower);
-    }
-
-    // Global data search
-    if (/\b(search(?:\s+for)?|look\s*for|lookup)\b/i.test(lower)) {
-      this.doGlobalSearch(input);
+    // Low confidence → fall back to ChatGPT one-shot
+    if (result.confidence < 0.15 && result.intent === 'unknown') {
+      this.doChatGPT(input);
       return null;
     }
 
-    // Implicit navigation (just a page name)
-    const nav = this.findNavTarget(lower);
-    if (nav) {
-      setTimeout(() => this.router.navigateByUrl(nav.route), 800);
-      return {
-        role: 'agent',
-        html: `Navigating you to <strong>${nav.label}</strong>…`,
-        actions: [{ label: `Open ${nav.label}`, route: nav.route }],
-        timestamp: new Date(),
-      };
-    }
+    switch (result.intent) {
+      case 'help':
+        return this.helpMessage();
 
-    // One-shot ChatGPT query ("ask chatgpt ...", "chat gpt ...", "ask ai ...")
-    if (/\b(ask\s*(chatgpt|gpt|ai|openai)|chat\s*gpt|chatgpt)\b/i.test(lower)) {
-      const prompt = input
-        .replace(/\b(ask\s*(chatgpt|gpt|ai|openai)|chat\s*gpt|chatgpt)\b/gi, '')
-        .trim();
-      if (!prompt) {
+      case 'list_modules':
+        return this.listModules();
+
+      case 'create_workflow':
+        return this.createWorkflow(input);
+
+      case 'navigate': {
+        if (result.route) {
+          setTimeout(() => this.router.navigateByUrl(result.route!), 800);
+          return {
+            role: 'agent',
+            html: `Navigating you to <strong>${result.routeLabel}</strong>…`,
+            actions: [{ label: `Open ${result.routeLabel}`, route: result.route }],
+            timestamp: new Date(),
+          };
+        }
+        const moduleList = MODULES.slice(0, 6).map(m => `<em>${m.label}</em>`).join(', ');
         return {
           role: 'agent',
-          html: `Please provide a prompt after <code>ask chatgpt</code>.<br>
-Example: <em>"ask chatgpt what is cloud computing?"</em>`,
+          html: `I couldn't find that page. Try: <br>
+<em>Workflows, Calendar, IC Dashboard, Invoice Dashboard, Settings</em>, or a module like ${moduleList}…`,
           timestamp: new Date(),
         };
       }
-      this.doChatGPT(prompt);
-      return null; // async response
-    }
 
-    // Fallback
-    return {
-      role: 'agent',
-      html: `I didn't quite understand that. Try:<br>
+      case 'search': {
+        this.doGlobalSearch(input);
+        return null;
+      }
+
+      case 'ask_chatgpt': {
+        const promptEntity = result.entities.find(e => e.type === 'freetext');
+        const prompt = promptEntity?.value || input.replaceAll(/\b(ask\s*(chatgpt|gpt|ai|openai)|chat\s*gpt|chatgpt)\b/gi, '').trim();
+        if (!prompt) {
+          return {
+            role: 'agent',
+            html: `Please provide a prompt after <code>ask chatgpt</code>.<br>
+Example: <em>"ask chatgpt what is cloud computing?"</em>`,
+            timestamp: new Date(),
+          };
+        }
+        this.doChatGPT(prompt);
+        return null;
+      }
+
+      case 'greet':
+        return {
+          role: 'agent',
+          html: `<strong>👋 Hello!</strong> How can I help you today?<br>
+Type <code>help</code> to see what I can do.`,
+          timestamp: new Date(),
+        };
+
+      case 'farewell':
+        return {
+          role: 'agent',
+          html: `<strong>👋 Goodbye!</strong> Come back anytime you need help.`,
+          timestamp: new Date(),
+        };
+
+      case 'status':
+        return {
+          role: 'agent',
+          html: `<strong>📊 Platform Status</strong><br>
+&bull; <strong>${MODULES.length}</strong> API modules connected<br>
+&bull; Type <em>"list modules"</em> for details<br>
+&bull; Type <em>"search [term]"</em> to find data across all endpoints`,
+          actions: [
+            { label: 'View Workflows', route: '/workflows' },
+            { label: 'View Dashboards', route: '/dashboards' },
+          ],
+          timestamp: new Date(),
+        };
+
+      default: {
+        // Last resort: try implicit navigation via NLU entity detection
+        const pageEntity = result.entities.find(e => e.type === 'page');
+        const moduleEntity = result.entities.find(e => e.type === 'module');
+        if (pageEntity) {
+          const route = `/${pageEntity.canonical}`;
+          setTimeout(() => this.router.navigateByUrl(route), 800);
+          return {
+            role: 'agent',
+            html: `Navigating you to <strong>${pageEntity.value}</strong>…`,
+            actions: [{ label: `Open ${pageEntity.value}`, route }],
+            timestamp: new Date(),
+          };
+        }
+        if (moduleEntity) {
+          const route = `/${moduleEntity.canonical}`;
+          setTimeout(() => this.router.navigateByUrl(route), 800);
+          return {
+            role: 'agent',
+            html: `Navigating you to <strong>${moduleEntity.value}</strong>…`,
+            actions: [{ label: `Open ${moduleEntity.value}`, route }],
+            timestamp: new Date(),
+          };
+        }
+        return {
+          role: 'agent',
+          html: `I didn't quite understand that. Try:<br>
 &bull; <em>"go to Workflows"</em> to navigate<br>
 &bull; <em>"create a workflow that lists Zoho CRM contacts"</em> to build a workflow<br>
 &bull; <code>help</code> for all options`,
-      timestamp: new Date(),
-    };
+          timestamp: new Date(),
+        };
+      }
+    }
   }
 
-  // ── Navigation ──────────────────────────────────────────────────────────────
+  // ── Navigation (kept for direct calls) ──────────────────────────────────────
   private doNavigate(lower: string): AgentMessage {
-    const nav = this.findNavTarget(lower);
-    if (nav) {
-      setTimeout(() => this.router.navigateByUrl(nav.route), 800);
+    const result = this.nlu.classify(lower);
+    if (result.route) {
+      setTimeout(() => this.router.navigateByUrl(result.route!), 800);
       return {
         role: 'agent',
-        html: `Navigating you to <strong>${nav.label}</strong>…`,
-        actions: [{ label: `Open ${nav.label}`, route: nav.route }],
+        html: `Navigating you to <strong>${result.routeLabel}</strong>…`,
+        actions: [{ label: `Open ${result.routeLabel}`, route: result.route }],
         timestamp: new Date(),
       };
     }
@@ -284,10 +340,9 @@ Example: <em>"ask chatgpt what is cloud computing?"</em>`,
   }
 
   private findNavTarget(lower: string): NavTarget | null {
-    for (const entry of this.NAV_MAP) {
-      if (entry.keywords.some(k => lower.includes(k))) {
-        return { route: entry.route, label: entry.label };
-      }
+    const result = this.nlu.classify(lower);
+    if (result.route) {
+      return { route: result.route, label: result.routeLabel! };
     }
     return null;
   }
@@ -299,7 +354,7 @@ Example: <em>"ask chatgpt what is cloud computing?"</em>`,
 
     for (const mod of MODULES) {
       const modLabel = mod.label.toLowerCase();
-      const modIdSpaced = mod.id.replace(/-/g, ' ');
+      const modIdSpaced = mod.id.replaceAll('-', ' ');
       const modMentioned =
         lower.includes(modLabel) ||
         lower.includes(modIdSpaced) ||
@@ -307,10 +362,10 @@ Example: <em>"ask chatgpt what is cloud computing?"</em>`,
 
       for (const ep of mod.endpoints) {
         const epLabel = ep.label.toLowerCase();
-        const epIdSpaced = ep.id.replace(/-/g, ' ');
+        const epIdSpaced = ep.id.replaceAll('-', ' ');
 
         // Score by counting label-word overlaps in prompt
-        const labelWords = epLabel.split(/[\s\-]+/).filter(w => w.length > 2);
+        const labelWords = epLabel.split(/[\s-]+/).filter(w => w.length > 2);
         const matchCount = labelWords.filter(w => lower.includes(w)).length;
         const threshold = Math.max(1, Math.floor(labelWords.length * 0.55));
 
@@ -367,8 +422,8 @@ Try mentioning module names and actions, e.g.:<br>
 
     // Derive a workflow name from the prompt
     const nameRaw = input
-      .replace(/\b(create|build|make|generate|a|an|the|new|me|that|which|to|workflow)\b/gi, '')
-      .replace(/\s+/g, ' ')
+      .replaceAll(/\b(create|build|make|generate|a|an|the|new|me|that|which|to|workflow)\b/gi, '')
+      .replaceAll(/\s+/g, ' ')
       .trim();
     const name = nameRaw.length > 70
       ? nameRaw.slice(0, 70).trim() + '…'
@@ -395,7 +450,7 @@ Try mentioning module names and actions, e.g.:<br>
 
     return {
       role: 'agent',
-      html: `✅ Workflow <strong>"${this.escapeHtml(name)}"</strong> created with <strong>${uniqueSteps.length}</strong> step${uniqueSteps.length !== 1 ? 's' : ''}:<ul>${stepsHtml}</ul>Opening the workflow builder…`,
+      html: `✅ Workflow <strong>"${this.escapeHtml(name)}"</strong> created with <strong>${uniqueSteps.length}</strong> step${uniqueSteps.length === 1 ? '' : 's'}:<ul>${stepsHtml}</ul>Opening the workflow builder…`,
       actions: [{ label: 'Open in Builder', route: `/workflows/${workflow.id}/edit` }],
       timestamp: new Date(),
     };
@@ -457,18 +512,18 @@ Make sure the backend is running and the ChatGPT module is configured.`,
     let html = this.escapeHtml(text);
 
     // Convert markdown-like code blocks  ```...```
-    html = html.replace(/```(\w*)\n?([\s\S]*?)```/g,
+    html = html.replaceAll(/```(\w*)\n?([\s\S]*?)```/g,
       (_m, _lang, code) => `<pre style="background:#f5f5f5;padding:8px 12px;border-radius:6px;overflow-x:auto;font-size:12.5px;margin:8px 0"><code>${code.trim()}</code></pre>`);
 
     // Convert inline code `...`
-    html = html.replace(/`([^`]+)`/g,
+    html = html.replaceAll(/`([^`]+)`/g,
       '<code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:4px;font-size:12.5px">$1</code>');
 
     // Convert bold **...**
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replaceAll(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
     // Convert newlines to <br>
-    html = html.replace(/\n/g, '<br>');
+    html = html.replaceAll('\n', '<br>');
 
     return html;
   }
@@ -476,7 +531,7 @@ Make sure the backend is running and the ChatGPT module is configured.`,
   // ── Help ────────────────────────────────────────────────────────────────────
   private helpMessage(): AgentMessage {
     const moduleItems = MODULES.slice(0, 7)
-      .map(m => `<li><strong>${m.label}</strong> &mdash; ${m.endpoints.length} endpoint${m.endpoints.length !== 1 ? 's' : ''}</li>`)
+      .map(m => `<li><strong>${m.label}</strong> &mdash; ${m.endpoints.length} endpoint${m.endpoints.length === 1 ? '' : 's'}</li>`)
       .join('');
     const moreCount = MODULES.length > 7 ? `<li>…and ${MODULES.length - 7} more modules</li>` : '';
 
@@ -510,7 +565,7 @@ Available pages: <em>Workflows, Calendar, IC Dashboard, Invoice Dashboard, Setti
 
   private listModules(): AgentMessage {
     const items = MODULES.map(m =>
-      `<li><strong>${m.label}</strong> &mdash; ${m.endpoints.length} endpoint${m.endpoints.length !== 1 ? 's' : ''} &nbsp;
+      `<li><strong>${m.label}</strong> &mdash; ${m.endpoints.length} endpoint${m.endpoints.length === 1 ? '' : 's'} &nbsp;
        <a href="/${m.id}">view</a></li>`
     ).join('');
     return {
@@ -524,9 +579,9 @@ Available pages: <em>Workflows, Calendar, IC Dashboard, Invoice Dashboard, Setti
   // ── Global data search ──────────────────────────────────────────────────────
   private async doGlobalSearch(input: string): Promise<void> {
     const searchTerm = input
-      .replace(/\b(search(?:\s+for)?|look\s*for|lookup)\b/gi, '')
-      .replace(/\b(in|all|api|endpoints?|data|across|every|the|a|an)\b/gi, '')
-      .replace(/\s+/g, ' ')
+      .replaceAll(/\b(search(?:\s+for)?|look\s*for|lookup)\b/gi, '')
+      .replaceAll(/\b(in|all|api|endpoints?|data|across|every|the|a|an)\b/gi, '')
+      .replaceAll(/\s+/g, ' ')
       .trim();
 
     if (!searchTerm || searchTerm.length < 2) {
@@ -540,38 +595,39 @@ Available pages: <em>Workflows, Calendar, IC Dashboard, Invoice Dashboard, Setti
       return;
     }
 
-    // Collect GET endpoints without path params (list endpoints)
-    const listEndpoints: { apiPrefix: string; pathTemplate: string; moduleLabel: string; endpointLabel: string }[] = [];
+    const listEndpoints = this._collectListEndpoints();
+    const hits = await this._executeSearch(listEndpoints, searchTerm.toLowerCase());
+
+    this.thinking.set(false);
+    const html = hits.length === 0
+      ? `🔍 No results found for <strong>"${this.escapeHtml(searchTerm)}"</strong> across <strong>${listEndpoints.length}</strong> endpoints.`
+      : this._formatSearchResults(hits, searchTerm);
+    this.messages.update(msgs => [...msgs, { role: 'agent', html, timestamp: new Date() }]);
+    this.scrollToBottom();
+  }
+
+  private _collectListEndpoints(): { apiPrefix: string; pathTemplate: string; moduleLabel: string; endpointLabel: string }[] {
+    const endpoints: { apiPrefix: string; pathTemplate: string; moduleLabel: string; endpointLabel: string }[] = [];
     for (const mod of MODULES) {
       for (const ep of mod.endpoints) {
         if (ep.method === 'GET' && extractPathParams(ep.pathTemplate).length === 0) {
-          listEndpoints.push({
-            apiPrefix: mod.apiPrefix,
-            pathTemplate: ep.pathTemplate,
-            moduleLabel: mod.label,
-            endpointLabel: ep.label,
-          });
+          endpoints.push({ apiPrefix: mod.apiPrefix, pathTemplate: ep.pathTemplate, moduleLabel: mod.label, endpointLabel: ep.label });
         }
       }
     }
+    return endpoints;
+  }
 
-    interface SearchHit {
-      moduleLabel: string;
-      endpointLabel: string;
-      record: Record<string, unknown>;
-      matchedFields: string[];
-    }
-
-    const hits: SearchHit[] = [];
-    const lowerTerm = searchTerm.toLowerCase();
-
-    // Fire all GET calls in parallel
+  private async _executeSearch(
+    endpoints: { apiPrefix: string; pathTemplate: string; moduleLabel: string; endpointLabel: string }[],
+    lowerTerm: string,
+  ): Promise<{ moduleLabel: string; endpointLabel: string; record: Record<string, unknown>; matchedFields: string[] }[]> {
+    const hits: { moduleLabel: string; endpointLabel: string; record: Record<string, unknown>; matchedFields: string[] }[] = [];
     await Promise.allSettled(
-      listEndpoints.map(async (ep) => {
+      endpoints.map(async (ep) => {
         try {
           const raw = await firstValueFrom(this.api.get(ep.apiPrefix, ep.pathTemplate));
-          const records = this._extractRecords(raw);
-          for (const record of records) {
+          for (const record of this._extractRecords(raw)) {
             const matchedFields = this._getMatchedFields(record, lowerTerm);
             if (matchedFields.length > 0) {
               hits.push({ moduleLabel: ep.moduleLabel, endpointLabel: ep.endpointLabel, record, matchedFields });
@@ -580,59 +636,54 @@ Available pages: <em>Workflows, Calendar, IC Dashboard, Invoice Dashboard, Setti
         } catch { /* endpoint failed – skip */ }
       })
     );
+    return hits;
+  }
 
-    this.thinking.set(false);
-
-    if (hits.length === 0) {
-      this.messages.update(msgs => [...msgs, {
-        role: 'agent',
-        html: `🔍 No results found for <strong>"${this.escapeHtml(searchTerm)}"</strong> across <strong>${listEndpoints.length}</strong> endpoints.`,
-        timestamp: new Date(),
-      }]);
-    } else {
-      // Group by module → endpoint
-      const grouped = new Map<string, SearchHit[]>();
-      for (const h of hits) {
-        const key = `${h.moduleLabel} → ${h.endpointLabel}`;
-        if (!grouped.has(key)) grouped.set(key, []);
-        grouped.get(key)!.push(h);
-      }
-
-      const MAX_PER_GROUP = 3;
-      const MAX_TOTAL = 50;
-      let shown = 0;
-
-      let html = `🔍 Found <strong>${hits.length}</strong> result${hits.length !== 1 ? 's' : ''} for <strong>"${this.escapeHtml(searchTerm)}"</strong> across <strong>${grouped.size}</strong> endpoint${grouped.size !== 1 ? 's' : ''}:<br><br>`;
-
-      for (const [group, items] of grouped) {
-        if (shown >= MAX_TOTAL) {
-          html += `<em>…results truncated (${MAX_TOTAL} shown of ${hits.length})</em>`;
-          break;
-        }
-        html += `<strong>${this.escapeHtml(group)}</strong> (${items.length}):<ul>`;
-        const slice = items.slice(0, MAX_PER_GROUP);
-        for (const item of slice) {
-          const preview = item.matchedFields.slice(0, 4)
-            .map(f => {
-              const val = item.record[f];
-              const str = typeof val === 'object' ? JSON.stringify(val) : String(val ?? '');
-              const trunc = str.length > 80 ? str.slice(0, 80) + '…' : str;
-              return `<em>${this.escapeHtml(f)}</em>: ${this.escapeHtml(trunc)}`;
-            })
-            .join(' &middot; ');
-          html += `<li>${preview}</li>`;
-          shown++;
-        }
-        if (items.length > MAX_PER_GROUP) {
-          html += `<li><em>…and ${items.length - MAX_PER_GROUP} more</em></li>`;
-        }
-        html += '</ul>';
-      }
-
-      this.messages.update(msgs => [...msgs, { role: 'agent', html, timestamp: new Date() }]);
+  private _formatSearchResults(
+    hits: { moduleLabel: string; endpointLabel: string; record: Record<string, unknown>; matchedFields: string[] }[],
+    searchTerm: string,
+  ): string {
+    const grouped = new Map<string, typeof hits>();
+    for (const h of hits) {
+      const key = `${h.moduleLabel} → ${h.endpointLabel}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push(h);
     }
 
-    this.scrollToBottom();
+    const MAX_PER_GROUP = 3;
+    const MAX_TOTAL = 50;
+    let shown = 0;
+    const pl = (n: number) => n === 1 ? '' : 's';
+
+    let html = `🔍 Found <strong>${hits.length}</strong> result${pl(hits.length)} for <strong>"${this.escapeHtml(searchTerm)}"</strong> across <strong>${grouped.size}</strong> endpoint${pl(grouped.size)}:<br><br>`;
+
+    for (const [group, items] of grouped) {
+      if (shown >= MAX_TOTAL) {
+        html += `<em>…results truncated (${MAX_TOTAL} shown of ${hits.length})</em>`;
+        break;
+      }
+      html += `<strong>${this.escapeHtml(group)}</strong> (${items.length}):<ul>`;
+      for (const item of items.slice(0, MAX_PER_GROUP)) {
+        html += `<li>${this._formatHitPreview(item)}</li>`;
+        shown++;
+      }
+      if (items.length > MAX_PER_GROUP) {
+        html += `<li><em>…and ${items.length - MAX_PER_GROUP} more</em></li>`;
+      }
+      html += '</ul>';
+    }
+    return html;
+  }
+
+  private _formatHitPreview(item: { record: Record<string, unknown>; matchedFields: string[] }): string {
+    return item.matchedFields.slice(0, 4)
+      .map(f => {
+        const val = item.record[f];
+        const str = this._stringifyValue(val);
+        const trunc = str.length > 80 ? str.slice(0, 80) + '…' : str;
+        return `<em>${this.escapeHtml(f)}</em>: ${this.escapeHtml(trunc)}`;
+      })
+      .join(' &middot; ');
   }
 
   /** Extract an array of records from any API response shape */
@@ -653,7 +704,7 @@ Available pages: <em>Workflows, Calendar, IC Dashboard, Invoice Dashboard, Setti
     const matched: string[] = [];
     for (const [key, value] of Object.entries(record)) {
       if (value == null) continue;
-      const str = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      const str = this._stringifyValue(value);
       if (str.toLowerCase().includes(lowerTerm)) {
         matched.push(key);
       }
@@ -662,11 +713,18 @@ Available pages: <em>Workflows, Calendar, IC Dashboard, Invoice Dashboard, Setti
   }
 
   // ── Utils ───────────────────────────────────────────────────────────────────
+  private _stringifyValue(val: unknown): string {
+    if (val == null) return '';
+    if (typeof val === 'string') return val;
+    if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+    return JSON.stringify(val);
+  }
+
   private escapeHtml(text: string): string {
     return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;');
   }
 }

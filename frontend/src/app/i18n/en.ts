@@ -725,6 +725,20 @@ export const EN = {
   'settings.theme-light': 'Light',
   'settings.theme-dark': 'Dark',
   'settings.theme-color': 'Accent Color',
+
+  /* ── Shared Views ── */
+  'nav.shares': 'Shared Views',
+  'shares.list-title': 'Shared Views',
+  'shares.list-subtitle': 'Manage your share links and view items shared with you',
+  'shares.my-shares': 'My Shares',
+  'shares.shared-with-me': 'Shared With Me',
+  'shares.no-my-shares': 'You have not shared any items yet.',
+  'shares.no-shared-with-me': 'No items have been shared with you yet.',
+  'shares.public': 'Public',
+  'shares.copy-link': 'Copy Link',
+  'shares.open': 'Open',
+  'shares.revoke': 'Revoke',
+  'shares.copied': 'Link copied to clipboard',
 } as const;
 
 export type TranslationKey = keyof typeof EN;
