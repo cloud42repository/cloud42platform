@@ -183,6 +183,16 @@ export const EN = {
   'workflow.output-preview': 'Available outputs',
   'workflow.sub-wf-output-hint': 'These outputs will be available as this step\'s result',
 
+  /* ── Script block ── */
+  'workflow.script': 'Script',
+  'workflow.script-code': 'JavaScript code',
+  'workflow.script-code-hint': 'Write JavaScript to transform data. Use the bound input variables and return a result.',
+  'workflow.script-inputs': 'Input bindings',
+  'workflow.script-add-input': 'Add input binding',
+  'workflow.script-var-name': 'Variable name',
+  'workflow.script-no-inputs': 'No input bindings — add one to pass data into the script',
+  'workflow.script-result-hint': 'The returned value will be available as this step\'s result for downstream steps',
+
   /* ── Calendar ── */
   'calendar.title': 'Schedule Calendar',
   'calendar.subtitle': 'Scheduled workflow steps across all workflows',

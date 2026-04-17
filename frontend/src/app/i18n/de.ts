@@ -185,6 +185,16 @@ export const DE: Record<TranslationKey, string> = {
   'workflow.output-preview': 'Verfügbare Ausgaben',
   'workflow.sub-wf-output-hint': 'Diese Ausgaben sind als Ergebnis dieses Schritts verfügbar',
 
+  /* ── Script-Block ── */
+  'workflow.script': 'Script',
+  'workflow.script-code': 'JavaScript-Code',
+  'workflow.script-code-hint': 'Schreiben Sie JavaScript, um Daten zu transformieren. Verwenden Sie die gebundenen Eingabevariablen und geben Sie ein Ergebnis zurück.',
+  'workflow.script-inputs': 'Eingabe-Bindungen',
+  'workflow.script-add-input': 'Eingabe-Bindung hinzufügen',
+  'workflow.script-var-name': 'Variablenname',
+  'workflow.script-no-inputs': 'Keine Eingabe-Bindungen — fügen Sie eine hinzu, um Daten an das Script zu übergeben',
+  'workflow.script-result-hint': 'Der Rückgabewert ist als Ergebnis dieses Schritts für nachfolgende Schritte verfügbar',
+
   /* ── Calendar ── */
   'calendar.title': 'Terminkalender',
   'calendar.subtitle': 'Geplante Workflow-Schritte über alle Workflows',

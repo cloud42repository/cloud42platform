@@ -27,7 +27,7 @@ import { getEndpointInputSchema, getEndpointOutputSchema, getEndpointOutputLabel
 import { WorkflowService } from '../../services/workflow.service';
 import { ShareService } from '../../services/share.service';
 import {
-  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FilterBlock, SubWorkflowBlock, WorkflowInput, WorkflowOutput, FieldMapping, PayloadSource, BodyMode,
+  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FilterBlock, SubWorkflowBlock, ScriptBlock, WorkflowInput, WorkflowOutput, FieldMapping, PayloadSource, BodyMode,
 } from '../../config/workflow.types';
 import { FormViewComponent, StepRefSuggestion } from '../../shared/form-view/form-view.component';
 import { TranslatePipe } from '../../i18n/translate.pipe';
@@ -42,7 +42,7 @@ interface AutocompleteSuggestion {
 }
 
 interface EndpointRef { module: ModuleDef; endpoint: EndpointDef; }
-interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow'; label: string; icon: string; color: string; }
+interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow' | 'script'; label: string; icon: string; color: string; }
 
 @Component({
   selector: 'app-workflow-builder',
@@ -654,6 +654,32 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
                   </div>
                 }
 
+                <!-- ── SCRIPT BLOCK ── -->
+                @if (node.kind === 'script') {
+                  @let block = asScript(node);
+                  <div class="block-card block-card--script" (click)="selectStep(node.id)">
+                    <div class="block-header">
+                      <mat-icon class="block-icon">code</mat-icon>
+                      <span class="block-title">{{ block.label || ('workflow.script' | t) }}</span>
+                      <span class="block-badge">{{ block.inputBindings.length }} input{{ block.inputBindings.length === 1 ? '' : 's' }}</span>
+                      <div class="step-card-actions" (click)="$event.stopPropagation()">
+                        <button mat-icon-button (click)="selectStep(node.id)" matTooltip="{{ 'workflow.configure-step' | t }}">
+                          <mat-icon>settings</mat-icon>
+                        </button>
+                        <button mat-icon-button (click)="removeStep(node.id)" color="warn" matTooltip="{{ 'workflow.remove-step' | t }}">
+                          <mat-icon>delete_outline</mat-icon>
+                        </button>
+                        <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
+                      </div>
+                    </div>
+                    @if (block.code) {
+                      <div class="script-preview">
+                        <code>{{ block.code.substring(0, 80) }}{{ block.code.length > 80 ? '…' : '' }}</code>
+                      </div>
+                    }
+                  </div>
+                }
+
                 <!-- DnD extras -->
                 <div *cdkDragPlaceholder class="drag-placeholder-canvas"></div>
 
@@ -698,6 +724,9 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
             } @else if (selectedStep()!.kind === 'sub-workflow') {
               <mat-icon style="color:#7c3aed">account_tree</mat-icon>
               <span class="config-title">{{ asSubWorkflow(selectedStep()!).label || ('workflow.sub-workflow' | t) }}</span>
+            } @else if (selectedStep()!.kind === 'script') {
+              <mat-icon style="color:#0891b2">code</mat-icon>
+              <span class="config-title">{{ asScript(selectedStep()!).label || ('workflow.script' | t) }}</span>
             }
             <button mat-icon-button (click)="selectedStepId.set(null)" style="margin-left:auto">
               <mat-icon>close</mat-icon>
@@ -1379,6 +1408,108 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
                   }
                 }
               }
+            }
+
+            <!-- ── SCRIPT CONFIG ───────────────────────────────────────────── -->
+            @if (selectedStep()!.kind === 'script') {
+              @let block = asScript(selectedStep()!);
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'workflow.label' | t }}</mat-label>
+                <input matInput [value]="block.label ?? ''" (input)="mutateBlock(block.id, $any($event.target).value, 'label')" />
+              </mat-form-field>
+
+              <!-- Code editor (shown first so it stays visible) -->
+              <div class="config-section-label">{{ 'workflow.script-code' | t }}</div>
+              <p class="config-hint">{{ 'workflow.script-code-hint' | t }}</p>
+              <div class="script-editor-wrapper">
+                <div class="script-editor-gutter">
+                  @for (line of getScriptLineNumbers(block.code); track line) {
+                    <span class="script-line-num">{{ line }}</span>
+                  }
+                </div>
+                <textarea class="script-editor"
+                          spellcheck="false"
+                          #scriptTextarea
+                          [value]="block.code"
+                          (input)="mutateBlock(block.id, $any($event.target).value, 'code')"
+                          (keydown)="onScriptKeydown($event, $any($event.target))"
+                          placeholder="// Write your script here&#10;return input;"></textarea>
+              </div>
+              @if (block.inputBindings.length > 0) {
+                <div class="script-intellisense-hint">
+                  <mat-icon style="font-size:14px;width:14px;height:14px">info</mat-icon>
+                  Available variables: <code>{{ getScriptVarNames(block).join(', ') }}</code>
+                </div>
+              }
+              <p class="config-hint">{{ 'workflow.script-result-hint' | t }}</p>
+
+              <mat-divider class="section-divider" />
+
+              <!-- Input bindings -->
+              <div class="config-section-label">{{ 'workflow.script-inputs' | t }}</div>
+              @if (block.inputBindings.length === 0) {
+                <p class="config-hint">{{ 'workflow.script-no-inputs' | t }}</p>
+              }
+              @for (binding of block.inputBindings; track $index; let bi = $index) {
+                <div class="field-block">
+                  <div class="field-name-row">
+                    <mat-icon>input</mat-icon>
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic" style="flex:1">
+                      <mat-label>{{ 'workflow.script-var-name' | t }}</mat-label>
+                      <input matInput [value]="binding.name"
+                             (input)="setScriptBindingName(block.id, bi, $any($event.target).value)" />
+                    </mat-form-field>
+                    <button mat-icon-button color="warn" (click)="removeScriptBinding(block.id, bi)"
+                            matTooltip="{{ 'workflow.remove-mapping' | t }}">
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </div>
+                  <div class="source-toggle">
+                    <button mat-stroked-button
+                            [class.active-mode]="binding.source.type === 'hardcoded'"
+                            (click)="setScriptBindingSourceType(block.id, bi, 'hardcoded')">
+                      <mat-icon>text_fields</mat-icon> {{ 'workflow.hardcoded' | t }}
+                    </button>
+                    <button mat-stroked-button
+                            [class.active-mode]="binding.source.type === 'from-step'"
+                            (click)="setScriptBindingSourceType(block.id, bi, 'from-step')">
+                      <mat-icon>link</mat-icon> {{ 'workflow.from-step' | t }}
+                    </button>
+                  </div>
+                  @if (binding.source.type === 'hardcoded') {
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                      <mat-label>{{ 'workflow.value' | t }}</mat-label>
+                      <input matInput [value]="binding.source.value"
+                             (input)="setScriptBindingHardcoded(block.id, bi, $any($event.target).value)" />
+                    </mat-form-field>
+                  }
+                  @if (binding.source.type === 'from-step') {
+                    <div class="from-step-row">
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="step-select">
+                        <mat-label>{{ 'workflow.step' | t }}</mat-label>
+                        <mat-select [value]="binding.source.stepId"
+                                    (selectionChange)="setScriptBindingStep(block.id, bi, $event.value)">
+                          @for (prev of previousSteps(); track prev.id; let si = $index) {
+                            <mat-option [value]="prev.id">Step {{ si + 1 }}: {{ getStepLabel(prev) }}</mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field-input">
+                        <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
+                        <input matInput [value]="binding.source.field"
+                               (input)="setScriptBindingField(block.id, bi, $any($event.target).value)"
+                               (input)="onAcFieldInput($any($event.target), scriptFieldCallback(block.id, bi))"
+                               (keydown)="onAcKeydown($event)"
+                               placeholder="e.g. data.id" />
+                      </mat-form-field>
+                    </div>
+                  }
+                </div>
+              }
+              <button mat-stroked-button class="add-mapping-btn" (click)="addScriptBinding(block.id)" [disabled]="previousSteps().length === 0">
+                <mat-icon>add</mat-icon> {{ 'workflow.script-add-input' | t }}
+              </button>
             }
 
           </div>
@@ -2073,6 +2204,34 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
     .block-card--mapper { border-left: 3px solid #059669 !important; }
     .block-card--filter { border-left: 3px solid #dc2626 !important; }
     .block-card--sub-workflow { border-left: 3px solid #7c3aed !important; }
+    .block-card--script { border-left: 3px solid #0891b2 !important; }
+    .script-preview {
+      padding: 4px 12px 8px; font-size: 11px; color: #64748b;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .script-preview code { font-family: 'Fira Code', 'Consolas', monospace; font-size: 11px; }
+    .script-editor-wrapper {
+      display: flex; border: 1px solid #e2e8f0; border-radius: 8px;
+      background: #1e293b; margin-bottom: 8px; overflow: visible;
+    }
+    .script-editor-gutter {
+      display: flex; flex-direction: column; padding: 8px 0; min-width: 32px;
+      background: #334155; text-align: right; user-select: none;
+      border-radius: 8px 0 0 8px;
+    }
+    .script-line-num { font-size: 11px; line-height: 18px; padding: 0 6px; color: #64748b; font-family: 'Fira Code', 'Consolas', monospace; }
+    .script-editor {
+      flex: 1; min-height: 160px; max-height: 400px; padding: 8px; resize: vertical;
+      background: #1e293b; color: #e2e8f0; border: none; outline: none;
+      font-family: 'Fira Code', 'Consolas', monospace; font-size: 12px;
+      line-height: 18px; tab-size: 2; white-space: pre-wrap; word-wrap: break-word;
+      overflow: auto; border-radius: 0 8px 8px 0;
+    }
+    .script-intellisense-hint {
+      display: flex; align-items: center; gap: 4px; font-size: 11px; color: #64748b;
+      padding: 4px 0 8px;
+    }
+    .script-intellisense-hint code { background: #f1f5f9; padding: 1px 4px; border-radius: 3px; font-size: 11px; }
 
     .block-header {
       display: flex; align-items: center; gap: 8px; padding: 8px 12px;
@@ -2241,6 +2400,7 @@ export class WorkflowBuilderComponent implements OnInit {
     { kind: 'mapper',    label: 'Mapper',       icon: 'swap_horiz', color: '#059669' },
     { kind: 'filter',    label: 'Filter',       icon: 'filter_list', color: '#dc2626' },
     { kind: 'sub-workflow', label: 'Sub-Workflow', icon: 'account_tree', color: '#7c3aed' },
+    { kind: 'script',       label: 'Script',       icon: 'code',         color: '#0891b2' },
   ];
 
   // ── Browser state ─────────────────────────────────────────────────────────
@@ -2383,6 +2543,8 @@ export class WorkflowBuilderComponent implements OnInit {
       return { id, kind: 'filter', filterOperator: '==' } as FilterBlock;
     } else if (ref.kind === 'sub-workflow') {
       return { id, kind: 'sub-workflow', inputBindings: {} } as SubWorkflowBlock;
+    } else if (ref.kind === 'script') {
+      return { id, kind: 'script', inputBindings: [], code: '// Transform data here\nreturn input;' } as ScriptBlock;
     } else {
       return { id, kind: 'if-else', conditionOperator: '==', thenSteps: [], elseSteps: [] } as IfElseBlock;
     }
@@ -2532,6 +2694,7 @@ export class WorkflowBuilderComponent implements OnInit {
   asMapper(node: WorkflowNode): MapperBlock     { return node as MapperBlock; }
   asFilter(node: WorkflowNode): FilterBlock     { return node as FilterBlock; }
   asSubWorkflow(node: WorkflowNode): SubWorkflowBlock { return node as SubWorkflowBlock; }
+  asScript(node: WorkflowNode): ScriptBlock     { return node as ScriptBlock; }
 
   getNodeLabel(node: WorkflowNode): string {
     if (node.kind === 'endpoint') return node.endpointLabel;
@@ -2541,6 +2704,7 @@ export class WorkflowBuilderComponent implements OnInit {
     if (node.kind === 'mapper') return node.label || 'Mapper';
     if (node.kind === 'filter') return node.label || 'Filter';
     if (node.kind === 'sub-workflow') return node.label || node.workflowName || 'Sub-Workflow';
+    if (node.kind === 'script') return node.label || 'Script';
     return 'Step';
   }
 
@@ -3526,7 +3690,7 @@ export class WorkflowBuilderComponent implements OnInit {
       workflowId,
       workflowName: wf?.name ?? '',
       inputBindings: {},
-    })));
+    }) as WorkflowNode));
   }
 
   getSubWorkflowInputDefs(workflowId: string | undefined): WorkflowInput[] {
@@ -3566,27 +3730,112 @@ export class WorkflowBuilderComponent implements OnInit {
     this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => ({
       ...n,
       inputBindings: { ...(n as SubWorkflowBlock).inputBindings, [inputName]: src },
-    })));
+    }) as WorkflowNode));
   }
   setSubWfBindingHardcoded(blockId: string, inputName: string, value: string) {
     this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => ({
       ...n,
       inputBindings: { ...(n as SubWorkflowBlock).inputBindings, [inputName]: { type: 'hardcoded' as const, value } },
-    })));
+    }) as WorkflowNode));
   }
   setSubWfBindingStep(blockId: string, inputName: string, stepId: string) {
     this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
       const existing = (n as SubWorkflowBlock).inputBindings[inputName];
       const field = existing?.type === 'from-step' ? existing.field : '';
-      return { ...n, inputBindings: { ...(n as SubWorkflowBlock).inputBindings, [inputName]: { type: 'from-step' as const, stepId, field } } };
+      return { ...n, inputBindings: { ...(n as SubWorkflowBlock).inputBindings, [inputName]: { type: 'from-step' as const, stepId, field } } } as WorkflowNode;
     }));
   }
   setSubWfBindingField(blockId: string, inputName: string, field: string) {
     this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
       const existing = (n as SubWorkflowBlock).inputBindings[inputName];
       const stepId = existing?.type === 'from-step' ? existing.stepId : '';
-      return { ...n, inputBindings: { ...(n as SubWorkflowBlock).inputBindings, [inputName]: { type: 'from-step' as const, stepId, field } } };
+      return { ...n, inputBindings: { ...(n as SubWorkflowBlock).inputBindings, [inputName]: { type: 'from-step' as const, stepId, field } } } as WorkflowNode;
     }));
+  }
+
+  // ── Script block helpers ──────────────────────────────────────────────────
+  addScriptBinding(blockId: string) {
+    const prevSteps = this.previousSteps();
+    const defaultSource: PayloadSource = prevSteps.length > 0
+      ? { type: 'from-step', stepId: prevSteps.at(-1)!.id, field: '' }
+      : { type: 'hardcoded', value: '' };
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => ({
+      ...n,
+      inputBindings: [...(n as ScriptBlock).inputBindings, { name: 'input' + ((n as ScriptBlock).inputBindings.length + 1), source: defaultSource }],
+    }) as WorkflowNode));
+  }
+  removeScriptBinding(blockId: string, index: number) {
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => ({
+      ...n,
+      inputBindings: (n as ScriptBlock).inputBindings.filter((_, i) => i !== index),
+    }) as WorkflowNode));
+  }
+  setScriptBindingName(blockId: string, index: number, name: string) {
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const bindings = [...(n as ScriptBlock).inputBindings];
+      bindings[index] = { ...bindings[index], name };
+      return { ...n, inputBindings: bindings } as WorkflowNode;
+    }));
+  }
+  setScriptBindingSourceType(blockId: string, index: number, type: 'hardcoded' | 'from-step') {
+    const src: PayloadSource = type === 'hardcoded'
+      ? { type: 'hardcoded', value: '' }
+      : { type: 'from-step', stepId: '', field: '' };
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const bindings = [...(n as ScriptBlock).inputBindings];
+      bindings[index] = { ...bindings[index], source: src };
+      return { ...n, inputBindings: bindings } as WorkflowNode;
+    }));
+  }
+  setScriptBindingHardcoded(blockId: string, index: number, value: string) {
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const bindings = [...(n as ScriptBlock).inputBindings];
+      bindings[index] = { ...bindings[index], source: { type: 'hardcoded', value } };
+      return { ...n, inputBindings: bindings } as WorkflowNode;
+    }));
+  }
+  setScriptBindingStep(blockId: string, index: number, stepId: string) {
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const bindings = [...(n as ScriptBlock).inputBindings];
+      const existing = bindings[index].source;
+      const field = existing.type === 'from-step' ? existing.field : '';
+      bindings[index] = { ...bindings[index], source: { type: 'from-step', stepId, field } };
+      return { ...n, inputBindings: bindings } as WorkflowNode;
+    }));
+  }
+  setScriptBindingField(blockId: string, index: number, field: string) {
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const bindings = [...(n as ScriptBlock).inputBindings];
+      const existing = bindings[index].source;
+      const stepId = existing.type === 'from-step' ? existing.stepId : '';
+      bindings[index] = { ...bindings[index], source: { type: 'from-step', stepId, field } };
+      return { ...n, inputBindings: bindings } as WorkflowNode;
+    }));
+  }
+  scriptFieldCallback(blockId: string, index: number): (value: string) => void {
+    return (value: string) => this.setScriptBindingField(blockId, index, value);
+  }
+  onScriptCodeInput(ta: HTMLTextAreaElement) {
+    const id = this.selectedStepId()!;
+    this.steps.update(ss => this.updateNodeDeep(ss, id, n => ({ ...n, code: ta.value })));
+  }
+  onScriptKeydown(event: KeyboardEvent, ta: HTMLTextAreaElement) {
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const updated = ta.value.substring(0, start) + '  ' + ta.value.substring(end);
+      ta.value = updated;
+      ta.selectionStart = ta.selectionEnd = start + 2;
+      this.mutateBlock(this.selectedStepId()!, updated, 'code');
+    }
+  }
+  getScriptLineNumbers(code: string): number[] {
+    const count = (code || '').split('\n').length;
+    return Array.from({ length: count }, (_, i) => i + 1);
+  }
+  getScriptVarNames(block: ScriptBlock): string[] {
+    return block.inputBindings.map(b => b.name).filter(Boolean);
   }
 
   // ── Save / Run ────────────────────────────────────────────────────────────

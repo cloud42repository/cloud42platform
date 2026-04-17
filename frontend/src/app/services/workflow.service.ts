@@ -6,7 +6,7 @@ import { UserManagementService } from './user-management.service';
 import {
   Workflow, WorkflowNode, WorkflowStep, WorkflowStatus,
   TryCatchBlock, LoopBlock, IfElseBlock, MapperBlock, FilterBlock,
-  SubWorkflowBlock, WorkflowInput, WorkflowOutput,
+  SubWorkflowBlock, ScriptBlock, WorkflowInput, WorkflowOutput,
   WorkflowRunLog, WorkflowRunStepLog, PayloadSource,
 } from '../config/workflow.types';
 
@@ -229,6 +229,8 @@ export class WorkflowService {
         return this.executeFilterNode(node as FilterBlock, stepResults, log);
       case 'sub-workflow':
         return this.executeSubWorkflowNode(node as SubWorkflowBlock, stepResults, log);
+      case 'script':
+        return this.executeScriptNode(node as ScriptBlock, stepResults, log);
       default:
         return true;
     }
@@ -431,6 +433,64 @@ export class WorkflowService {
       });
       return false;
     }
+  }
+
+  private executeScriptNode(
+    block: ScriptBlock,
+    stepResults: Map<string, unknown>,
+    log: WorkflowRunLog,
+  ): boolean {
+    const stepLog: WorkflowRunStepLog = {
+      stepId: block.id,
+      label: block.label || 'Script',
+      startedAt: new Date().toISOString(),
+      resolvedParams: {},
+      success: false,
+    };
+
+    try {
+      // Resolve input bindings → inject as named variables
+      const args: Record<string, unknown> = {};
+      for (const binding of block.inputBindings) {
+        if (!binding.name) continue;
+        if (binding.source.type === 'from-step') {
+          const srcResult = stepResults.get(binding.source.stepId);
+          args[binding.name] = srcResult == null
+            ? undefined
+            : binding.source.field
+              ? this.getPathRaw(srcResult, binding.source.field)
+              : srcResult;
+        } else {
+          args[binding.name] = binding.source.value;
+        }
+      }
+
+      stepLog.resolvedParams = Object.fromEntries(
+        Object.entries(args).map(([k, v]) => [k, this.safeStringify(v)])
+      );
+
+      // Build a sandboxed function: argument names + code
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+      // eslint-disable-next-line no-new-func
+      const fn = new Function(...argNames, block.code);
+      const result = fn(...argValues);
+
+      stepLog.response = result;
+      stepLog.success = true;
+      stepResults.set(block.id, result);
+    } catch (err: unknown) {
+      stepLog.error = this.extractErrorMessage(err);
+      stepLog.success = false;
+    }
+
+    stepLog.finishedAt = new Date().toISOString();
+    log.steps.push(stepLog);
+
+    if (!stepLog.success) {
+      log.error = `Step "${stepLog.label}" failed: ${stepLog.error}`;
+    }
+    return stepLog.success;
   }
 
   private async executeEndpoint(

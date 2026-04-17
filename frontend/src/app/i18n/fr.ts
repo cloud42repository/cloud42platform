@@ -185,6 +185,16 @@ export const FR: Record<TranslationKey, string> = {
   'workflow.output-preview': 'Sorties disponibles',
   'workflow.sub-wf-output-hint': 'Ces sorties seront disponibles comme résultat de cette étape',
 
+  /* ── Bloc Script ── */
+  'workflow.script': 'Script',
+  'workflow.script-code': 'Code JavaScript',
+  'workflow.script-code-hint': 'Écrivez du JavaScript pour transformer les données. Utilisez les variables d\'entrée liées et retournez un résultat.',
+  'workflow.script-inputs': 'Liaisons d\'entrée',
+  'workflow.script-add-input': 'Ajouter une liaison d\'entrée',
+  'workflow.script-var-name': 'Nom de variable',
+  'workflow.script-no-inputs': 'Aucune liaison d\'entrée — ajoutez-en une pour transmettre des données au script',
+  'workflow.script-result-hint': 'La valeur retournée sera disponible comme résultat de cette étape pour les étapes suivantes',
+
   /* ── Calendar ── */
   'calendar.title': 'Calendrier de planification',
   'calendar.subtitle': 'Étapes planifiées de tous les workflows',

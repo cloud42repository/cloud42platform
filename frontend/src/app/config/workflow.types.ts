@@ -7,7 +7,7 @@ export type PayloadSource =
   | { type: 'from-step'; stepId: string; field: string };
 
 /** Discriminator for workflow canvas nodes */
-export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow';
+export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow' | 'script';
 
 /** How the request body is configured for a POST / PUT / PATCH step */
 export type BodyMode = 'fields' | 'text' | 'form';
@@ -139,6 +139,29 @@ export interface SubWorkflowBlock {
   inputBindings: Record<string, PayloadSource>;
 }
 
+/** Named input binding for a script block */
+export interface ScriptBinding {
+  /** Variable name accessible inside the script (e.g. "contact") */
+  name: string;
+  /** Where the value comes from */
+  source: PayloadSource;
+}
+
+/**
+ * Script block — runs user-defined JavaScript code.
+ * Input bindings are injected as variables; the script must return a value
+ * which becomes the block's result for downstream steps.
+ */
+export interface ScriptBlock {
+  id: string;
+  kind: 'script';
+  label?: string;
+  /** Named input bindings — each becomes a variable in the script scope */
+  inputBindings: ScriptBinding[];
+  /** JavaScript code to execute. Must return a value. */
+  code: string;
+}
+
 /** A named input parameter that a workflow accepts */
 export interface WorkflowInput {
   name: string;
@@ -154,7 +177,7 @@ export interface WorkflowOutput {
 }
 
 /** Any top-level canvas node (endpoint step or control-flow block) */
-export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock | MapperBlock | FilterBlock | SubWorkflowBlock;
+export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock | MapperBlock | FilterBlock | SubWorkflowBlock | ScriptBlock;
 
 export type WorkflowStatus = 'draft' | 'scheduled' | 'running' | 'completed' | 'failed';
 
