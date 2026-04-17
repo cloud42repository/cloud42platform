@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { UserManagementService } from './user-management.service';
@@ -425,7 +426,7 @@ export class WorkflowService {
         startedAt: new Date().toISOString(),
         finishedAt: new Date().toISOString(),
         resolvedParams: inputValues,
-        error: err instanceof Error ? err.message : String(err),
+        error: this.extractErrorMessage(err),
         success: false,
       });
       return false;
@@ -458,7 +459,7 @@ export class WorkflowService {
       stepLog.success = true;
       stepResults.set(step.id, response);
     } catch (err: unknown) {
-      stepLog.error = err instanceof Error ? err.message : String(err);
+      stepLog.error = this.extractErrorMessage(err);
       stepLog.success = false;
     }
 
@@ -572,6 +573,18 @@ export class WorkflowService {
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  private extractErrorMessage(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      const body = err.error;
+      const detail = typeof body === 'string' ? body
+        : body?.message ?? body?.error ?? JSON.stringify(body);
+      return `${err.status} ${err.statusText}: ${detail}`;
+    }
+    if (err instanceof Error) return err.message;
+    if (typeof err === 'string') return err;
+    return JSON.stringify(err);
+  }
 
   /**
    * Replace {{steps.N.path}} and {{input.name}} tokens in a raw body string with resolved values.
