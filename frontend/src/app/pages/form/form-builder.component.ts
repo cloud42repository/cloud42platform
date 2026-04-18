@@ -28,10 +28,11 @@ import {
   FormField,
   FormFieldKind,
   FormSubmitAction,
+  ActionMode,
   BodyMode,
   BodyFieldSource,
 } from '../../config/form.types';
-import { MODULES, EndpointDef } from '../../config/endpoints';
+import { MODULES, EndpointDef, extractPathParams } from '../../config/endpoints';
 import { getEndpointPayload } from '../../config/endpoint-payloads';
 import { getEndpointInputSchema } from '../../config/endpoint-schemas';
 import { TranslatePipe } from '../../i18n/translate.pipe';
@@ -88,7 +89,11 @@ interface FieldTypeRef {
           @for (action of submitActions(); track action.id) {
             <div class="action-item" [class.selected]="selectedActionId() === action.id"
                  (click)="selectAction(action.id)">
-              <span class="method-tag method-{{ action.method.toLowerCase() }}">{{ action.method }}</span>
+              @if (action.actionMode === 'script') {
+                <span class="method-tag method-patch">JS</span>
+              } @else {
+                <span class="method-tag method-{{ action.method.toLowerCase() }}">{{ action.method }}</span>
+              }
               <span class="action-label">{{ action.label || action.endpointLabel || 'Action' }}</span>
               <button mat-icon-button (click)="removeAction(action.id); $event.stopPropagation()" class="action-delete">
                 <mat-icon>close</mat-icon>
@@ -359,7 +364,7 @@ interface FieldTypeRef {
                     @if (executing() && lastResponse()?.actionId === action.id) {
                       <mat-spinner diameter="16" />
                     } @else {
-                      <mat-icon>send</mat-icon>
+                      <mat-icon>{{ action.actionMode === 'script' ? 'code' : 'send' }}</mat-icon>
                     }
                     {{ action.label || action.method }}
                   </button>
@@ -549,6 +554,7 @@ interface FieldTypeRef {
               <input matInput [value]="action.label" (input)="updateAction(action.id, 'label', $any($event.target).value)" />
             </mat-form-field>
 
+            @if (getActionMode(action) === 'api') {
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
               <mat-label>{{ 'form.http-method' | t }}</mat-label>
               <mat-select [value]="action.method" (selectionChange)="updateAction(action.id, 'method', $event.value)">
@@ -558,6 +564,7 @@ interface FieldTypeRef {
                 <mat-option value="DELETE">DELETE</mat-option>
               </mat-select>
             </mat-form-field>
+            }
 
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
               <mat-label>{{ 'form.button-color' | t }}</mat-label>
@@ -568,6 +575,41 @@ interface FieldTypeRef {
               </mat-select>
             </mat-form-field>
 
+            <mat-divider class="section-divider" />
+
+            <!-- Action mode toggle: API vs Script -->
+            <div class="config-section-label">{{ 'form.action-mode' | t }}</div>
+            <div class="body-mode-toggle">
+              <button mat-stroked-button
+                      [class.active-mode]="getActionMode(action) === 'api'"
+                      (click)="updateAction(action.id, 'actionMode', 'api')">
+                <mat-icon>api</mat-icon> {{ 'form.api-mode' | t }}
+              </button>
+              <button mat-stroked-button
+                      [class.active-mode]="getActionMode(action) === 'script'"
+                      (click)="updateAction(action.id, 'actionMode', 'script')">
+                <mat-icon>code</mat-icon> {{ 'form.script-mode' | t }}
+              </button>
+            </div>
+
+            <!-- ── SCRIPT MODE ── -->
+            @if (getActionMode(action) === 'script') {
+              <mat-divider class="section-divider" />
+              <div class="config-section-label">{{ 'form.script-code' | t }}</div>
+              <p class="config-hint">{{ 'form.script-hint' | t }}</p>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'form.script-code' | t }}</mat-label>
+                <textarea matInput rows="14"
+                          [value]="action.scriptCode ?? ''"
+                          (input)="updateAction(action.id, 'scriptCode', $any($event.target).value)"
+                          placeholder="// Form field values available via FormFields object&#10;// All API modules available (e.g. ImpossibleCloud, ZohoCRM)&#10;&#10;const regions = await ImpossibleCloud.ListRegions();&#10;return regions;"
+                          class="raw-body-textarea script-textarea"></textarea>
+                <mat-hint>{{ 'form.script-async-hint' | t }}</mat-hint>
+              </mat-form-field>
+            }
+
+            <!-- ── API MODE ── -->
+            @if (getActionMode(action) === 'api') {
             <mat-divider class="section-divider" />
 
             <!-- Action API endpoint -->
@@ -740,6 +782,7 @@ interface FieldTypeRef {
             } @else {
               <p class="config-hint" style="font-style:italic">{{ 'form.no-body' | t }}</p>
             }
+            } <!-- end API mode -->
           </div>
         }
 
@@ -1167,6 +1210,10 @@ interface FieldTypeRef {
       font-family: 'Cascadia Code', 'Fira Code', monospace;
       font-size: 11px; line-height: 1.5;
     }
+    .script-textarea {
+      min-height: 200px; resize: vertical;
+      tab-size: 2;
+    }
 
     .ep-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -1429,6 +1476,10 @@ export class FormBuilderComponent implements OnInit {
   }
 
   // ── Submit actions ────────────────────────────────────────────────────────
+
+  getActionMode(action: FormSubmitAction): ActionMode {
+    return action.actionMode ?? 'api';
+  }
 
   addSubmitAction() {
     const action: FormSubmitAction = {
@@ -1850,6 +1901,12 @@ export class FormBuilderComponent implements OnInit {
   // ── Execute submit action ──────────────────────────────────────────────
 
   async executeAction(action: FormSubmitAction) {
+    const mode = this.getActionMode(action);
+
+    if (mode === 'script') {
+      return this.executeScriptAction(action);
+    }
+
     console.log('[FormBuilder] executeAction called:', {
       moduleApiPrefix: action.moduleApiPrefix,
       pathTemplate: action.pathTemplate,
@@ -1859,7 +1916,6 @@ export class FormBuilderComponent implements OnInit {
     });
     if (!action.moduleApiPrefix || !action.pathTemplate) {
       console.warn('[FormBuilder] Missing moduleApiPrefix or pathTemplate — action not configured');
-      // Show error result instead of silently opening config
       this.lastResponse.set({
         actionId: action.id,
         status: 'error',
@@ -1902,6 +1958,122 @@ export class FormBuilderComponent implements OnInit {
     } finally {
       this.executing.set(false);
     }
+  }
+
+  /** Execute a script action — same pattern as workflow ScriptBlock */
+  private async executeScriptAction(action: FormSubmitAction) {
+    const code = action.scriptCode ?? '';
+    if (!code.trim()) {
+      this.lastResponse.set({
+        actionId: action.id,
+        status: 'error',
+        data: { error: 'No script code configured — click the ⚙ button to add a script' },
+      });
+      return;
+    }
+
+    this.executing.set(true);
+    this.lastResponse.set({ actionId: action.id, status: 'success', data: null });
+
+    try {
+      // Build FormFields object from current field values + metadata
+      const formFields: Record<string, unknown> = {};
+      for (const field of this.fields()) {
+        formFields[field.label || field.id] = this.fieldValues()[field.id] ?? '';
+      }
+
+      // Build API proxy objects (same as workflow scripts)
+      const apiProxies = this.buildScriptApiProxies();
+
+      const args: Record<string, unknown> = {
+        FormFields: formFields,
+        ...apiProxies,
+      };
+
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+
+      // eslint-disable-next-line no-new-func
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      const result = await fn(...argValues);
+
+      this.lastResponse.set({ actionId: action.id, status: 'success', data: result });
+    } catch (err: unknown) {
+      let errorData: unknown;
+      if (err && typeof err === 'object' && 'error' in err) {
+        errorData = (err as { error: unknown }).error;
+      } else if (err instanceof Error) {
+        errorData = err.message;
+      } else {
+        errorData = err;
+      }
+      this.lastResponse.set({ actionId: action.id, status: 'error', data: errorData });
+    } finally {
+      this.executing.set(false);
+    }
+  }
+
+  /**
+   * Build API proxy objects for all registered modules so scripts can call e.g.:
+   *   const regions = await ImpossibleCloud.ListRegions();
+   */
+  private buildScriptApiProxies(): Record<string, Record<string, (...a: unknown[]) => Promise<unknown>>> {
+    const proxies: Record<string, Record<string, (...a: unknown[]) => Promise<unknown>>> = {};
+
+    for (const mod of MODULES) {
+      const proxyName = mod.label.split(/\s+/).join('');
+      const obj: Record<string, (...a: unknown[]) => Promise<unknown>> = {};
+
+      for (const ep of mod.endpoints) {
+        const methodName = ep.label.split(/\s+/).join('');
+        const httpMethod = ep.method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
+        const paramNames = extractPathParams(ep.pathTemplate);
+        const hasParams = paramNames.length > 0;
+        const hasBody = ep.hasBody ?? false;
+
+        obj[methodName] = async (...args: unknown[]): Promise<unknown> => {
+          const pathParams = this.resolveProxyPathParams(hasParams, args);
+          const body = this.resolveProxyBody(hasBody, hasParams, args);
+          return this.callProxyApi(mod.apiPrefix, ep.pathTemplate, httpMethod, pathParams, body);
+        };
+      }
+
+      proxies[proxyName] = obj;
+    }
+
+    return proxies;
+  }
+
+  private resolveProxyPathParams(hasParams: boolean, args: unknown[]): Record<string, string> {
+    const pathParams: Record<string, string> = {};
+    if (hasParams && args[0] && typeof args[0] === 'object') {
+      for (const [k, v] of Object.entries(args[0] as Record<string, unknown>)) {
+        if (v == null) pathParams[k] = '';
+        else if (typeof v === 'string') pathParams[k] = v;
+        else pathParams[k] = JSON.stringify(v);
+      }
+    }
+    return pathParams;
+  }
+
+  private resolveProxyBody(hasBody: boolean, hasParams: boolean, args: unknown[]): Record<string, unknown> | undefined {
+    if (!hasBody) return undefined;
+    const bodyArg = hasParams ? args[1] : args[0];
+    return (bodyArg && typeof bodyArg === 'object') ? bodyArg as Record<string, unknown> : undefined;
+  }
+
+  private callProxyApi(
+    apiPrefix: string, pathTemplate: string,
+    httpMethod: 'get' | 'post' | 'put' | 'patch' | 'delete',
+    pathParams: Record<string, string>,
+    body: Record<string, unknown> | undefined,
+  ): Promise<unknown> {
+    if (httpMethod === 'get' || httpMethod === 'delete') {
+      return firstValueFrom(this.api[httpMethod](apiPrefix, pathTemplate, pathParams));
+    }
+    const call = ({ post: this.api.post, put: this.api.put, patch: this.api.patch } as Record<string, typeof this.api.post>)[httpMethod] ?? this.api.post;
+    return firstValueFrom(call.call(this.api, apiPrefix, pathTemplate, pathParams, body ?? {}));
   }
 
   private buildRequestBody(action: FormSubmitAction): unknown {

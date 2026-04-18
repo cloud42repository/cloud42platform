@@ -44,15 +44,20 @@ export interface FormField {
 /** How the request body is configured for a submit action */
 export type BodyMode = 'fields' | 'text' | 'form';
 
+/** Whether the action calls an API endpoint or runs a script */
+export type ActionMode = 'api' | 'script';
+
 /** Source for a single body field value */
 export type BodyFieldSource =
   | { type: 'hardcoded'; value: string }
   | { type: 'form-field'; fieldId: string };
 
-/** Submit action — maps to a specific API endpoint */
+/** Submit action — maps to a specific API endpoint or runs a script */
 export interface FormSubmitAction {
   id: string;
   label: string;
+  /** 'api' (default) = call an API endpoint, 'script' = run JavaScript code */
+  actionMode?: ActionMode;
   method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   moduleApiPrefix: string;
   moduleLabel: string;
@@ -67,6 +72,8 @@ export interface FormSubmitAction {
   bodySources: Record<string, BodyFieldSource>;
   /** Raw JSON body string (text/form mode) */
   rawBody?: string;
+  /** JavaScript code to execute (script mode). Must return a value. */
+  scriptCode?: string;
   /** Legacy mapping — kept for backward compat */
   bodyMapping: Record<string, string>;
   color: 'primary' | 'accent' | 'warn';

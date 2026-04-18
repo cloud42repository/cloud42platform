@@ -694,6 +694,12 @@ export const FR: Record<TranslationKey, string> = {
   'form.no-body': 'Ce point de terminaison ne nécessite pas de corps de requête (GET/DELETE).',
   'form.generate-template': 'Générer le modèle',
   'form.generate-hint': 'Générer automatiquement le corps JSON à partir des champs du formulaire',
+  'form.action-mode': 'Mode d\'action',
+  'form.api-mode': 'Appel API',
+  'form.script-mode': 'Script',
+  'form.script-code': 'Code du script',
+  'form.script-hint': 'Écrire du code JavaScript. Les valeurs des champs sont disponibles via FormFields. Tous les modules API (ex. ImpossibleCloud, ZohoCRM) sont disponibles comme objets globaux.',
+  'form.script-async-hint': 'Async — utiliser await pour les appels API. La valeur de retour est affichée comme réponse.',
 
   /* ── Page Testeur API ── */
   'api-tester.history': 'Historique',

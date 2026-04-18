@@ -692,6 +692,12 @@ export const EN = {
   'form.no-body': 'This endpoint does not require a request body (GET/DELETE).',
   'form.generate-template': 'Generate template',
   'form.generate-hint': 'Auto-generate JSON body from form fields',
+  'form.action-mode': 'Action Mode',
+  'form.api-mode': 'API Call',
+  'form.script-mode': 'Script',
+  'form.script-code': 'Script Code',
+  'form.script-hint': 'Write JavaScript code. Form field values are available via FormFields. All API modules (e.g. ImpossibleCloud, ZohoCRM) are available as global objects.',
+  'form.script-async-hint': 'Async — use await for API calls. Return value shown as response.',
 
   /* ── API Tester page ── */
   'api-tester.history': 'History',
