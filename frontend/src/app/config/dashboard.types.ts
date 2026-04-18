@@ -4,6 +4,9 @@ export type WidgetKind = 'line-chart' | 'bar-chart' | 'pie-chart' | 'data-table'
 /** Aggregate function for badge widgets */
 export type AggregateFunction = 'count' | 'sum' | 'avg' | 'max' | 'min';
 
+/** How the widget data is sourced: from an API endpoint or a script */
+export type DataSourceMode = 'api' | 'script';
+
 /** How to resolve the data source for a widget */
 export interface WidgetDataSource {
   /** Module API prefix, e.g. '/zoho-crm' */
@@ -33,8 +36,14 @@ export interface DashboardWidget {
   width: number;   // grid columns (1–12)
   height: number;  // grid rows
 
-  /** Where to fetch the data from */
+  /** How data is sourced: 'api' (default) or 'script' */
+  dataSourceMode?: DataSourceMode;
+
+  /** Where to fetch the data from (api mode) */
   dataSource?: WidgetDataSource;
+
+  /** JavaScript code that returns the data array (script mode) */
+  scriptCode?: string;
 
   /**
    * Data binding expressions ({{token}} syntax, same as workflow).

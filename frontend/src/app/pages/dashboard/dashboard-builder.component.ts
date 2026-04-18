@@ -28,8 +28,9 @@ import {
   DashboardWidget,
   WidgetKind,
   AggregateFunction,
+  DataSourceMode,
 } from '../../config/dashboard.types';
-import { MODULES, ModuleDef, EndpointDef } from '../../config/endpoints';
+import { MODULES, ModuleDef, EndpointDef, extractPathParams } from '../../config/endpoints';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { firstValueFrom } from 'rxjs';
 
@@ -219,7 +220,7 @@ interface EndpointRef {
                 </mat-icon>
                 <span class="widget-title">{{ widget.label || kindLabel(widget.kind) }}</span>
                 <span class="widget-badge">{{ kindLabel(widget.kind) }}</span>
-                @if (previewMode() && widget.dataSource && widget.kind !== 'search-text') {
+                @if (previewMode() && (widget.dataSource || widget.dataSourceMode === 'script') && widget.kind !== 'search-text') {
                   <button mat-icon-button class="widget-refresh-btn" (click)="fetchWidgetData(widget); $event.stopPropagation()" matTooltip="Refresh data">
                     <mat-icon>refresh</mat-icon>
                   </button>
@@ -257,6 +258,11 @@ interface EndpointRef {
                   <span class="data-source-tag">
                     <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
                     {{ widget.dataSource.moduleLabel }} › {{ widget.dataSource.endpointLabel }}
+                  </span>
+                } @else if (widget.dataSourceMode === 'script') {
+                  <span class="data-source-tag">
+                    <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
+                    Script
                   </span>
                 } @else {
                   <span class="no-source">{{ 'dashboard.no-data-source' | t }}</span>
@@ -413,6 +419,7 @@ interface EndpointRef {
                     <mat-icon style="font-size:14px;width:14px;height:14px;color:#d97706">warning</mat-icon>
                     <span>{{ 'dashboard.data-not-array' | t }}</span>
                   </div>
+                  <pre class="data-preview" style="max-height:120px;margin-top:4px">{{ widget.lastData | json }}</pre>
                 }
               </div>
               <div *cdkDragPlaceholder class="widget-drag-placeholder"></div>
@@ -451,6 +458,41 @@ interface EndpointRef {
 
             @if (widget.kind !== 'search-text') {
 
+            <mat-divider class="section-divider" />
+
+            <!-- Data source mode toggle -->
+            <div class="config-section-label">{{ 'dashboard.data-source-mode' | t }}</div>
+            <div class="body-mode-toggle">
+              <button mat-stroked-button
+                      [class.active-mode]="getDataSourceMode(widget) === 'api'"
+                      (click)="updateWidget(widget.id, 'dataSourceMode', 'api')">
+                <mat-icon>api</mat-icon> {{ 'dashboard.api-mode' | t }}
+              </button>
+              <button mat-stroked-button
+                      [class.active-mode]="getDataSourceMode(widget) === 'script'"
+                      (click)="updateWidget(widget.id, 'dataSourceMode', 'script')">
+                <mat-icon>code</mat-icon> {{ 'dashboard.script-mode' | t }}
+              </button>
+            </div>
+
+            <!-- ── SCRIPT MODE ── -->
+            @if (getDataSourceMode(widget) === 'script') {
+              <mat-divider class="section-divider" />
+              <div class="config-section-label">{{ 'dashboard.script-code' | t }}</div>
+              <p class="config-hint">{{ 'dashboard.script-hint' | t }}</p>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'dashboard.script-code' | t }}</mat-label>
+                <textarea matInput rows="14"
+                          [value]="widget.scriptCode ?? ''"
+                          (input)="updateWidget(widget.id, 'scriptCode', $any($event.target).value)"
+                          placeholder="// All API modules available (e.g. ImpossibleCloud, ZohoCRM)&#10;&#10;const regions = await ImpossibleCloud.ListRegions();&#10;return regions.regions;"
+                          class="script-textarea"></textarea>
+                <mat-hint>{{ 'dashboard.script-async-hint' | t }}</mat-hint>
+              </mat-form-field>
+            }
+
+            <!-- ── API MODE ── -->
+            @if (getDataSourceMode(widget) === 'api') {
             <mat-divider class="section-divider" />
 
             <!-- Data Source -->
@@ -515,6 +557,7 @@ interface EndpointRef {
                 <mat-icon>add</mat-icon> {{ 'dashboard.add-query-param' | t }}
               </button>
             }
+            } <!-- end API mode -->
 
             <mat-divider class="section-divider" />
 
@@ -608,9 +651,10 @@ interface EndpointRef {
             <mat-divider class="section-divider" />
 
             <!-- Fetch test -->
-            <button mat-flat-button color="accent" class="full-width" (click)="fetchWidgetData(widget)" [disabled]="!widget.dataSource || fetching()">
+            <button mat-flat-button color="accent" class="full-width" (click)="fetchWidgetData(widget)" [disabled]="(!widget.dataSource && getDataSourceMode(widget) !== 'script') || fetching()">
               @if (fetching()) { <mat-spinner diameter="16" /> }
-              <mat-icon>cloud_download</mat-icon> {{ 'dashboard.fetch-data' | t }}
+              <mat-icon>{{ getDataSourceMode(widget) === 'script' ? 'play_arrow' : 'cloud_download' }}</mat-icon>
+              {{ getDataSourceMode(widget) === 'script' ? ('dashboard.run-script' | t) : ('dashboard.fetch-data' | t) }}
             </button>
 
             @if (widget.lastData !== undefined) {
@@ -929,6 +973,17 @@ interface EndpointRef {
       white-space: pre-wrap; word-break: break-all;
       font-family: 'Cascadia Code', 'Fira Code', monospace;
     }
+
+    .script-textarea {
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 11px; line-height: 1.5;
+      min-height: 200px; resize: vertical; tab-size: 2;
+    }
+    .body-mode-toggle {
+      display: flex; gap: 4px; margin-bottom: 12px;
+    }
+    .body-mode-toggle button { flex: 1; font-size: 11px; }
+    .active-mode { background: #e0f2fe !important; border-color: #0891b2 !important; color: #0891b2 !important; }
 
     .ep-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -1599,6 +1654,12 @@ export class DashboardBuilderComponent implements OnInit {
   // ── Fetch widget data (test) ──────────────────────────────────────────────
 
   async fetchWidgetData(widget: DashboardWidget) {
+    const mode = this.getDataSourceMode(widget);
+
+    if (mode === 'script') {
+      return this.fetchWidgetDataFromScript(widget);
+    }
+
     if (!widget.dataSource) return;
     this.fetching.set(true);
     try {
@@ -1614,21 +1675,7 @@ export class DashboardBuilderComponent implements OnInit {
       const res = await firstValueFrom(
         this.api.get(ds.moduleApiPrefix, ds.pathTemplate, pathParams, queryParams)
       );
-      // Apply dataPath, then auto-detect wrapped arrays
-      let data: unknown = res;
-      if (widget.dataPath) {
-        data = this.svc.getPath(res, widget.dataPath);
-      }
-      // Auto-detect wrapped arrays (e.g. { data: [...] })
-      if (data && typeof data === 'object' && !Array.isArray(data)) {
-        const obj = data as Record<string, unknown>;
-        if (Array.isArray(obj['data'])) {
-          data = obj['data'];
-        } else {
-          const firstArr = Object.values(obj).find(v => Array.isArray(v));
-          if (firstArr) data = firstArr;
-        }
-      }
+      const data = this.extractArrayData(res, widget.dataPath);
       this.widgets.update(ws => ws.map(w =>
         w.id === widget.id ? { ...w, lastData: data } : w
       ));
@@ -1640,6 +1687,141 @@ export class DashboardBuilderComponent implements OnInit {
     } finally {
       this.fetching.set(false);
     }
+  }
+
+  /** Execute script datasource — same async pattern as workflow/form scripts */
+  private async fetchWidgetDataFromScript(widget: DashboardWidget) {
+    const code = widget.scriptCode ?? '';
+    if (!code.trim()) return;
+
+    this.fetching.set(true);
+    try {
+      const apiProxies = this.buildScriptApiProxies();
+      const args: Record<string, unknown> = { ...apiProxies };
+
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+
+      // eslint-disable-next-line no-new-func
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      const res = await fn(...argValues);
+
+      const data = this.extractArrayData(res, widget.dataPath);
+      this.widgets.update(ws => ws.map(w =>
+        w.id === widget.id ? { ...w, lastData: data } : w
+      ));
+    } catch (err) {
+      console.error('Failed to run widget script', err);
+      this.widgets.update(ws => ws.map(w =>
+        w.id === widget.id ? { ...w, lastData: { error: err instanceof Error ? err.message : String(err) } } : w
+      ));
+    } finally {
+      this.fetching.set(false);
+    }
+  }
+
+  /** Apply dataPath and auto-detect wrapped arrays (searches up to 3 levels deep) */
+  private extractArrayData(res: unknown, dataPath?: string): unknown {
+    let data: unknown = res;
+    if (dataPath) {
+      data = this.svc.getPath(res, dataPath);
+    }
+    // Already an array — return as-is
+    if (Array.isArray(data)) return data;
+    // Try to find an array inside the object (up to 3 levels deep)
+    if (data && typeof data === 'object') {
+      const found = this.findNestedArray(data, 3);
+      if (found) return found;
+    }
+    return data;
+  }
+
+  /** Recursively search for the first array property in an object, up to maxDepth levels */
+  private findNestedArray(obj: unknown, maxDepth: number): unknown[] | null {
+    if (!obj || typeof obj !== 'object' || maxDepth <= 0) return null;
+    const record = obj as Record<string, unknown>;
+    // First pass: direct array children (prefer 'data', then 'records', then 'items', then first found)
+    for (const key of ['data', 'records', 'items']) {
+      if (Array.isArray(record[key])) return record[key] as unknown[];
+    }
+    for (const val of Object.values(record)) {
+      if (Array.isArray(val)) return val as unknown[];
+    }
+    // Second pass: recurse into nested objects
+    for (const val of Object.values(record)) {
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        const found = this.findNestedArray(val, maxDepth - 1);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  getDataSourceMode(widget: DashboardWidget): DataSourceMode {
+    return widget.dataSourceMode ?? 'api';
+  }
+
+  /**
+   * Build API proxy objects for all registered modules so scripts can call e.g.:
+   *   const regions = await ImpossibleCloud.ListRegions();
+   */
+  private buildScriptApiProxies(): Record<string, Record<string, (...a: unknown[]) => Promise<unknown>>> {
+    const proxies: Record<string, Record<string, (...a: unknown[]) => Promise<unknown>>> = {};
+
+    for (const mod of MODULES) {
+      const proxyName = mod.label.split(/\s+/).join('');
+      const obj: Record<string, (...a: unknown[]) => Promise<unknown>> = {};
+
+      for (const ep of mod.endpoints) {
+        const methodName = ep.label.split(/\s+/).join('');
+        const httpMethod = ep.method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
+        const paramNames = extractPathParams(ep.pathTemplate);
+        const hasParams = paramNames.length > 0;
+        const hasBody = ep.hasBody ?? false;
+
+        obj[methodName] = async (...args: unknown[]): Promise<unknown> => {
+          const pathParams = this.resolveProxyPathParams(hasParams, args);
+          const body = this.resolveProxyBody(hasBody, hasParams, args);
+          return this.callProxyApi(mod.apiPrefix, ep.pathTemplate, httpMethod, pathParams, body);
+        };
+      }
+
+      proxies[proxyName] = obj;
+    }
+
+    return proxies;
+  }
+
+  private resolveProxyPathParams(hasParams: boolean, args: unknown[]): Record<string, string> {
+    const pathParams: Record<string, string> = {};
+    if (hasParams && args[0] && typeof args[0] === 'object') {
+      for (const [k, v] of Object.entries(args[0] as Record<string, unknown>)) {
+        if (v == null) pathParams[k] = '';
+        else if (typeof v === 'string') pathParams[k] = v;
+        else pathParams[k] = JSON.stringify(v);
+      }
+    }
+    return pathParams;
+  }
+
+  private resolveProxyBody(hasBody: boolean, hasParams: boolean, args: unknown[]): Record<string, unknown> | undefined {
+    if (!hasBody) return undefined;
+    const bodyArg = hasParams ? args[1] : args[0];
+    return (bodyArg && typeof bodyArg === 'object') ? bodyArg as Record<string, unknown> : undefined;
+  }
+
+  private callProxyApi(
+    apiPrefix: string, pathTemplate: string,
+    httpMethod: 'get' | 'post' | 'put' | 'patch' | 'delete',
+    pathParams: Record<string, string>,
+    body: Record<string, unknown> | undefined,
+  ): Promise<unknown> {
+    if (httpMethod === 'get' || httpMethod === 'delete') {
+      return firstValueFrom(this.api[httpMethod](apiPrefix, pathTemplate, pathParams));
+    }
+    const call = ({ post: this.api.post, put: this.api.put, patch: this.api.patch } as Record<string, typeof this.api.post>)[httpMethod] ?? this.api.post;
+    return firstValueFrom(call.call(this.api, apiPrefix, pathTemplate, pathParams, body ?? {}));
   }
 
   // ── Save & Preview ────────────────────────────────────────────────────────
@@ -1669,7 +1851,7 @@ export class DashboardBuilderComponent implements OnInit {
     this.previewMode.set(true);
     this.selectedWidgetId.set(null);
     const promises = this.widgets()
-      .filter(w => w.dataSource)
+      .filter(w => w.dataSource || w.dataSourceMode === 'script')
       .map(w => this.fetchWidgetData(w));
     await Promise.all(promises);
   }
