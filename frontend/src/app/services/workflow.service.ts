@@ -9,6 +9,7 @@ import {
   SubWorkflowBlock, ScriptBlock, WorkflowInput, WorkflowOutput,
   WorkflowRunLog, WorkflowRunStepLog, PayloadSource,
 } from '../config/workflow.types';
+import { MODULES, extractPathParams } from '../config/endpoints';
 
 @Injectable({ providedIn: 'root' })
 export class WorkflowService {
@@ -435,11 +436,11 @@ export class WorkflowService {
     }
   }
 
-  private executeScriptNode(
+  private async executeScriptNode(
     block: ScriptBlock,
     stepResults: Map<string, unknown>,
     log: WorkflowRunLog,
-  ): boolean {
+  ): Promise<boolean> {
     const stepLog: WorkflowRunStepLog = {
       stepId: block.id,
       label: block.label || 'Script',
@@ -455,26 +456,31 @@ export class WorkflowService {
         if (!binding.name) continue;
         if (binding.source.type === 'from-step') {
           const srcResult = stepResults.get(binding.source.stepId);
-          args[binding.name] = srcResult == null
-            ? undefined
-            : binding.source.field
-              ? this.getPathRaw(srcResult, binding.source.field)
-              : srcResult;
+          args[binding.name] = this.resolveBinding(srcResult, binding.source.field);
         } else {
           args[binding.name] = binding.source.value;
         }
       }
 
+      // Inject API proxy objects so scripts can call: await ImpossibleCloud.ListRegions()
+      const apiProxies = this.buildScriptApiProxies();
+      for (const [name, proxy] of Object.entries(apiProxies)) {
+        args[name] = proxy;
+      }
+
       stepLog.resolvedParams = Object.fromEntries(
-        Object.entries(args).map(([k, v]) => [k, this.safeStringify(v)])
+        Object.entries(args)
+          .filter(([k]) => !apiProxies[k])  // don't log proxy objects
+          .map(([k, v]) => [k, this.safeStringify(v)])
       );
 
-      // Build a sandboxed function: argument names + code
+      // Build an async sandboxed function so scripts can use await
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       // eslint-disable-next-line no-new-func
-      const fn = new Function(...argNames, block.code);
-      const result = fn(...argValues);
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, block.code);
+      const result = await fn(...argValues);
 
       stepLog.response = result;
       stepLog.success = true;
@@ -491,6 +497,66 @@ export class WorkflowService {
       log.error = `Step "${stepLog.label}" failed: ${stepLog.error}`;
     }
     return stepLog.success;
+  }
+
+  /**
+   * Build API proxy objects for all registered modules so scripts can call e.g.:
+   *   const regions = await ImpossibleCloud.ListRegions();
+   *   const partner = await ImpossibleCloud.GetPartner({ partnerId: '123' });
+   *   const result  = await ImpossibleCloud.CreatePartner({ name: 'Acme' });
+   *
+   * Signature per method:
+   *   GET/DELETE without path params → Method()
+   *   GET/DELETE with path params    → Method(pathParams)
+   *   POST/PUT/PATCH without params  → Method(body)
+   *   POST/PUT/PATCH with params     → Method(pathParams, body)
+   */
+  private buildScriptApiProxies(): Record<string, Record<string, (...a: unknown[]) => Promise<unknown>>> {
+    const proxies: Record<string, Record<string, (...a: unknown[]) => Promise<unknown>>> = {};
+
+    for (const mod of MODULES) {
+      const proxyName = mod.label.split(/\s+/).join('');     // "Impossible Cloud" → "ImpossibleCloud"
+      const obj: Record<string, (...a: unknown[]) => Promise<unknown>> = {};
+
+      for (const ep of mod.endpoints) {
+        const methodName = ep.label.split(/\s+/).join('');   // "List Regions" → "ListRegions"
+        const httpMethod = ep.method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
+        const paramNames = extractPathParams(ep.pathTemplate);
+        const hasParams = paramNames.length > 0;
+        const hasBody = ep.hasBody ?? false;
+
+        obj[methodName] = async (...args: unknown[]): Promise<unknown> => {
+          const pathParams: Record<string, string> = {};
+          let body: Record<string, unknown> | undefined;
+
+          if (hasParams && args[0] && typeof args[0] === 'object') {
+            for (const [k, v] of Object.entries(args[0] as Record<string, unknown>)) {
+              pathParams[k] = v == null ? '' : typeof v === 'string' ? v : JSON.stringify(v);
+            }
+          }
+          if (hasBody) {
+            const bodyArg = hasParams ? args[1] : args[0];
+            if (bodyArg && typeof bodyArg === 'object') {
+              body = bodyArg as Record<string, unknown>;
+            }
+          }
+
+          if (httpMethod === 'get' || httpMethod === 'delete') {
+            return firstValueFrom(
+              this.api[httpMethod](mod.apiPrefix, ep.pathTemplate, pathParams)
+            );
+          }
+          const call = ({ post: this.api.post, put: this.api.put, patch: this.api.patch } as Record<string, typeof this.api.post>)[httpMethod] ?? this.api.post;
+          return firstValueFrom(
+            call.call(this.api, mod.apiPrefix, ep.pathTemplate, pathParams, body ?? {})
+          );
+        };
+      }
+
+      proxies[proxyName] = obj;
+    }
+
+    return proxies;
   }
 
   private async executeEndpoint(
@@ -736,6 +802,11 @@ export class WorkflowService {
     const result = stepResults.get(source.stepId);
     if (result == null) return '';
     return this.getPathRaw(result, source.field) ?? '';
+  }
+
+  private resolveBinding(srcResult: unknown, field: string): unknown {
+    if (srcResult == null) return undefined;
+    return field ? this.getPathRaw(srcResult, field) : srcResult;
   }
 
   getPath(obj: unknown, path: string): string {
