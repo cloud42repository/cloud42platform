@@ -60,6 +60,8 @@ export const FR: Record<TranslationKey, string> = {
   'workflow.untitled': 'Sans titre',
   'workflow.edit-btn': 'Modifier',
   'workflow.run-now': 'Exécuter',
+  'workflow.run-backend': 'Exécuter sur le backend',
+  'workflow.run-backend-hint': 'Exécuter ce workflow sur le serveur (backend)',
   'workflow.delete-wf': 'Supprimer le workflow',
   'workflow.confirm-delete': 'Supprimer le workflow "{{name}}" ?',
   'workflow.last-run': 'Dernière exécution',

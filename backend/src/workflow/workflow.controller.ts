@@ -9,11 +9,15 @@ import {
   Query,
 } from '@nestjs/common';
 import { WorkflowService } from './workflow.service';
-import type { CreateWorkflowDto, UpdateWorkflowDto } from './workflow.dto';
+import { WorkflowExecutionService } from './workflow-execution.service';
+import type { CreateWorkflowDto, UpdateWorkflowDto, ExecuteWorkflowDto } from './workflow.dto';
 
 @Controller('workflows')
 export class WorkflowController {
-  constructor(private readonly service: WorkflowService) {}
+  constructor(
+    private readonly service: WorkflowService,
+    private readonly execution: WorkflowExecutionService,
+  ) {}
 
   /** GET /api/workflows?userEmail=xxx — list all workflows for a user */
   @Get()
@@ -25,6 +29,12 @@ export class WorkflowController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findById(id);
+  }
+
+  /** POST /api/workflows/:id/execute — execute a workflow on the backend */
+  @Post(':id/execute')
+  execute(@Param('id') id: string, @Body() dto: ExecuteWorkflowDto) {
+    return this.execution.execute(id, dto?.inputValues);
   }
 
   /** POST /api/workflows — create a new workflow */

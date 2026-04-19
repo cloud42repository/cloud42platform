@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
@@ -9,6 +10,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { WorkflowService } from '../../services/workflow.service';
+import { ApiService } from '../../services/api.service';
 import { Workflow, WorkflowStatus } from '../../config/workflow.types';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { TranslateService } from '../../services/translate.service';
@@ -126,6 +128,17 @@ import { TranslateService } from '../../services/translate.service';
                 }
                 {{ 'workflow.run-now' | t }}
               </button>
+              <button mat-stroked-button
+                      (click)="runBackend(wf)"
+                      [disabled]="wf.status === 'running'"
+                      matTooltip="{{ 'workflow.run-backend-hint' | t }}">
+                @if (runningBackendId() === wf.id) {
+                  <mat-spinner diameter="16" />
+                } @else {
+                  <mat-icon>cloud_upload</mat-icon>
+                }
+                {{ 'workflow.run-backend' | t }}
+              </button>
               <button mat-icon-button color="warn"
                       (click)="delete(wf)"
                       [matTooltip]="'workflow.delete-wf' | t">
@@ -238,9 +251,11 @@ import { TranslateService } from '../../services/translate.service';
 })
 export class WorkflowListComponent {
   readonly svc = inject(WorkflowService);
+  private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   readonly i18n = inject(TranslateService);
   readonly runningId = signal<string | null>(null);
+  readonly runningBackendId = signal<string | null>(null);
 
   async run(wf: Workflow) {
     this.runningId.set(wf.id);
@@ -250,6 +265,20 @@ export class WorkflowListComponent {
       console.error(e);
     } finally {
       this.runningId.set(null);
+    }
+  }
+
+  async runBackend(wf: Workflow) {
+    this.runningBackendId.set(wf.id);
+    try {
+      await firstValueFrom(
+        this.api.post('/workflows', '/:id/execute', { id: wf.id }, {})
+      );
+      await this.svc.loadFromApi();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      this.runningBackendId.set(null);
     }
   }
 

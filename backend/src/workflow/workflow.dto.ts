@@ -27,6 +27,11 @@ export interface UpdateWorkflowDto {
   lastRunLog?: unknown;
 }
 
+/** POST /api/workflows/:id/execute — run a workflow */
+export interface ExecuteWorkflowDto {
+  inputValues?: Record<string, string>;
+}
+
 /* ── Response DTO ── */
 
 export interface WorkflowResponseDto {

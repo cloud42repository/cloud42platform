@@ -58,6 +58,8 @@ export const EN = {
   'workflow.untitled': 'Untitled',
   'workflow.edit-btn': 'Edit',
   'workflow.run-now': 'Run now',
+  'workflow.run-backend': 'Run on Backend',
+  'workflow.run-backend-hint': 'Execute this workflow on the server (backend)',
   'workflow.delete-wf': 'Delete workflow',
   'workflow.confirm-delete': 'Delete workflow "{{name}}"?',
   'workflow.last-run': 'Last run',

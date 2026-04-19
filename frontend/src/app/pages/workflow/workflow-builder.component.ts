@@ -5,6 +5,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -25,6 +26,7 @@ import { MODULES, ModuleDef, EndpointDef, extractPathParams } from '../../config
 import { getEndpointPayload } from '../../config/endpoint-payloads';
 import { getEndpointInputSchema, getEndpointOutputSchema, getEndpointOutputLabel, flattenSchemaKeys } from '../../config/endpoint-schemas';
 import { WorkflowService } from '../../services/workflow.service';
+import { ApiService } from '../../services/api.service';
 import { ShareService } from '../../services/share.service';
 import {
   Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FilterBlock, SubWorkflowBlock, ScriptBlock, WorkflowInput, WorkflowOutput, FieldMapping, PayloadSource, BodyMode,
@@ -97,6 +99,14 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
           @if (running()) { <mat-spinner diameter="16" /> }
           @else { <mat-icon>play_arrow</mat-icon> }
           {{ 'workflow.run-now' | t }}
+        </button>
+        <button mat-stroked-button color="accent"
+                (click)="runOnBackend()"
+                [disabled]="steps().length === 0 || running()"
+                matTooltip="{{ 'workflow.run-backend-hint' | t }}">
+          @if (running()) { <mat-spinner diameter="16" /> }
+          @else { <mat-icon>cloud_upload</mat-icon> }
+          {{ 'workflow.run-backend' | t }}
         </button>
         @if (runLog()) {
           <button mat-stroked-button class="results-btn" (click)="resultPanelOpen.update(v => !v)">
@@ -2367,6 +2377,7 @@ export class WorkflowBuilderComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly svc = inject(WorkflowService);
+  private readonly api = inject(ApiService);
   private readonly shareSvc = inject(ShareService);
   private readonly snack = inject(MatSnackBar);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -3878,6 +3889,35 @@ export class WorkflowBuilderComponent implements OnInit {
       this.resultPanelOpen.set(true);
     } catch (e) {
       this.snack.open(`Execution error: ${e}`, '', { duration: 4000 });
+    } finally {
+      this.running.set(false);
+    }
+  }
+
+  async runOnBackend() {
+    const name = this.wfName.trim() || 'Untitled';
+    this.wfName = name;
+    this.save();
+    const id = this.workflowId!;
+
+    // Build input values from the wfInputs
+    const inputValues: Record<string, string> = {};
+    for (const inp of this.wfInputs()) {
+      inputValues[inp.name] = inp.defaultValue ?? '';
+    }
+
+    this.running.set(true);
+    this.runLog.set(null);
+    try {
+      const log = await firstValueFrom(
+        this.api.post('/workflows', '/:id/execute', { id }, { inputValues })
+      ) as { success: boolean; steps: { stepId: string; label: string; response?: unknown; error?: string; success: boolean }[] };
+      this.runLog.set(log);
+      this.resultPanelOpen.set(true);
+      // Reload workflow to get updated status/log from backend
+      await this.svc.loadFromApi();
+    } catch (e) {
+      this.snack.open(`Backend execution error: ${e}`, '', { duration: 4000 });
     } finally {
       this.running.set(false);
     }
