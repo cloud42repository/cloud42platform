@@ -672,6 +672,14 @@ export const DE: Record<TranslationKey, string> = {
   'form.placeholder': 'Platzhalter',
   'form.required': 'Pflichtfeld',
   'form.data-source': 'Datenquelle',
+  'form.data-binding': 'Datenbindung',
+  'form.text-binding': 'Wertbindung',
+  'form.text-binding-hint': 'Punkt-Notation Pfad zum Extrahieren eines Wertes (z.B. name, kontakt.email)',
+  'form.bind-to-table': 'An Tabelle binden',
+  'form.source-table': 'Quelltabelle',
+  'form.none': 'Keine',
+  'form.bound-column': 'Spalte',
+  'form.bound-column-hint': 'Spaltenname aus der ausgew\u00e4hlten Zeile (z.B. email, status)',
   'form.select-module': 'Modul',
   'form.select-endpoint': 'Endpunkt',
   'form.path-params': 'Pfadparameter',
@@ -723,6 +731,8 @@ export const DE: Record<TranslationKey, string> = {
   'form.script-code': 'Skript-Code',
   'form.script-hint': 'JavaScript-Code schreiben. Formularfeldwerte sind über FormFields verfügbar. Alle API-Module (z.B. ImpossibleCloud, ZohoCRM) sind als globale Objekte verfügbar.',
   'form.script-async-hint': 'Async — await für API-Aufrufe verwenden. Rückgabewert wird als Antwort angezeigt.',
+  'form.field-script-hint': 'JavaScript schreiben, das ein Array von Objekten zurückgibt. Alle API-Module (z.B. ZohoBooks, ZohoCRM) sind als globale Objekte verfügbar.',
+  'form.run-script': 'Skript ausführen',
 
   /* ── API Tester Seite ── */
   'api-tester.history': 'Verlauf',

@@ -1,6 +1,9 @@
 /** Form field types */
 export type FormFieldKind = 'text' | 'date' | 'select' | 'datatable';
 
+/** Data source mode: call an API endpoint or run a script */
+export type FieldDataSourceMode = 'api' | 'script';
+
 /** API data source for select / datatable fields */
 export interface FormFieldDataSource {
   moduleApiPrefix: string;
@@ -36,6 +39,16 @@ export interface FormField {
 
   /** Data source for select & datatable */
   dataSource?: FormFieldDataSource;
+
+  /** 'api' (default) = call an API endpoint, 'script' = run JavaScript code */
+  dataSourceMode?: FieldDataSourceMode;
+  /** JavaScript code for script data source (must return an array) */
+  scriptCode?: string;
+
+  /** For text/date: bind value to a selected row in a datatable field */
+  boundFieldId?: string;
+  /** For text/date: column name to extract from the selected datatable row */
+  boundColumn?: string;
 
   /** Runtime data (transient, not persisted) */
   lastData?: unknown;

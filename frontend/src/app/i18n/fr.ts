@@ -672,7 +672,13 @@ export const FR: Record<TranslationKey, string> = {
   'form.placeholder': 'Texte indicatif',
   'form.required': 'Obligatoire',
   'form.data-source': 'Source de données',
-  'form.select-module': 'Module',
+  'form.data-binding': 'Liaison de données',
+  'form.text-binding': 'Liaison de valeur',
+  'form.text-binding-hint': 'Chemin en notation pointée pour extraire une valeur (ex. name, contact.email)',  'form.bind-to-table': 'Lier \u00e0 une table',
+  'form.source-table': 'Table source',
+  'form.none': 'Aucun',
+  'form.bound-column': 'Colonne',
+  'form.bound-column-hint': 'Nom de colonne de la ligne s\u00e9lectionn\u00e9e (ex. email, status)',  'form.select-module': 'Module',
   'form.select-endpoint': 'Point d\'accès',
   'form.path-params': 'Paramètres de chemin',
   'form.data-path': 'Chemin des données',
@@ -723,6 +729,8 @@ export const FR: Record<TranslationKey, string> = {
   'form.script-code': 'Code du script',
   'form.script-hint': 'Écrire du code JavaScript. Les valeurs des champs sont disponibles via FormFields. Tous les modules API (ex. ImpossibleCloud, ZohoCRM) sont disponibles comme objets globaux.',
   'form.script-async-hint': 'Async — utiliser await pour les appels API. La valeur de retour est affichée comme réponse.',
+  'form.field-script-hint': 'Écrire du JavaScript qui retourne un tableau d\'objets. Tous les modules API (ex. ZohoBooks, ZohoCRM) sont disponibles comme objets globaux.',
+  'form.run-script': 'Exécuter le script',
 
   /* ── Page Testeur API ── */
   'api-tester.history': 'Historique',

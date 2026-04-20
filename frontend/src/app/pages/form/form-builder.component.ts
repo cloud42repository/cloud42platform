@@ -31,6 +31,7 @@ import {
   ActionMode,
   BodyMode,
   BodyFieldSource,
+  FieldDataSourceMode,
 } from '../../config/form.types';
 import { MODULES, EndpointDef, extractPathParams } from '../../config/endpoints';
 import { getEndpointPayload } from '../../config/endpoint-payloads';
@@ -259,6 +260,22 @@ interface FieldTypeRef {
                            (input)="setFieldValue(field.id, $any($event.target).value)"
                            (click)="$event.stopPropagation(); selectField(field.id)" />
                   </div>
+                  @if (field.boundFieldId) {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">table_chart</mat-icon>
+                      {{ getBoundTableLabel(field) }} → {{ field.boundColumn || '?' }}
+                    </span>
+                  } @else if (field.dataSourceMode === 'script') {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
+                      Script → {{ field.valueField || '?' }}
+                    </span>
+                  } @else if (field.dataSource) {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
+                      {{ field.dataSource.moduleLabel }} › {{ field.valueField || '?' }}
+                    </span>
+                  }
                 }
                 @if (field.kind === 'date') {
                   <div class="preview-input preview-date">
@@ -267,6 +284,22 @@ interface FieldTypeRef {
                            (input)="setFieldValue(field.id, $any($event.target).value)"
                            (click)="$event.stopPropagation(); selectField(field.id)" />
                   </div>
+                  @if (field.boundFieldId) {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">table_chart</mat-icon>
+                      {{ getBoundTableLabel(field) }} → {{ field.boundColumn || '?' }}
+                    </span>
+                  } @else if (field.dataSourceMode === 'script') {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
+                      Script → {{ field.valueField || '?' }}
+                    </span>
+                  } @else if (field.dataSource) {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
+                      {{ field.dataSource.moduleLabel }} › {{ field.valueField || '?' }}
+                    </span>
+                  }
                 }
                 @if (field.kind === 'select') {
                   <mat-form-field appearance="outline" class="preview-select-field" (click)="$event.stopPropagation()">
@@ -278,7 +311,12 @@ interface FieldTypeRef {
                       }
                     </mat-select>
                   </mat-form-field>
-                  @if (field.dataSource) {
+                  @if (field.dataSourceMode === 'script') {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
+                      Script
+                    </span>
+                  } @else if (field.dataSource) {
                     <span class="data-source-tag">
                       <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
                       {{ field.dataSource.moduleLabel }} › {{ field.dataSource.endpointLabel }}
@@ -299,7 +337,12 @@ interface FieldTypeRef {
                   }
                 }
                 @if (field.kind === 'datatable') {
-                  @if (field.dataSource) {
+                  @if (field.dataSourceMode === 'script') {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
+                      Script
+                    </span>
+                  } @else if (field.dataSource) {
                     <span class="data-source-tag">
                       <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
                       {{ field.dataSource.moduleLabel }} › {{ field.dataSource.endpointLabel }}
@@ -328,7 +371,8 @@ interface FieldTypeRef {
                         </thead>
                         <tbody>
                           @for (row of getTableRows(field); track $index) {
-                            <tr>
+                            <tr [class.row-selected]="selectedTableRow()?.fieldId === field.id && selectedTableRow()?.rowIndex === $index"
+                                (click)="onTableRowSelect(field, $index, row); $event.stopPropagation()">
                               @for (col of getTableColumns(field); track col) {
                                 <td>{{ row[col] }}</td>
                               }
@@ -431,9 +475,50 @@ interface FieldTypeRef {
 
             <mat-divider class="section-divider" />
 
-            <!-- Data Source (for select & datatable) -->
-            @if (field.kind === 'select' || field.kind === 'datatable') {
-              <div class="config-section-label">{{ 'form.data-source' | t }}</div>
+            <!-- Data Source / Data Binding -->
+            @if (field.kind === 'text' || field.kind === 'date' || field.kind === 'select' || field.kind === 'datatable') {
+              <div class="config-section-label">{{ field.kind === 'text' || field.kind === 'date' ? ('form.data-binding' | t) : ('form.data-source' | t) }}</div>
+
+              <!-- Data source mode toggle -->
+              <div class="body-mode-toggle">
+                <button mat-stroked-button
+                        [class.active-mode]="getFieldDataSourceMode(field) === 'api'"
+                        (click)="updateField(field.id, 'dataSourceMode', 'api')">
+                  <mat-icon>api</mat-icon> {{ 'form.api-mode' | t }}
+                </button>
+                <button mat-stroked-button
+                        [class.active-mode]="getFieldDataSourceMode(field) === 'script'"
+                        (click)="updateField(field.id, 'dataSourceMode', 'script')">
+                  <mat-icon>code</mat-icon> {{ 'form.script-mode' | t }}
+                </button>
+              </div>
+
+              <!-- ── SCRIPT MODE ── -->
+              @if (getFieldDataSourceMode(field) === 'script') {
+                <mat-divider class="section-divider" />
+                <div class="config-section-label">{{ 'form.script-code' | t }}</div>
+                <p class="config-hint">{{ 'form.field-script-hint' | t }}</p>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                  <mat-label>{{ 'form.script-code' | t }}</mat-label>
+                  <textarea matInput rows="12"
+                            [value]="field.scriptCode ?? ''"
+                            (input)="updateField(field.id, 'scriptCode', $any($event.target).value)"
+                            placeholder="// All API modules available (e.g. ZohoBooks, ZohoCRM)&#10;&#10;const res = await ZohoBooks.ListContacts();&#10;return res.contacts;"
+                            class="script-textarea"></textarea>
+                  <mat-hint>{{ 'form.script-async-hint' | t }}</mat-hint>
+                </mat-form-field>
+
+                <!-- Data path for script result -->
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                  <mat-label>{{ 'form.data-path' | t }}</mat-label>
+                  <input matInput [value]="field.dataSource?.dataPath ?? ''"
+                         (input)="updateFieldDataPath(field.id, $any($event.target).value)"
+                         placeholder="data" />
+                </mat-form-field>
+              }
+
+              <!-- ── API MODE ── -->
+              @if (getFieldDataSourceMode(field) === 'api') {
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                 <mat-label>{{ 'form.select-module' | t }}</mat-label>
                 <mat-select [value]="field.dataSource?.moduleApiPrefix ?? ''"
@@ -478,6 +563,44 @@ interface FieldTypeRef {
                        (input)="updateFieldDataPath(field.id, $any($event.target).value)"
                        placeholder="data" />
               </mat-form-field>
+              } <!-- end API MODE -->
+
+              @if (field.kind === 'text' || field.kind === 'date') {
+                <mat-divider class="section-divider" />
+                <div class="config-section-label">{{ 'form.text-binding' | t }}</div>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                  <mat-label>{{ 'form.value-field' | t }}</mat-label>
+                  <input matInput [value]="field.valueField || ''"
+                         (input)="updateField(field.id, 'valueField', $any($event.target).value)"
+                         placeholder="name" />
+                  <mat-hint>{{ 'form.text-binding-hint' | t }}</mat-hint>
+                </mat-form-field>
+
+                <!-- Bind to Table row -->
+                @if (getDatatableFields().length > 0) {
+                  <mat-divider class="section-divider" />
+                  <div class="config-section-label">{{ 'form.bind-to-table' | t }}</div>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                    <mat-label>{{ 'form.source-table' | t }}</mat-label>
+                    <mat-select [value]="field.boundFieldId || ''"
+                                (selectionChange)="updateField(field.id, 'boundFieldId', $event.value || undefined)">
+                      <mat-option value="">{{ 'form.none' | t }}</mat-option>
+                      @for (dt of getDatatableFields(); track dt.id) {
+                        <mat-option [value]="dt.id">{{ dt.label || dt.id }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  @if (field.boundFieldId) {
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                      <mat-label>{{ 'form.bound-column' | t }}</mat-label>
+                      <input matInput [value]="field.boundColumn || ''"
+                             (input)="updateField(field.id, 'boundColumn', $any($event.target).value)"
+                             placeholder="email" />
+                      <mat-hint>{{ 'form.bound-column-hint' | t }}</mat-hint>
+                    </mat-form-field>
+                  }
+                }
+              }
 
               @if (field.kind === 'select') {
                 <mat-divider class="section-divider" />
@@ -507,9 +630,12 @@ interface FieldTypeRef {
                 </mat-form-field>
               }
 
-              <button mat-flat-button color="accent" class="full-width" (click)="fetchFieldData(field)" [disabled]="!field.dataSource || fetching()">
+              <button mat-flat-button color="accent" class="full-width"
+                      (click)="fetchFieldData(field)"
+                      [disabled]="(getFieldDataSourceMode(field) === 'api' && !field.dataSource) || (getFieldDataSourceMode(field) === 'script' && !field.scriptCode?.trim()) || fetching()">
                 @if (fetching()) { <mat-spinner diameter="16" /> }
-                <mat-icon>cloud_download</mat-icon> {{ 'form.fetch-data' | t }}
+                <mat-icon>{{ getFieldDataSourceMode(field) === 'script' ? 'play_arrow' : 'cloud_download' }}</mat-icon>
+                {{ getFieldDataSourceMode(field) === 'script' ? ('form.run-script' | t) : ('form.fetch-data' | t) }}
               </button>
             }
 
@@ -1232,6 +1358,8 @@ interface FieldTypeRef {
       max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .data-table tbody tr:hover td { background: #f0f9ff; }
+    .data-table tbody tr { cursor: pointer; }
+    .data-table tbody tr.row-selected td { background: #dbeafe; font-weight: 500; }
   `]
 })
 export class FormBuilderComponent implements OnInit {
@@ -1270,6 +1398,8 @@ export class FormBuilderComponent implements OnInit {
   readonly lastResponse = signal<{ actionId: string; status: 'success' | 'error'; data: unknown } | null>(null);
   /** Runtime values entered in the form fields */
   readonly fieldValues = signal<Record<string, unknown>>({});
+  /** Currently selected datatable row: { fieldId, rowIndex } */
+  readonly selectedTableRow = signal<{ fieldId: string; rowIndex: number } | null>(null);
 
   readonly selectedField = computed<FormField | null>(() => {
     const id = this.selectedFieldId();
@@ -1321,9 +1451,9 @@ export class FormBuilderComponent implements OnInit {
         this.formName.set(existing.name);
         this.fields.set([...existing.fields]);
         this.submitActions.set([...existing.submitActions]);
-        // Auto-fetch data for fields with a dataSource but no cached data
+        // Auto-fetch data for fields with a dataSource or script but no cached data
         for (const f of this.fields()) {
-          if (f.dataSource && f.lastData == null) this.fetchFieldData(f);
+          if ((f.dataSource || f.dataSourceMode === 'script') && f.lastData == null) this.fetchFieldData(f);
         }
       } else {
         this.router.navigate(['/forms']);
@@ -1772,6 +1902,29 @@ export class FormBuilderComponent implements OnInit {
     });
   }
 
+  /** Called when a datatable row is clicked — updates all text/date fields bound to this table */
+  onTableRowSelect(tableField: FormField, rowIndex: number, row: Record<string, string>) {
+    this.selectedTableRow.set({ fieldId: tableField.id, rowIndex });
+    // Find all fields bound to this datatable and populate their values
+    for (const f of this.fields()) {
+      if (f.boundFieldId === tableField.id && f.boundColumn) {
+        const value = row[f.boundColumn] ?? '';
+        this.setFieldValue(f.id, value);
+      }
+    }
+  }
+
+  /** Get datatable fields for the "Bind to Table" dropdown */
+  getDatatableFields(): FormField[] {
+    return this.fields().filter(f => f.kind === 'datatable');
+  }
+
+  /** Get label of bound datatable field */
+  getBoundTableLabel(field: FormField): string {
+    const dt = this.fields().find(f => f.id === field.boundFieldId);
+    return dt?.label || field.boundFieldId || '?';
+  }
+
   // ── Field resize ──────────────────────────────────────────────────────────
 
   onFieldResizeStart(event: MouseEvent, field: FormField, direction: 'e' | 's' | 'se') {
@@ -1825,9 +1978,19 @@ export class FormBuilderComponent implements OnInit {
     document.addEventListener('mouseup', onUp);
   }
 
-  // ── Fetch data (for select / datatable) ───────────────────────────────────
+  // ── Fetch data (for select / datatable / text+date binding) ──────────────
+
+  getFieldDataSourceMode(field: FormField): FieldDataSourceMode {
+    return field.dataSourceMode ?? 'api';
+  }
 
   async fetchFieldData(field: FormField) {
+    const mode = this.getFieldDataSourceMode(field);
+
+    if (mode === 'script') {
+      return this.fetchFieldDataFromScript(field);
+    }
+
     if (!field.dataSource) return;
     this.fetching.set(true);
     try {
@@ -1835,27 +1998,86 @@ export class FormBuilderComponent implements OnInit {
       const res = await firstValueFrom(
         this.api.get(ds.moduleApiPrefix, ds.pathTemplate, ds.pathParams, ds.queryParams)
       );
-      let data: unknown = res;
-      if (ds.dataPath) {
-        data = this.svc.getPath(res, ds.dataPath);
-      }
-      if (data && typeof data === 'object' && !Array.isArray(data)) {
-        const obj = data as Record<string, unknown>;
-        if (Array.isArray(obj['data'])) {
-          data = obj['data'];
-        } else {
-          const firstArr = Object.values(obj).find(v => Array.isArray(v));
-          if (firstArr) data = firstArr;
-        }
-      }
-      this.fields.update(fs => fs.map(f =>
-        f.id === field.id ? { ...f, lastData: data } : f
-      ));
+      this.applyFetchedData(field, res);
     } catch (err) {
       console.error('Failed to fetch field data', err);
     } finally {
       this.fetching.set(false);
     }
+  }
+
+  /** Execute script data source — same async pattern as dashboard/workflow scripts */
+  private async fetchFieldDataFromScript(field: FormField) {
+    const code = field.scriptCode ?? '';
+    if (!code.trim()) return;
+
+    this.fetching.set(true);
+    try {
+      const apiProxies = this.buildScriptApiProxies();
+      const args: Record<string, unknown> = { ...apiProxies };
+
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+
+      // eslint-disable-next-line no-new-func
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      const res = await fn(...argValues);
+
+      this.applyFetchedData(field, res);
+    } catch (err) {
+      console.error('Failed to run field script', err);
+    } finally {
+      this.fetching.set(false);
+    }
+  }
+
+  /** Store fetched data and, for text/date fields, extract a single value via valueField */
+  private applyFetchedData(field: FormField, res: unknown) {
+    if (field.kind === 'text' || field.kind === 'date') {
+      // For text/date: extract a single value from the response
+      let data: unknown = res;
+      if (field.dataSource?.dataPath) {
+        data = this.svc.getPath(res, field.dataSource.dataPath);
+      }
+      // If the result is an array, take the first element
+      if (Array.isArray(data) && data.length > 0) data = data[0];
+      // Extract the value at valueField path
+      let value: unknown = data;
+      if (field.valueField && data && typeof data === 'object') {
+        value = this.svc.getPath(data, field.valueField);
+      }
+      const strValue = value != null ? String(value) : '';
+      this.setFieldValue(field.id, strValue);
+      this.fields.update(fs => fs.map(f =>
+        f.id === field.id ? { ...f, lastData: res } : f
+      ));
+    } else {
+      // For select/datatable: extract array as before
+      const data = this.extractFieldArrayData(res, field.dataSource?.dataPath);
+      this.fields.update(fs => fs.map(f =>
+        f.id === field.id ? { ...f, lastData: data } : f
+      ));
+    }
+  }
+
+  /** Apply dataPath and auto-detect wrapped arrays (searches up to 3 levels deep) */
+  private extractFieldArrayData(res: unknown, dataPath?: string): unknown {
+    let data: unknown = res;
+    if (dataPath) {
+      data = this.svc.getPath(res, dataPath);
+    }
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      const obj = data as Record<string, unknown>;
+      // Prioritise common keys
+      for (const key of ['data', 'records', 'items']) {
+        if (Array.isArray(obj[key])) return obj[key];
+      }
+      const firstArr = Object.values(obj).find(v => Array.isArray(v));
+      if (firstArr) return firstArr;
+    }
+    return data;
   }
 
   // ── Save ──────────────────────────────────────────────────────────────────

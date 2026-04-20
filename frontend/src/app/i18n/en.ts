@@ -670,6 +670,14 @@ export const EN = {
   'form.placeholder': 'Placeholder',
   'form.required': 'Required',
   'form.data-source': 'Data Source',
+  'form.data-binding': 'Data Binding',
+  'form.text-binding': 'Value Binding',
+  'form.text-binding-hint': 'Dot-notation path to extract a value (e.g. name, contact.email)',
+  'form.bind-to-table': 'Bind to Table',
+  'form.source-table': 'Source Table',
+  'form.none': 'None',
+  'form.bound-column': 'Column',
+  'form.bound-column-hint': 'Column name from the selected row (e.g. email, status)',
   'form.select-module': 'Module',
   'form.select-endpoint': 'Endpoint',
   'form.path-params': 'Path Parameters',
@@ -721,6 +729,8 @@ export const EN = {
   'form.script-code': 'Script Code',
   'form.script-hint': 'Write JavaScript code. Form field values are available via FormFields. All API modules (e.g. ImpossibleCloud, ZohoCRM) are available as global objects.',
   'form.script-async-hint': 'Async — use await for API calls. Return value shown as response.',
+  'form.field-script-hint': 'Write JavaScript that returns an array of objects. All API modules (e.g. ZohoBooks, ZohoCRM) are available as global objects.',
+  'form.run-script': 'Run Script',
 
   /* ── API Tester page ── */
   'api-tester.history': 'History',
