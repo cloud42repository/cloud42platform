@@ -22,6 +22,11 @@ interface DevLoginDto {
   name?: string;
 }
 
+interface PasswordLoginDto {
+  email: string;
+  password: string;
+}
+
 @Controller('auth')
 export class AuthController {
   /** Cookie name for the refresh token */
@@ -67,6 +72,23 @@ export class AuthController {
         dto.email ?? 'mock@cloud42.dev',
         dto.name ?? 'Mock User',
       );
+
+    this.setRefreshCookie(res, refreshToken);
+
+    return { accessToken, refreshToken, user };
+  }
+
+  /* ── POST /api/auth/password-login ── */
+
+  @Public()
+  @Post('password-login')
+  @HttpCode(HttpStatus.OK)
+  async passwordLogin(
+    @Body() dto: PasswordLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken, user } =
+      await this.authService.loginWithPassword(dto.email, dto.password);
 
     this.setRefreshCookie(res, refreshToken);
 

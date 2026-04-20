@@ -123,6 +123,33 @@ export class AuthService {
     return user;
   }
 
+  /* ── Password Login ── */
+
+  /**
+   * Login with email + password — for users who registered via the form.
+   */
+  async loginWithPassword(email: string, password: string): Promise<CloudUser> {
+    const res = await firstValueFrom(
+      this.http.post<AuthResponse>(
+        `${environment.apiBase}/auth/password-login`,
+        { email, password },
+        { withCredentials: true },
+      ),
+    );
+
+    this.saveTokens(res.accessToken, res.refreshToken);
+
+    const user: CloudUser = {
+      name: res.user.name,
+      email: res.user.email,
+      firstName: res.user.name?.split(' ')[0] ?? '',
+      photoUrl: res.user.photoUrl ?? '',
+      role: res.user.role,
+    };
+    this.saveProfile(user);
+    return user;
+  }
+
   /* ── Dev / Mock Login ── */
 
   /**

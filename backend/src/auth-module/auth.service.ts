@@ -202,6 +202,50 @@ export class AuthService {
     await this.userService.setHashedRefreshToken(email, null);
   }
 
+  /* ── Password Login ── */
+
+  /**
+   * Authenticate with email + password (for users who registered via the form).
+   */
+  async loginWithPassword(
+    email: string,
+    password: string,
+  ): Promise<{ accessToken: string; refreshToken: string; user: UserResponseDto }> {
+    const user = await this.userService.validatePassword(email, password);
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    // Check status
+    const entity = await this.userService.findEntityByEmail(email);
+    if (entity?.status === 'pending') {
+      throw new UnauthorizedException('Your account is pending admin approval');
+    }
+    if (entity?.status === 'revoked') {
+      throw new UnauthorizedException('Your account has been revoked');
+    }
+
+    const jwtPayload: JwtPayload = {
+      sub: user.email,
+      name: user.name,
+      role: user.role,
+    };
+
+    const accessToken = this.jwtService.sign(jwtPayload as unknown as Record<string, unknown>, {
+      secret: this.jwtSecret,
+      expiresIn: this.jwtExpiry as any,
+    });
+
+    const refreshToken = this.jwtService.sign(
+      { sub: user.email } as unknown as Record<string, unknown>,
+      { secret: this.jwtRefreshSecret, expiresIn: this.jwtRefreshExpiry as any },
+    );
+
+    await this.userService.setHashedRefreshToken(email, this.hashToken(refreshToken));
+
+    return { accessToken, refreshToken, user };
+  }
+
   /* ── Helpers ── */
 
   private hashToken(token: string): string {

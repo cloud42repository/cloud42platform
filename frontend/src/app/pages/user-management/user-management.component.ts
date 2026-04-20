@@ -146,6 +146,16 @@ import { TranslateService } from '../../services/translate.service';
             </mat-select>
           </mat-form-field>
 
+          <mat-form-field appearance="outline" class="role-filter-field">
+            <mat-label>{{ 'users.filter-status' | t }}</mat-label>
+            <mat-select [(value)]="filterStatus" (selectionChange)="applyFilter()">
+              <mat-option value="all">{{ 'users.all-statuses' | t }}</mat-option>
+              <mat-option value="active">{{ 'users.status-active' | t }}</mat-option>
+              <mat-option value="pending">{{ 'users.status-pending' | t }}</mat-option>
+              <mat-option value="revoked">{{ 'users.status-revoked' | t }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
           <span class="user-count">
             {{ filteredUsers().length }} / {{ users().length }} {{ 'users.users-label' | t }}
           </span>
@@ -187,6 +197,7 @@ import { TranslateService } from '../../services/translate.service';
                   </div>
                 </mat-panel-title>
                 <mat-panel-description class="user-panel-desc">
+                  <span class="badge" [class]="'badge-status-' + (user.status || 'active')">{{ statusLabel(user.status) }}</span>
                   <span class="badge" [class]="'badge-role-' + user.role">{{ roleLabel(user.role) }}</span>
                   @if (user.email === userMgmt.currentUser()?.email) {
                     <span class="badge badge-you">{{ 'users.you' | t }}</span>
@@ -261,6 +272,36 @@ import { TranslateService } from '../../services/translate.service';
                     </div>
                   </div>
 
+                  <mat-divider />
+                }
+
+                <!-- Approve / Revoke / Resend -->
+                @if (userMgmt.isAdmin() && user.email !== userMgmt.currentUser()?.email) {
+                  <div class="status-actions">
+                    <h3 class="section-label">{{ 'users.status-actions' | t }}</h3>
+                    <div class="status-btn-row">
+                      @if (user.status === 'pending') {
+                        <button mat-flat-button color="primary" (click)="approveUser(user.email)">
+                          <mat-icon>check_circle</mat-icon> {{ 'users.approve' | t }}
+                        </button>
+                      }
+                      @if (user.status === 'active') {
+                        <button mat-stroked-button color="warn" (click)="revokeUser(user.email, user.name)">
+                          <mat-icon>block</mat-icon> {{ 'users.revoke' | t }}
+                        </button>
+                      }
+                      @if (user.status === 'revoked') {
+                        <button mat-flat-button color="primary" (click)="approveUser(user.email)">
+                          <mat-icon>restore</mat-icon> {{ 'users.reactivate' | t }}
+                        </button>
+                      }
+                      @if (user.status === 'active' || user.status === 'pending') {
+                        <button mat-stroked-button (click)="resendInvite(user.email)">
+                          <mat-icon>send</mat-icon> {{ 'users.resend-invite' | t }}
+                        </button>
+                      }
+                    </div>
+                  </div>
                   <mat-divider />
                 }
 
@@ -452,6 +493,18 @@ import { TranslateService } from '../../services/translate.service';
       color: #e65100;
       font-style: italic;
     }
+    .badge-status-active {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .badge-status-pending {
+      background: #fff8e1;
+      color: #f57f17;
+    }
+    .badge-status-revoked {
+      background: #ffebee;
+      color: #c62828;
+    }
 
     /* ── User detail ── */
     .user-detail {
@@ -581,6 +634,14 @@ import { TranslateService } from '../../services/translate.service';
       padding-top: 6px;
       flex-basis: 100%;
     }
+
+    /* ── Status actions ── */
+    .status-actions { margin-bottom: 4px; }
+    .status-btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
   `],
 })
 export class UserManagementComponent implements OnInit {
@@ -603,6 +664,7 @@ export class UserManagementComponent implements OnInit {
 
   searchTerm = '';
   filterRole = 'all';
+  filterStatus = 'all';
 
   readonly roleOptions = [
     { value: 'admin' as UserRole, label: USER_ROLE_LABELS.admin, description: USER_ROLE_DESCRIPTIONS.admin },
@@ -671,6 +733,9 @@ export class UserManagementComponent implements OnInit {
     if (this.filterRole !== 'all') {
       result = result.filter(u => u.role === this.filterRole);
     }
+    if (this.filterStatus !== 'all') {
+      result = result.filter(u => (u.status || 'active') === this.filterStatus);
+    }
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.trim().toLowerCase();
       result = result.filter(u =>
@@ -683,6 +748,47 @@ export class UserManagementComponent implements OnInit {
 
   roleLabel(role: UserRole): string {
     return USER_ROLE_LABELS[role] ?? role;
+  }
+
+  statusLabel(status: string | undefined): string {
+    switch (status) {
+      case 'pending': return this.i18n.t('users.status-pending');
+      case 'revoked': return this.i18n.t('users.status-revoked');
+      default: return this.i18n.t('users.status-active');
+    }
+  }
+
+  /* ─── Approve / Revoke / Resend ─── */
+
+  async approveUser(email: string): Promise<void> {
+    try {
+      const updated = await firstValueFrom(this.userApi.approve(email));
+      this.updateLocal(email, updated);
+      this.snack.open(this.i18n.t('users.user-approved'), 'OK', { duration: 3000 });
+    } catch {
+      this.snack.open(this.i18n.t('users.update-error'), 'OK', { duration: 4000 });
+    }
+  }
+
+  async revokeUser(email: string, name: string): Promise<void> {
+    const msg = this.i18n.t('users.revoke-confirm', { name });
+    if (!confirm(msg)) return;
+    try {
+      const updated = await firstValueFrom(this.userApi.revoke(email));
+      this.updateLocal(email, updated);
+      this.snack.open(this.i18n.t('users.user-revoked'), 'OK', { duration: 3000 });
+    } catch {
+      this.snack.open(this.i18n.t('users.update-error'), 'OK', { duration: 4000 });
+    }
+  }
+
+  async resendInvite(email: string): Promise<void> {
+    try {
+      await firstValueFrom(this.userApi.resendInvite(email));
+      this.snack.open(this.i18n.t('users.invite-sent'), 'OK', { duration: 3000 });
+    } catch {
+      this.snack.open(this.i18n.t('users.update-error'), 'OK', { duration: 4000 });
+    }
   }
 
   async changeRole(email: string, newRole: UserRole): Promise<void> {

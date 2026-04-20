@@ -24,12 +24,14 @@ import { FormBuilderComponent } from './pages/form/form-builder.component';
 import { ApiTesterComponent } from './pages/api-tester/api-tester.component';
 import { SharedViewerComponent } from './pages/shared/shared-viewer.component';
 import { SharedListComponent } from './pages/shared/shared-list.component';
+import { SetPasswordComponent } from './pages/set-password/set-password.component';
 import { authGuard } from './guards/auth.guard';
 import { MODULES } from './config/endpoints';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent, title: 'Sign In' },
+  { path: 'set-password', component: SetPasswordComponent, title: 'Set Password' },
   {
     path: 'workflows',
     children: [

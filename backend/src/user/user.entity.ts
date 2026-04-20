@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 
 export type UserRole = 'admin' | 'manager' | 'user';
+export type UserStatus = 'pending' | 'active' | 'revoked';
 
 @Entity('users')
 export class UserEntity {
@@ -22,6 +23,22 @@ export class UserEntity {
 
   @Column({ type: 'varchar', length: 20, default: 'user' })
   role!: UserRole;
+
+  /** Account status: pending (awaiting admin approval), active, revoked */
+  @Column({ type: 'varchar', length: 20, default: 'active' })
+  status!: UserStatus;
+
+  /** Bcrypt-hashed password (null = password not yet set, e.g. Google-only users) */
+  @Column({ type: 'varchar', length: 255, nullable: true, default: null })
+  passwordHash!: string | null;
+
+  /** One-time token for setting/resetting password (SHA-256, null = no pending invite) */
+  @Column({ type: 'varchar', length: 64, nullable: true, default: null })
+  passwordSetToken!: string | null;
+
+  /** Expiry of the password-set token */
+  @Column({ type: 'timestamptz', nullable: true, default: null })
+  passwordSetTokenExpiry!: Date | null;
 
   /**
    * Per-module visibility map: { moduleId: boolean }.

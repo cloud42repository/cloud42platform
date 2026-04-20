@@ -8,6 +8,7 @@ export interface UserResponse {
   name: string;
   photoUrl: string;
   role: UserRole;
+  status: 'pending' | 'active' | 'revoked';
   moduleVisibility: Record<string, boolean>;
   createdAt: string;
   lastLoginAt: string;
@@ -51,5 +52,32 @@ export class UserApiService {
   /** PATCH /api/users/:email/modules-bulk — bulk toggle */
   setAllModulesEnabled(email: string, moduleIds: string[], enabled: boolean): Observable<UserResponse> {
     return this.api.patch(this.prefix, '/:email/modules-bulk', { email }, { moduleIds, enabled }) as Observable<UserResponse>;
+  }
+
+  /* ── Registration & Admin actions ── */
+
+  /** POST /api/users/register — self-registration (public) */
+  register(email: string, name: string): Observable<UserResponse> {
+    return this.api.post(this.prefix, '/register', {}, { email, name }) as Observable<UserResponse>;
+  }
+
+  /** POST /api/users/:email/approve — admin approves a pending user */
+  approve(email: string): Observable<UserResponse> {
+    return this.api.post(this.prefix, '/:email/approve', { email }) as Observable<UserResponse>;
+  }
+
+  /** POST /api/users/:email/revoke — admin revokes a user */
+  revoke(email: string): Observable<UserResponse> {
+    return this.api.post(this.prefix, '/:email/revoke', { email }) as Observable<UserResponse>;
+  }
+
+  /** POST /api/users/:email/resend-invite — admin re-sends the password-set email */
+  resendInvite(email: string): Observable<UserResponse> {
+    return this.api.post(this.prefix, '/:email/resend-invite', { email }) as Observable<UserResponse>;
+  }
+
+  /** POST /api/users/:email/set-password — set password with token (public) */
+  setPassword(email: string, token: string, password: string): Observable<{ message: string }> {
+    return this.api.post(this.prefix, '/:email/set-password', { email }, { token, password }) as Observable<{ message: string }>;
   }
 }
