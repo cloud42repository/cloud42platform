@@ -51,6 +51,18 @@ export class ZohoBooksController {
   @Put('items/:id') updateItem(@Param('id') id: string, @Body() body: unknown) { return this.service.updateItem(id, body); }
   @Delete('items/:id') deleteItem(@Param('id') id: string) { return this.service.deleteItem(id); }
 
+  // Recurring Invoices
+  @Get('recurringinvoices') listRecurringInvoices(@Query() q: Record<string, unknown>) { return this.service.listRecurringInvoices(q); }
+  @Get('recurringinvoices/:id') getRecurringInvoice(@Param('id') id: string) { return this.service.getRecurringInvoice(id); }
+  @Post('recurringinvoices') createRecurringInvoice(@Body() body: unknown) { return this.service.createRecurringInvoice(body); }
+  @Put('recurringinvoices') updateRecurringInvoices(@Body() body: unknown) { return this.service.updateRecurringInvoices(body); }
+  @Put('recurringinvoices/:id') updateRecurringInvoice(@Param('id') id: string, @Body() body: unknown) { return this.service.updateRecurringInvoice(id, body); }
+  @Delete('recurringinvoices/:id') deleteRecurringInvoice(@Param('id') id: string) { return this.service.deleteRecurringInvoice(id); }
+  @Post('recurringinvoices/:id/status/stop') stopRecurringInvoice(@Param('id') id: string) { return this.service.stopRecurringInvoice(id); }
+  @Post('recurringinvoices/:id/status/resume') resumeRecurringInvoice(@Param('id') id: string) { return this.service.resumeRecurringInvoice(id); }
+  @Put('recurringinvoices/:id/templates/:templateId') updateRecurringInvoiceTemplate(@Param('id') id: string, @Param('templateId') templateId: string) { return this.service.updateRecurringInvoiceTemplate(id, templateId); }
+  @Get('recurringinvoices/:id/comments') listRecurringInvoiceComments(@Param('id') id: string) { return this.service.listRecurringInvoiceComments(id); }
+
   // ── OAuth ────────────────────────────────────────────────────────────
   @Get('oauth/authorize') getAuthUrl(@Query('scope') scope: string) { return this.service.getAuthUrl(scope); }
   @Post('oauth/exchange') exchangeGrantCode(@Body() body: { code: string }) { return this.service.exchangeGrantCode(body.code); }

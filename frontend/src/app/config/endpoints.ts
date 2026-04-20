@@ -127,6 +127,16 @@ export const MODULES: ModuleDef[] = [
       { id: 'create-item', label: 'Create Item', method: 'POST', pathTemplate: '/items', hasBody: true },
       { id: 'update-item', label: 'Update Item', method: 'PUT', pathTemplate: '/items/:id', hasBody: true },
       { id: 'delete-item', label: 'Delete Item', method: 'DELETE', pathTemplate: '/items/:id' },
+      { id: 'list-recurring-invoices', label: 'List Recurring Invoices', method: 'GET', pathTemplate: '/recurringinvoices', hasQueryParams: true },
+      { id: 'get-recurring-invoice', label: 'Get Recurring Invoice', method: 'GET', pathTemplate: '/recurringinvoices/:id' },
+      { id: 'create-recurring-invoice', label: 'Create Recurring Invoice', method: 'POST', pathTemplate: '/recurringinvoices', hasBody: true },
+      { id: 'update-recurring-invoices', label: 'Update Recurring Invoices (Bulk)', method: 'PUT', pathTemplate: '/recurringinvoices', hasBody: true },
+      { id: 'update-recurring-invoice', label: 'Update Recurring Invoice', method: 'PUT', pathTemplate: '/recurringinvoices/:id', hasBody: true },
+      { id: 'delete-recurring-invoice', label: 'Delete Recurring Invoice', method: 'DELETE', pathTemplate: '/recurringinvoices/:id' },
+      { id: 'stop-recurring-invoice', label: 'Stop Recurring Invoice', method: 'POST', pathTemplate: '/recurringinvoices/:id/status/stop' },
+      { id: 'resume-recurring-invoice', label: 'Resume Recurring Invoice', method: 'POST', pathTemplate: '/recurringinvoices/:id/status/resume' },
+      { id: 'update-recurring-invoice-template', label: 'Update Recurring Invoice Template', method: 'PUT', pathTemplate: '/recurringinvoices/:id/templates/:templateId' },
+      { id: 'list-recurring-invoice-comments', label: 'List Recurring Invoice Comments', method: 'GET', pathTemplate: '/recurringinvoices/:id/comments' },
     ]
   },
   {

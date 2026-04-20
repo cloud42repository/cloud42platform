@@ -7,6 +7,8 @@ import {
   BooksExpense, CreateBooksExpenseDTO, UpdateBooksExpenseDTO,
   BooksPayment, CreateBooksPaymentDTO,
   BooksItem, CreateBooksItemDTO, UpdateBooksItemDTO,
+  BooksRecurringInvoice, CreateRecurringInvoiceDTO, UpdateRecurringInvoiceDTO,
+  RecurringInvoiceComment,
   BooksListParams,
 } from "./zoho-books.dto";
 
@@ -142,5 +144,38 @@ export class ZohoBooksClient extends ZohoBaseClient {
   }
   deleteItem(id: string): Promise<{ message: string }> {
     return this.delete(`/items/${id}`);
+  }
+
+  // ─── Recurring Invoices ────────────────────────────────────────────────────────
+
+  listRecurringInvoices(params?: BooksListParams): Promise<{ recurring_invoices: BooksRecurringInvoice[] }> {
+    return this.get("/recurringinvoices", { params });
+  }
+  getRecurringInvoice(id: string): Promise<{ recurring_invoice: BooksRecurringInvoice }> {
+    return this.get(`/recurringinvoices/${id}`);
+  }
+  createRecurringInvoice(data: CreateRecurringInvoiceDTO): Promise<{ recurring_invoice: BooksRecurringInvoice }> {
+    return this.post("/recurringinvoices", data);
+  }
+  updateRecurringInvoice(id: string, data: UpdateRecurringInvoiceDTO): Promise<{ recurring_invoice: BooksRecurringInvoice }> {
+    return this.put(`/recurringinvoices/${id}`, data);
+  }
+  updateRecurringInvoices(data: unknown): Promise<{ recurring_invoices: BooksRecurringInvoice[] }> {
+    return this.put("/recurringinvoices", data);
+  }
+  deleteRecurringInvoice(id: string): Promise<{ message: string }> {
+    return this.delete(`/recurringinvoices/${id}`);
+  }
+  stopRecurringInvoice(id: string): Promise<{ message: string }> {
+    return this.post(`/recurringinvoices/${id}/status/stop`, {});
+  }
+  resumeRecurringInvoice(id: string): Promise<{ message: string }> {
+    return this.post(`/recurringinvoices/${id}/status/resume`, {});
+  }
+  updateRecurringInvoiceTemplate(id: string, templateId: string): Promise<{ message: string }> {
+    return this.put(`/recurringinvoices/${id}/templates/${templateId}`, {});
+  }
+  listRecurringInvoiceComments(id: string): Promise<{ comments: RecurringInvoiceComment[] }> {
+    return this.get(`/recurringinvoices/${id}/comments`);
   }
 }

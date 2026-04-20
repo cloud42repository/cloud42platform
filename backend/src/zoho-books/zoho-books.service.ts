@@ -99,6 +99,18 @@ export class ZohoBooksService {
   async updateItem(id: string, data: unknown) { return (await this.getClient()).updateItem(id, data as any); }
   async deleteItem(id: string) { return (await this.getClient()).deleteItem(id); }
 
+  // Recurring Invoices
+  async listRecurringInvoices(params?: Record<string, unknown>) { return (await this.getClient()).listRecurringInvoices(params as any); }
+  async getRecurringInvoice(id: string) { return (await this.getClient()).getRecurringInvoice(id); }
+  async createRecurringInvoice(data: unknown) { return (await this.getClient()).createRecurringInvoice(data as any); }
+  async updateRecurringInvoice(id: string, data: unknown) { return (await this.getClient()).updateRecurringInvoice(id, data as any); }
+  async updateRecurringInvoices(data: unknown) { return (await this.getClient()).updateRecurringInvoices(data); }
+  async deleteRecurringInvoice(id: string) { return (await this.getClient()).deleteRecurringInvoice(id); }
+  async stopRecurringInvoice(id: string) { return (await this.getClient()).stopRecurringInvoice(id); }
+  async resumeRecurringInvoice(id: string) { return (await this.getClient()).resumeRecurringInvoice(id); }
+  async updateRecurringInvoiceTemplate(id: string, templateId: string) { return (await this.getClient()).updateRecurringInvoiceTemplate(id, templateId); }
+  async listRecurringInvoiceComments(id: string) { return (await this.getClient()).listRecurringInvoiceComments(id); }
+
   // ── OAuth lifecycle ──────────────────────────────────────────────────────
   getAuthUrl(scope: string) { return this.zohoOAuth.buildAuthorizationUrl({ scope }); }
   async exchangeGrantCode(code: string) {

@@ -276,6 +276,31 @@ const BOOKS_SCHEMAS: Record<string, EndpointIOSchema> = {
     output: { item: { item_id: '', name: '', rate: 0, description: '' } },
   },
   'delete-item': { output: { message: 'item deleted' } },
+  'list-recurring-invoices': {
+    output: { recurring_invoices: [{ recurring_invoice_id: '', recurrence_name: '', customer_name: '', customer_id: '', status: '', start_date: '', end_date: '', next_invoice_date: '', currency_code: '' }] },
+  },
+  'get-recurring-invoice': {
+    output: { recurring_invoice: { recurring_invoice_id: '', recurrence_name: '', customer_id: '', customer_name: '', status: '', start_date: '', end_date: '', next_invoice_date: '', currency_code: '', line_items: [{ line_item_id: '', name: '', quantity: 1, item_total: 0 }], billing_address: {}, shipping_address: {} } },
+  },
+  'create-recurring-invoice': {
+    input: { recurrence_name: '', customer_id: '', start_date: '', end_date: '', line_items: [{ name: '', quantity: 1, item_total: 0 }] },
+    output: { recurring_invoice: { recurring_invoice_id: '', recurrence_name: '', customer_id: '', status: '' } },
+  },
+  'update-recurring-invoice': {
+    input: { recurrence_name: '', customer_id: '', line_items: [{ name: '', quantity: 1, item_total: 0 }] },
+    output: { recurring_invoice: { recurring_invoice_id: '', recurrence_name: '', status: '' } },
+  },
+  'update-recurring-invoices': {
+    input: { recurring_invoice_ids: [''] },
+    output: { recurring_invoices: [{ recurring_invoice_id: '', status: '' }] },
+  },
+  'delete-recurring-invoice': { output: { message: 'recurring invoice deleted' } },
+  'stop-recurring-invoice': { output: { message: 'recurring invoice stopped' } },
+  'resume-recurring-invoice': { output: { message: 'recurring invoice resumed' } },
+  'update-recurring-invoice-template': { output: { message: 'template updated' } },
+  'list-recurring-invoice-comments': {
+    output: { comments: [{ comment_id: '', description: '', commented_by: '', date: '', time: '' }] },
+  },
 };
 
 // ── Zoho Campaigns ───────────────────────────────────────────────────────

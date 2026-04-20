@@ -121,6 +121,22 @@ const BOOKS_PAYLOADS: Record<string, unknown> = {
     name: '',
     rate: 0,
   },
+  'create-recurring-invoice': {
+    recurrence_name: '',
+    customer_id: '',
+    start_date: '',
+    end_date: '',
+    line_items: [{ name: '', quantity: 1, item_total: 0 }],
+  },
+  'update-recurring-invoice': {
+    recurrence_name: '',
+    customer_id: '',
+    line_items: [{ name: '', quantity: 1, item_total: 0 }],
+  },
+  'update-recurring-invoices': {
+    recurring_invoice_ids: [''],
+  },
+  'update-recurring-invoice-template': {},
 };
 
 // ── Zoho Campaigns ───────────────────────────────────────────────────────

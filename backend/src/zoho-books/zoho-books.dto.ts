@@ -173,7 +173,121 @@ export interface CreateBooksItemDTO {
 
 export type UpdateBooksItemDTO = Partial<CreateBooksItemDTO>;
 
-// â”€â”€â”€ List param helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Recurring Invoice ──────────────────────────────────────────────────
+
+export interface RecurringInvoiceContactPerson {
+  contact_person_id: number;
+  contact_person_name?: string;
+  first_name?: string;
+  last_name?: string;
+  contact_person_email?: string;
+  phone?: string;
+  mobile?: string;
+  communication_preference?: { is_email_enabled?: boolean; is_whatsapp_enabled?: boolean };
+}
+
+export interface RecurringInvoiceTag {
+  tag_id: string;
+  tag_name?: string;
+  tag_option_id?: string;
+  tag_option_name?: string;
+  is_tag_mandatory?: boolean;
+}
+
+export interface RecurringInvoiceLineItem {
+  line_item_id?: string;
+  quantity: number;
+  name?: string;
+  item_total?: number;
+  sku?: string;
+  product_type?: string;
+  sat_item_key_code?: number;
+  unitkey_code?: string;
+  location_id?: string;
+  location_name?: string;
+  tags?: RecurringInvoiceTag[];
+  tax_id?: string;
+  tax_treatment_code?: string;
+  project_id?: number;
+  project_name?: string;
+  header_name?: string;
+  header_id?: number;
+}
+
+export interface RecurringInvoiceCustomField {
+  value: string;
+  label: string;
+  data_type: string;
+}
+
+export interface RecurringInvoicePaymentOptions {
+  payment_gateways?: { configured?: boolean; additional_field1?: string; gateway_name?: string }[];
+}
+
+export interface BooksRecurringInvoice {
+  recurring_invoice_id: string;
+  recurrence_name: string;
+  reference_number?: string;
+  customer_name?: string;
+  contact_persons_associated?: RecurringInvoiceContactPerson[];
+  is_pre_gst?: boolean;
+  gst_no?: string;
+  gst_treatment?: string;
+  tax_treatment?: string;
+  is_reverse_charge_applied?: boolean;
+  cfdi_usage?: string;
+  vat_treatment?: string;
+  place_of_supply?: string;
+  customer_id: string;
+  currency_id?: string;
+  currency_code?: string;
+  start_date?: string;
+  end_date?: string;
+  last_sent_date?: string;
+  next_invoice_date?: string;
+  location_id?: string;
+  location_name?: string;
+  tags?: RecurringInvoiceTag[];
+  line_items: RecurringInvoiceLineItem[];
+  billing_address?: ZohoAddress;
+  shipping_address?: ZohoAddress;
+  custom_fields?: RecurringInvoiceCustomField[];
+  payment_options?: RecurringInvoicePaymentOptions;
+  avatax_exempt_no?: string;
+  avatax_use_code?: string;
+  status?: string;
+  created_time?: string;
+  last_modified_time?: string;
+}
+
+export interface CreateRecurringInvoiceDTO {
+  recurrence_name: string;
+  customer_id: string;
+  reference_number?: string;
+  start_date?: string;
+  end_date?: string;
+  line_items: RecurringInvoiceLineItem[];
+  billing_address?: ZohoAddress;
+  shipping_address?: ZohoAddress;
+  custom_fields?: RecurringInvoiceCustomField[];
+  payment_options?: RecurringInvoicePaymentOptions;
+  gst_no?: string;
+  gst_treatment?: string;
+  tax_treatment?: string;
+  place_of_supply?: string;
+  vat_treatment?: string;
+  tags?: RecurringInvoiceTag[];
+}
+
+export type UpdateRecurringInvoiceDTO = Partial<CreateRecurringInvoiceDTO>;
+
+export interface RecurringInvoiceComment {
+  comment_id: string;
+  description?: string;
+  commented_by?: string;
+  date?: string;
+  time?: string;
+}
 
 export interface BooksListParams extends ZohoListParams {
   customer_id?: string;
