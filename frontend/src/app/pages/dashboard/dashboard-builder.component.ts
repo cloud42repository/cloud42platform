@@ -484,7 +484,9 @@ interface EndpointRef {
                 <mat-label>{{ 'dashboard.script-code' | t }}</mat-label>
                 <textarea matInput rows="14"
                           [value]="widget.scriptCode ?? ''"
-                          (input)="updateWidget(widget.id, 'scriptCode', $any($event.target).value)"
+                          (input)="onWidgetScriptInput($any($event.target), widget.id)"
+                          (keydown)="onScriptKeydown($event)"
+                          (blur)="closeScriptAc()"
                           placeholder="// All API modules available (e.g. ImpossibleCloud, ZohoCRM)&#10;&#10;const regions = await ImpossibleCloud.ListRegions();&#10;return regions.regions;"
                           class="script-textarea"></textarea>
                 <mat-hint>{{ 'dashboard.script-async-hint' | t }}</mat-hint>
@@ -666,6 +668,22 @@ interface EndpointRef {
           </div>
         }
       </div>
+      }
+
+      <!-- Script IntelliSense overlay -->
+      @if (scriptAcSuggestions().length > 0) {
+        <div class="ac-overlay" [ngStyle]="scriptAcStyle()">
+          @for (s of scriptAcSuggestions(); track s.insertText; let i = $index) {
+            <div class="ac-item" [class.ac-active]="i === scriptAcIndex()"
+                 (mousedown)="insertScriptSuggestion(s, $event)">
+              <mat-icon class="ac-icon">{{ s.icon }}</mat-icon>
+              <div class="ac-text">
+                <span class="ac-label">{{ s.label }}</span>
+                <span class="ac-detail">{{ s.detail }}</span>
+              </div>
+            </div>
+          }
+        </div>
       }
     </div>
   `,
@@ -1028,6 +1046,23 @@ interface EndpointRef {
     }
 
     .preview-active .widget-card { cursor: default; }
+
+    /* ── Script IntelliSense overlay ── */
+    .ac-overlay {
+      position: fixed; z-index: 1000;
+      background: white; border: 1px solid #e2e8f0;
+      border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.12);
+      max-height: 240px; overflow-y: auto;
+    }
+    .ac-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 12px; cursor: pointer; font-size: 12px;
+    }
+    .ac-item:hover, .ac-active { background: #f0fdfa; }
+    .ac-icon { font-size: 16px; width: 16px; height: 16px; color: #0891b2; }
+    .ac-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+    .ac-label { font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-detail { font-size: 10px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   `]
 })
 export class DashboardBuilderComponent implements OnInit {
@@ -2240,5 +2275,138 @@ export class DashboardBuilderComponent implements OnInit {
     }
     this.shareCopied.set(true);
     setTimeout(() => this.shareCopied.set(false), 2500);
+  }
+
+  // ── Script IntelliSense ───────────────────────────────────────────────────
+
+  readonly scriptAcSuggestions = signal<{ label: string; insertText: string; detail: string; icon: string }[]>([]);
+  readonly scriptAcIndex = signal(0);
+  readonly scriptAcStyle = signal<Record<string, string>>({});
+  private scriptAcInput: HTMLTextAreaElement | null = null;
+  private scriptTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private buildScriptSuggestions(code: string, cursorPos: number): { label: string; insertText: string; detail: string; icon: string }[] {
+    const before = code.substring(0, cursorPos);
+    const suggestions: { label: string; insertText: string; detail: string; icon: string }[] = [];
+
+    // After "ModuleName." — suggest methods
+    const dotMatch = /(\w+)\.(\w*)$/.exec(before);
+    if (dotMatch) {
+      const moduleName = dotMatch[1];
+      const partial = dotMatch[2].toLowerCase();
+      const mod = MODULES.find(m => m.label.split(/\s+/).join('') === moduleName);
+      if (mod) {
+        for (const ep of mod.endpoints) {
+          const methodName = ep.label.split(/\s+/).join('');
+          if (!partial || methodName.toLowerCase().includes(partial)) {
+            const paramNames = extractPathParams(ep.pathTemplate);
+            const sig = paramNames.length > 0
+              ? `(${paramNames.map(p => `{ ${p} }`).join(', ')}${ep.hasBody ? ', body' : ''})`
+              : ep.hasBody ? '(body)' : '()';
+            suggestions.push({ label: methodName + sig, insertText: methodName + sig, detail: `${ep.method} ${ep.pathTemplate}`, icon: 'http' });
+          }
+        }
+      }
+      return suggestions.slice(0, 30);
+    }
+
+    // Not after a dot — suggest module names + keywords
+    const wordMatch = /(\w+)$/.exec(before);
+    const partial = wordMatch ? wordMatch[1].toLowerCase() : '';
+    if (!partial) return [];
+
+    for (const kw of ['await', 'return', 'const', 'let', 'if', 'else', 'for', 'of', 'true', 'false', 'null']) {
+      if (kw.includes(partial) && kw !== partial) {
+        suggestions.push({ label: kw, insertText: kw, detail: 'keyword', icon: 'code' });
+      }
+    }
+
+    for (const mod of MODULES) {
+      const name = mod.label.split(/\s+/).join('');
+      if (name.toLowerCase().includes(partial)) {
+        suggestions.push({ label: name, insertText: name, detail: `${mod.endpoints.length} endpoints`, icon: 'api' });
+      }
+    }
+
+    return suggestions.slice(0, 20);
+  }
+
+  onWidgetScriptInput(textarea: HTMLTextAreaElement, widgetId: string) {
+    this.scriptAcInput = textarea;
+    if (this.scriptTimer) clearTimeout(this.scriptTimer);
+    this.scriptTimer = setTimeout(() => this.updateWidget(widgetId, 'scriptCode', textarea.value), 400);
+    this.updateScriptAcPosition();
+    const pos = textarea.selectionStart ?? 0;
+    const suggestions = this.buildScriptSuggestions(textarea.value, pos);
+    this.scriptAcSuggestions.set(suggestions);
+    this.scriptAcIndex.set(0);
+  }
+
+  onScriptKeydown(event: KeyboardEvent) {
+    const list = this.scriptAcSuggestions();
+    if (list.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.scriptAcIndex.update(i => Math.min(i + 1, list.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.scriptAcIndex.update(i => Math.max(i - 1, 0));
+    } else if (event.key === 'Tab' || (event.key === 'Enter' && list.length > 0)) {
+      event.preventDefault();
+      this.insertScriptSuggestion(list[this.scriptAcIndex()]);
+    } else if (event.key === 'Escape') {
+      this.scriptAcSuggestions.set([]);
+    }
+  }
+
+  insertScriptSuggestion(suggestion: { insertText: string }, event?: MouseEvent) {
+    if (event) event.preventDefault();
+    const input = this.scriptAcInput;
+    if (!input) { this.scriptAcSuggestions.set([]); return; }
+
+    const pos = input.selectionStart ?? 0;
+    const text = input.value;
+    const before = text.substring(0, pos);
+    const after = text.substring(pos);
+
+    const dotMatch = /(\w+)\.(\w*)$/.exec(before);
+    let replaceStart: number;
+    if (dotMatch) {
+      replaceStart = pos - dotMatch[2].length;
+    } else {
+      const wordMatch = /(\w+)$/.exec(before);
+      replaceStart = wordMatch ? pos - wordMatch[1].length : pos;
+    }
+
+    const newText = text.substring(0, replaceStart) + suggestion.insertText + after;
+    input.value = newText;
+    const cursorPos = replaceStart + suggestion.insertText.length;
+    input.setSelectionRange(cursorPos, cursorPos);
+
+    this.scriptAcSuggestions.set([]);
+    input.focus();
+  }
+
+  closeScriptAc() {
+    setTimeout(() => { this.scriptAcSuggestions.set([]); this.scriptAcInput = null; }, 150);
+  }
+
+  private updateScriptAcPosition() {
+    if (!this.scriptAcInput) return;
+    const rect = this.scriptAcInput.getBoundingClientRect();
+    const ta = this.scriptAcInput;
+    const pos = ta.selectionStart ?? 0;
+    const textBefore = ta.value.substring(0, pos);
+    const lineNumber = textBefore.split('\n').length;
+    const lineHeight = Number.parseFloat(getComputedStyle(ta).lineHeight) || 18;
+    const paddingTop = Number.parseFloat(getComputedStyle(ta).paddingTop) || 8;
+    let top = rect.top + paddingTop + lineNumber * lineHeight + 4;
+    const maxTop = window.innerHeight - 260;
+    if (top > maxTop) top = maxTop;
+    this.scriptAcStyle.set({
+      top: top + 'px',
+      left: rect.left + 'px',
+      width: Math.max(rect.width, 260) + 'px',
+    });
   }
 }

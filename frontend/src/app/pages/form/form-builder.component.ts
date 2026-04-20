@@ -10,6 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {
   CdkDragDrop,
@@ -53,7 +54,7 @@ interface FieldTypeRef {
     CommonModule, RouterLink, FormsModule,
     MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatTooltipModule, MatDividerModule, MatCheckboxModule,
-    MatProgressSpinnerModule,
+    MatSlideToggleModule, MatProgressSpinnerModule,
     CdkDrag, CdkDropList, CdkDropListGroup, CdkDragPlaceholder, CdkDragHandle,
     TranslatePipe,
   ],
@@ -277,6 +278,41 @@ interface FieldTypeRef {
                     </span>
                   }
                 }
+                @if (field.kind === 'number') {
+                  <div class="preview-input">
+                    <input type="number" class="preview-text-input"
+                           [placeholder]="field.placeholder || field.label || '0'"
+                           [value]="getFieldValue(field.id)"
+                           (input)="setFieldValue(field.id, $any($event.target).valueAsNumber)"
+                           (click)="$event.stopPropagation(); selectField(field.id)" />
+                  </div>
+                  @if (field.boundFieldId) {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">table_chart</mat-icon>
+                      {{ getBoundTableLabel(field) }} → {{ field.boundColumn || '?' }}
+                    </span>
+                  } @else if (field.dataSourceMode === 'script') {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
+                      Script → {{ field.valueField || '?' }}
+                    </span>
+                  } @else if (field.dataSource) {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
+                      {{ field.dataSource.moduleLabel }} › {{ field.valueField || '?' }}
+                    </span>
+                  }
+                }
+                @if (field.kind === 'boolean') {
+                  <div class="preview-boolean" (click)="$event.stopPropagation(); toggleBooleanField(field.id)">
+                    <mat-slide-toggle
+                      [checked]="getBooleanFieldValue(field.id)"
+                      (change)="setFieldValue(field.id, $event.checked)"
+                      (click)="$event.stopPropagation()">
+                      {{ field.label || 'Toggle' }}
+                    </mat-slide-toggle>
+                  </div>
+                }
                 @if (field.kind === 'date') {
                   <div class="preview-input preview-date">
                     <input type="date" class="preview-text-input"
@@ -464,10 +500,12 @@ interface FieldTypeRef {
               <input matInput [value]="field.label" (input)="updateField(field.id, 'label', $any($event.target).value)" />
             </mat-form-field>
 
+            @if (field.kind !== 'boolean') {
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
               <mat-label>{{ 'form.placeholder' | t }}</mat-label>
               <input matInput [value]="field.placeholder || ''" (input)="updateField(field.id, 'placeholder', $any($event.target).value)" />
             </mat-form-field>
+            }
 
             <mat-checkbox [checked]="field.required" (change)="updateField(field.id, 'required', $event.checked)">
               {{ 'form.required' | t }}
@@ -476,8 +514,8 @@ interface FieldTypeRef {
             <mat-divider class="section-divider" />
 
             <!-- Data Source / Data Binding -->
-            @if (field.kind === 'text' || field.kind === 'date' || field.kind === 'select' || field.kind === 'datatable') {
-              <div class="config-section-label">{{ field.kind === 'text' || field.kind === 'date' ? ('form.data-binding' | t) : ('form.data-source' | t) }}</div>
+            @if (field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date' || field.kind === 'select' || field.kind === 'datatable') {
+              <div class="config-section-label">{{ field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date' ? ('form.data-binding' | t) : ('form.data-source' | t) }}</div>
 
               <!-- Data source mode toggle -->
               <div class="body-mode-toggle">
@@ -502,7 +540,9 @@ interface FieldTypeRef {
                   <mat-label>{{ 'form.script-code' | t }}</mat-label>
                   <textarea matInput rows="12"
                             [value]="field.scriptCode ?? ''"
-                            (input)="updateField(field.id, 'scriptCode', $any($event.target).value)"
+                            (input)="onFieldScriptInput($any($event.target), field.id)"
+                            (keydown)="onScriptKeydown($event)"
+                            (blur)="closeAc()"
                             placeholder="// All API modules available (e.g. ZohoBooks, ZohoCRM)&#10;&#10;const res = await ZohoBooks.ListContacts();&#10;return res.contacts;"
                             class="script-textarea"></textarea>
                   <mat-hint>{{ 'form.script-async-hint' | t }}</mat-hint>
@@ -565,7 +605,7 @@ interface FieldTypeRef {
               </mat-form-field>
               } <!-- end API MODE -->
 
-              @if (field.kind === 'text' || field.kind === 'date') {
+              @if (field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date') {
                 <mat-divider class="section-divider" />
                 <div class="config-section-label">{{ 'form.text-binding' | t }}</div>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
@@ -727,7 +767,9 @@ interface FieldTypeRef {
                 <mat-label>{{ 'form.script-code' | t }}</mat-label>
                 <textarea matInput rows="14"
                           [value]="action.scriptCode ?? ''"
-                          (input)="updateAction(action.id, 'scriptCode', $any($event.target).value)"
+                          (input)="onActionScriptInput($any($event.target), action.id)"
+                          (keydown)="onScriptKeydown($event)"
+                          (blur)="closeAc()"
                           placeholder="// Form field values available via FormFields object&#10;// All API modules available (e.g. ImpossibleCloud, ZohoCRM)&#10;&#10;const regions = await ImpossibleCloud.ListRegions();&#10;return regions;"
                           class="raw-body-textarea script-textarea"></textarea>
                 <mat-hint>{{ 'form.script-async-hint' | t }}</mat-hint>
@@ -770,7 +812,10 @@ interface FieldTypeRef {
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                   <mat-label>:{{ param }}</mat-label>
                   <input matInput [value]="action.pathParams[param] || ''"
-                         (input)="updateActionPathParam(action.id, param, $any($event.target).value)" />
+                         (input)="onAcInput($any($event.target), pathParamCallback(action.id, param))"
+                         (keydown)="onAcKeydown($event)"
+                         (blur)="closeAc()"
+                         [placeholder]="fieldRefPlaceholder" />
                 </mat-form-field>
               }
             }
@@ -1360,6 +1405,10 @@ interface FieldTypeRef {
     .data-table tbody tr:hover td { background: #f0f9ff; }
     .data-table tbody tr { cursor: pointer; }
     .data-table tbody tr.row-selected td { background: #dbeafe; font-weight: 500; }
+
+    .preview-boolean {
+      display: flex; align-items: center; padding: 4px 0;
+    }
   `]
 })
 export class FormBuilderComponent implements OnInit {
@@ -1379,6 +1428,8 @@ export class FormBuilderComponent implements OnInit {
 
   readonly fieldTypes: FieldTypeRef[] = [
     { kind: 'text',       label: 'Text Input',    icon: 'text_fields',           color: '#2563eb' },
+    { kind: 'number',     label: 'Number',        icon: 'pin',                   color: '#0d9488' },
+    { kind: 'boolean',    label: 'Boolean',       icon: 'toggle_on',             color: '#e11d48' },
     { kind: 'date',       label: 'Date Picker',   icon: 'calendar_today',        color: '#d97706' },
     { kind: 'select',     label: 'Select',        icon: 'arrow_drop_down_circle', color: '#7c3aed' },
     { kind: 'datatable',  label: 'Data Table',    icon: 'table_chart',           color: '#16a34a' },
@@ -1720,6 +1771,11 @@ export class FormBuilderComponent implements OnInit {
     }));
   }
 
+  /** Returns a callback for onAcInput that updates a specific path param */
+  pathParamCallback(actionId: string, param: string): (value: string) => void {
+    return (value: string) => this.updateActionPathParam(actionId, param, value);
+  }
+
   /** Generate body keys + sources from current form fields (fields mode) */
   generateFieldsTemplate(actionId: string) {
     const ff = this.fields();
@@ -1864,6 +1920,8 @@ export class FormBuilderComponent implements OnInit {
   private getFieldIcon(kind: FormFieldKind): string {
     switch (kind) {
       case 'text': return 'text_fields';
+      case 'number': return 'pin';
+      case 'boolean': return 'toggle_on';
       case 'date': return 'calendar_today';
       case 'select': return 'arrow_drop_down_circle';
       default: return 'table_chart';
@@ -1905,6 +1963,10 @@ export class FormBuilderComponent implements OnInit {
   /** Called when a datatable row is clicked — updates all text/date fields bound to this table */
   onTableRowSelect(tableField: FormField, rowIndex: number, row: Record<string, string>) {
     this.selectedTableRow.set({ fieldId: tableField.id, rowIndex });
+    // Store each column value as fieldValues['tableFieldId.colName'] for {{field.tableId.col}} refs
+    for (const [col, val] of Object.entries(row)) {
+      this.setFieldValue(`${tableField.id}.${col}`, val ?? '');
+    }
     // Find all fields bound to this datatable and populate their values
     for (const f of this.fields()) {
       if (f.boundFieldId === tableField.id && f.boundColumn) {
@@ -2034,8 +2096,7 @@ export class FormBuilderComponent implements OnInit {
 
   /** Store fetched data and, for text/date fields, extract a single value via valueField */
   private applyFetchedData(field: FormField, res: unknown) {
-    if (field.kind === 'text' || field.kind === 'date') {
-      // For text/date: extract a single value from the response
+    if (field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date') {
       let data: unknown = res;
       if (field.dataSource?.dataPath) {
         data = this.svc.getPath(res, field.dataSource.dataPath);
@@ -2120,9 +2181,20 @@ export class FormBuilderComponent implements OnInit {
     this.fieldValues.update(v => ({ ...v, [fieldId]: value }));
   }
 
+  getBooleanFieldValue(fieldId: string): boolean {
+    const val = this.fieldValues()[fieldId];
+    return val === true || val === 'true';
+  }
+
+  toggleBooleanField(fieldId: string) {
+    this.setFieldValue(fieldId, !this.getBooleanFieldValue(fieldId));
+  }
+
   // ── Execute submit action ──────────────────────────────────────────────
 
-  async executeAction(action: FormSubmitAction) {
+  async executeAction(actionParam: FormSubmitAction) {
+    // Always read the latest action from the signal to pick up path-param edits
+    const action = this.submitActions().find(a => a.id === actionParam.id) ?? actionParam;
     const mode = this.getActionMode(action);
 
     if (mode === 'script') {
@@ -2151,13 +2223,18 @@ export class FormBuilderComponent implements OnInit {
 
     try {
       const body = this.buildRequestBody(action);
+      const values = this.fieldValues();
+      const resolvedPathParams: Record<string, string> = {};
+      for (const [key, val] of Object.entries(action.pathParams)) {
+        resolvedPathParams[key] = this.resolveFieldRefs(val, values);
+      }
       const method = action.method.toLowerCase();
-      console.log('[FormBuilder] Executing action:', method.toUpperCase(), action.moduleApiPrefix + action.pathTemplate, 'Body:', body);
+      console.log('[FormBuilder] Executing action:', method.toUpperCase(), action.moduleApiPrefix + action.pathTemplate, 'pathParams:', resolvedPathParams, 'Body:', body);
       let res: unknown;
 
       if (method === 'delete') {
         res = await firstValueFrom(
-          this.api.delete(action.moduleApiPrefix, action.pathTemplate, action.pathParams)
+          this.api.delete(action.moduleApiPrefix, action.pathTemplate, resolvedPathParams)
         );
       } else {
         const apiCallMap: Record<string, typeof this.api.post> = {
@@ -2167,7 +2244,7 @@ export class FormBuilderComponent implements OnInit {
         };
         const apiCall = apiCallMap[method] ?? this.api.post;
         res = await firstValueFrom(
-          apiCall.call(this.api, action.moduleApiPrefix, action.pathTemplate, action.pathParams, body)
+          apiCall.call(this.api, action.moduleApiPrefix, action.pathTemplate, resolvedPathParams, body)
         );
       }
 
@@ -2382,6 +2459,8 @@ export class FormBuilderComponent implements OnInit {
   private acInput: HTMLInputElement | HTMLTextAreaElement | null = null;
   private acCallback: ((value: string) => void) | null = null;
   private rawBodyTimer: ReturnType<typeof setTimeout> | null = null;
+  private scriptFieldTimer: ReturnType<typeof setTimeout> | null = null;
+  private scriptActionTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** Debounced setRawBody to prevent Angular change detection from resetting textarea cursor */
   private setRawBodyDebounced(actionId: string, value: string) {
@@ -2408,6 +2487,27 @@ export class FormBuilderComponent implements OnInit {
           detail: `${label} (${f.kind})${preview}`,
           icon: this.getFieldIcon(f.kind),
         });
+      }
+      // For datatable fields, also offer column-level refs: {{field.tableId.colName}}
+      if (f.kind === 'datatable' && f.columns) {
+        for (const col of f.columns.split(',').map(c => c.trim()).filter(Boolean)) {
+          const colRef = `{{field.${f.id}.${col}}}`;
+          const colLabel = `${label} → ${col}`;
+          const colMatchesFilter = !filter
+            || colRef.toLowerCase().includes(filter)
+            || colLabel.toLowerCase().includes(filter)
+            || col.toLowerCase().includes(filter);
+          if (colMatchesFilter) {
+            const colVal = values[`${f.id}.${col}`];
+            const colPreview = colVal !== undefined && colVal !== '' ? ` = "${this.safeStr(colVal).slice(0, 30)}"` : '';
+            suggestions.push({
+              label: `field.${f.id}.${col}`,
+              insertText: colRef,
+              detail: `${colLabel}${colPreview}`,
+              icon: 'view_column',
+            });
+          }
+        }
       }
     }
     return suggestions;
@@ -2560,6 +2660,7 @@ export class FormBuilderComponent implements OnInit {
   }
 
   insertAcSuggestion(suggestion: { insertText: string }, event?: MouseEvent) {
+    if (this.scriptAcMode) { this.insertScriptSuggestion(suggestion, event); return; }
     if (event) event.preventDefault();
     const input = this.acInput;
     if (!input) { this.acSuggestions.set([]); return; }
@@ -2599,7 +2700,162 @@ export class FormBuilderComponent implements OnInit {
   }
 
   closeAc() {
-    setTimeout(() => { this.acSuggestions.set([]); this.acInput = null; }, 150);
+    setTimeout(() => { this.acSuggestions.set([]); this.acInput = null; this.scriptAcMode = false; }, 150);
+  }
+
+  // ── Script IntelliSense ───────────────────────────────────────────────────
+
+  /** Whether the current autocomplete is for script insertion (vs {{field}} refs) */
+  private scriptAcMode = false;
+
+  /** Build suggestions for the current word under the cursor inside a script textarea */
+  private buildScriptSuggestions(code: string, cursorPos: number, includeFormFields: boolean): { label: string; insertText: string; detail: string; icon: string }[] {
+    const before = code.substring(0, cursorPos);
+    const suggestions: { label: string; insertText: string; detail: string; icon: string }[] = [];
+
+    // Check if we're after "ModuleName." — suggest methods
+    const dotMatch = /(\w+)\.(\w*)$/.exec(before);
+    if (dotMatch) {
+      const moduleName = dotMatch[1];
+      const partial = dotMatch[2].toLowerCase();
+
+      // FormFields dot access
+      if (moduleName === 'FormFields' && includeFormFields) {
+        for (const f of this.fields()) {
+          const key = f.label || f.id;
+          if (!partial || key.toLowerCase().includes(partial)) {
+            suggestions.push({ label: key, insertText: key, detail: `${f.kind} field`, icon: this.getFieldIcon(f.kind) });
+          }
+        }
+        return suggestions.slice(0, 20);
+      }
+
+      // API module methods
+      const mod = MODULES.find(m => m.label.split(/\s+/).join('') === moduleName);
+      if (mod) {
+        for (const ep of mod.endpoints) {
+          const methodName = ep.label.split(/\s+/).join('');
+          if (!partial || methodName.toLowerCase().includes(partial)) {
+            const paramNames = extractPathParams(ep.pathTemplate);
+            const sig = paramNames.length > 0
+              ? `(${paramNames.map(p => `{ ${p} }`).join(', ')}${ep.hasBody ? ', body' : ''})`
+              : ep.hasBody ? '(body)' : '()';
+            suggestions.push({ label: methodName + sig, insertText: methodName + sig, detail: `${ep.method} ${ep.pathTemplate}`, icon: 'http' });
+          }
+        }
+        return suggestions.slice(0, 30);
+      }
+      return [];
+    }
+
+    // Not after a dot — suggest module names, FormFields, keywords
+    const wordMatch = /(\w+)$/.exec(before);
+    const partial = wordMatch ? wordMatch[1].toLowerCase() : '';
+    if (!partial) return [];
+
+    // Keywords
+    for (const kw of ['await', 'return', 'const', 'let', 'if', 'else', 'for', 'of', 'true', 'false', 'null']) {
+      if (kw.includes(partial) && kw !== partial) {
+        suggestions.push({ label: kw, insertText: kw, detail: 'keyword', icon: 'code' });
+      }
+    }
+
+    // API module names
+    for (const mod of MODULES) {
+      const name = mod.label.split(/\s+/).join('');
+      if (name.toLowerCase().includes(partial)) {
+        const count = mod.endpoints.length;
+        suggestions.push({ label: name, insertText: name, detail: `${count} endpoints`, icon: 'api' });
+      }
+    }
+
+    // FormFields (action scripts only)
+    if (includeFormFields && 'formfields'.includes(partial)) {
+      const count = this.fields().length;
+      suggestions.push({ label: 'FormFields', insertText: 'FormFields', detail: `${count} fields`, icon: 'dynamic_form' });
+    }
+
+    return suggestions.slice(0, 20);
+  }
+
+  /** Handle input in a field-data-source script textarea */
+  onFieldScriptInput(textarea: HTMLTextAreaElement, fieldId: string) {
+    this.acInput = textarea;
+    this.acCallback = null;
+    this.scriptAcMode = true;
+    if (this.scriptFieldTimer) clearTimeout(this.scriptFieldTimer);
+    this.scriptFieldTimer = setTimeout(() => this.updateField(fieldId, 'scriptCode', textarea.value), 400);
+    this.updateAcPosition();
+    const pos = textarea.selectionStart ?? 0;
+    const suggestions = this.buildScriptSuggestions(textarea.value, pos, false);
+    this.acSuggestions.set(suggestions);
+    this.acIndex.set(0);
+  }
+
+  /** Handle input in an action script textarea */
+  onActionScriptInput(textarea: HTMLTextAreaElement, actionId: string) {
+    this.acInput = textarea;
+    this.acCallback = null;
+    this.scriptAcMode = true;
+    if (this.scriptActionTimer) clearTimeout(this.scriptActionTimer);
+    this.scriptActionTimer = setTimeout(() => this.updateAction(actionId, 'scriptCode', textarea.value), 400);
+    this.updateAcPosition();
+    const pos = textarea.selectionStart ?? 0;
+    const suggestions = this.buildScriptSuggestions(textarea.value, pos, true);
+    this.acSuggestions.set(suggestions);
+    this.acIndex.set(0);
+  }
+
+  /** Handle keydown for script textareas — reuse same keys as existing AC */
+  onScriptKeydown(event: KeyboardEvent) {
+    const list = this.acSuggestions();
+    if (list.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.acIndex.update(i => Math.min(i + 1, list.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.acIndex.update(i => Math.max(i - 1, 0));
+    } else if (event.key === 'Tab' || (event.key === 'Enter' && list.length > 0)) {
+      event.preventDefault();
+      this.insertScriptSuggestion(list[this.acIndex()]);
+    } else if (event.key === 'Escape') {
+      this.acSuggestions.set([]);
+    }
+  }
+
+  /** Insert a script suggestion — replaces the partial word before cursor */
+  insertScriptSuggestion(suggestion: { insertText: string }, event?: MouseEvent) {
+    if (event) event.preventDefault();
+    const input = this.acInput;
+    if (!input) { this.acSuggestions.set([]); return; }
+
+    const pos = input.selectionStart ?? 0;
+    const text = input.value;
+    const before = text.substring(0, pos);
+    const after = text.substring(pos);
+
+    // Find the partial to replace — either "Module.partial" or "partial"
+    const dotMatch = /(\w+)\.(\w*)$/.exec(before);
+    let replaceStart: number;
+    let insertText: string;
+    if (dotMatch) {
+      // Replace just the part after the dot
+      replaceStart = pos - dotMatch[2].length;
+      insertText = suggestion.insertText;
+    } else {
+      const wordMatch = /(\w+)$/.exec(before);
+      replaceStart = wordMatch ? pos - wordMatch[1].length : pos;
+      insertText = suggestion.insertText;
+    }
+
+    const newText = text.substring(0, replaceStart) + insertText + after;
+    input.value = newText;
+    const cursorPos = replaceStart + insertText.length;
+    input.setSelectionRange(cursorPos, cursorPos);
+
+    this.acSuggestions.set([]);
+    input.focus();
   }
 
   acSetHardcoded(actionId: string, key: string, value: string) {

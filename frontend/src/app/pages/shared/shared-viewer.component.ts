@@ -8,7 +8,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ShareService, SharedItemData } from '../../services/share.service';
 import { WorkflowService } from '../../services/workflow.service';
 import { TranslatePipe } from '../../i18n/translate.pipe';
@@ -21,7 +23,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
   imports: [
     CommonModule, FormsModule,
     MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatDividerModule, MatTooltipModule,
-    MatFormFieldModule, MatSelectModule,
+    MatFormFieldModule, MatInputModule, MatSelectModule, MatSlideToggleModule,
     TranslatePipe,
   ],
   template: `
@@ -200,6 +202,8 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                   <div class="field-header">
                     <mat-icon class="field-type-icon">
                       @if (field.kind === 'text') { text_fields }
+                      @else if (field.kind === 'number') { pin }
+                      @else if (field.kind === 'boolean') { toggle_on }
                       @else if (field.kind === 'date') { calendar_today }
                       @else if (field.kind === 'select') { arrow_drop_down_circle }
                       @else { table_chart }
@@ -218,6 +222,19 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                              [placeholder]="field.placeholder || field.label || 'Text input'"
                              [value]="getFieldValue(field.id)"
                              (input)="setFieldValue(field.id, $any($event.target).value)" />
+                    }
+                    @if (field.kind === 'number') {
+                      <input type="number" class="preview-text-input"
+                             [placeholder]="field.placeholder || field.label || '0'"
+                             [value]="getFieldValue(field.id)"
+                             (input)="setFieldValue(field.id, $any($event.target).valueAsNumber)" />
+                    }
+                    @if (field.kind === 'boolean') {
+                      <mat-slide-toggle
+                        [checked]="getFieldValue(field.id) === 'true'"
+                        (change)="setFieldValue(field.id, $event.checked)">
+                        {{ field.label || 'Toggle' }}
+                      </mat-slide-toggle>
                     }
                     @if (field.kind === 'date') {
                       <input type="date" class="preview-text-input"
@@ -260,7 +277,8 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                             </thead>
                             <tbody>
                               @for (row of getFormTableRows(field); track $index) {
-                                <tr>
+                                <tr [class.row-selected]="selectedTableRow()?.fieldId === field.id && selectedTableRow()?.rowIndex === $index"
+                                    (click)="onTableRowSelect(field, $index, row)">
                                   @for (col of getFormTableColumns(field); track col) {
                                     <td>{{ row[col] }}</td>
                                   }
@@ -604,6 +622,9 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
     .data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .data-table th { background: #f8fafc; font-weight: 600; text-align: left; padding: 6px 8px; border-bottom: 2px solid #e2e8f0; }
     .data-table td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; }
+    .data-table tbody tr { cursor: pointer; }
+    .data-table tbody tr:hover td { background: #f0f9ff; }
+    .data-table tbody tr.row-selected td { background: #dbeafe; font-weight: 500; }
 
     /* ── Charts ── */
     .chart-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -769,6 +790,7 @@ export class SharedViewerComponent implements OnInit {
   readonly formFields = signal<any[]>([]);
   readonly formActions = signal<any[]>([]);
   readonly fieldValues = signal<Record<string, unknown>>({});
+  readonly selectedTableRow = signal<{ fieldId: string; rowIndex: number } | null>(null);
   readonly formExecuting = signal(false);
   readonly formResponse = signal<{ status: string; data: unknown } | null>(null);
 
@@ -1122,6 +1144,16 @@ export class SharedViewerComponent implements OnInit {
 
   setFieldValue(fieldId: string, value: unknown) {
     this.fieldValues.update(v => ({ ...v, [fieldId]: value }));
+  }
+
+  onTableRowSelect(tableField: any, rowIndex: number, row: Record<string, string>) {
+    this.selectedTableRow.set({ fieldId: tableField.id, rowIndex });
+    for (const f of this.formFields()) {
+      if (f.boundFieldId === tableField.id && f.boundColumn) {
+        const value = row[f.boundColumn] ?? '';
+        this.setFieldValue(f.id, value);
+      }
+    }
   }
 
   getSelectOptions(field: any): { display: string; value: string }[] {
