@@ -48,6 +48,9 @@ export interface FormField {
   /** Script to run when the field value changes (text / number / date / boolean) */
   onChangeScript?: string;
 
+  /** For text fields: mask input with asterisks (password-style) */
+  masked?: boolean;
+
   /** For text/date: bind value to a selected row in a datatable field */
   boundFieldId?: string;
   /** For text/date: column name to extract from the selected datatable row */

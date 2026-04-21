@@ -226,7 +226,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                       </div>
                     }
                     @if (field.kind === 'text') {
-                      <input type="text" class="preview-text-input"
+                      <input [type]="field.masked ? 'password' : 'text'" class="preview-text-input"
                              [placeholder]="field.placeholder || field.label || 'Text input'"
                              [value]="getFieldValue(field.id)"
                              (input)="onFieldInput(field, $any($event.target).value)" />

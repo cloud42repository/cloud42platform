@@ -669,6 +669,7 @@ export const EN = {
   'form.label': 'Field label',
   'form.placeholder': 'Placeholder',
   'form.required': 'Required',
+  'form.masked': 'Masked input (******)',
   'form.data-source': 'Data Source',
   'form.data-binding': 'Data Binding',
   'form.text-binding': 'Value Binding',

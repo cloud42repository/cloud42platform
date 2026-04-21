@@ -671,6 +671,7 @@ export const FR: Record<TranslationKey, string> = {
   'form.label': 'Libellé du champ',
   'form.placeholder': 'Texte indicatif',
   'form.required': 'Obligatoire',
+  'form.masked': 'Saisie masquée (******)',
   'form.data-source': 'Source de données',
   'form.data-binding': 'Liaison de données',
   'form.text-binding': 'Liaison de valeur',

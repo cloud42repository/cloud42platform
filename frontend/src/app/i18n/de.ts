@@ -671,6 +671,7 @@ export const DE: Record<TranslationKey, string> = {
   'form.label': 'Feldbezeichnung',
   'form.placeholder': 'Platzhalter',
   'form.required': 'Pflichtfeld',
+  'form.masked': 'Maskierte Eingabe (******)',
   'form.data-source': 'Datenquelle',
   'form.data-binding': 'Datenbindung',
   'form.text-binding': 'Wertbindung',

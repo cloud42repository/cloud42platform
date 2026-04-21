@@ -279,7 +279,7 @@ interface FieldTypeRef {
                 }
                 @if (field.kind === 'text') {
                   <div class="preview-input">
-                    <input type="text" class="preview-text-input"
+                    <input [type]="field.masked ? 'password' : 'text'" class="preview-text-input"
                            [placeholder]="field.placeholder || field.label || 'Text input'"
                            [value]="getFieldValue(field.id)"
                            (input)="onFieldInput(field, $any($event.target).value)"
@@ -534,6 +534,12 @@ interface FieldTypeRef {
             <mat-checkbox [checked]="field.required" (change)="updateField(field.id, 'required', $event.checked)">
               {{ 'form.required' | t }}
             </mat-checkbox>
+
+            @if (field.kind === 'text') {
+              <mat-checkbox [checked]="!!field.masked" (change)="updateField(field.id, 'masked', $event.checked)">
+                {{ 'form.masked' | t }}
+              </mat-checkbox>
+            }
 
             <mat-divider class="section-divider" />
 
