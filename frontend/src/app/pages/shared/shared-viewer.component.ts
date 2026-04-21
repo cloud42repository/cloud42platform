@@ -229,13 +229,13 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                       <input type="text" class="preview-text-input"
                              [placeholder]="field.placeholder || field.label || 'Text input'"
                              [value]="getFieldValue(field.id)"
-                             (input)="setFieldValue(field.id, $any($event.target).value)" />
+                             (input)="onFieldInput(field, $any($event.target).value)" />
                     }
                     @if (field.kind === 'number') {
                       <input type="number" class="preview-text-input"
                              [placeholder]="field.placeholder || field.label || '0'"
                              [value]="getFieldValue(field.id)"
-                             (input)="setFieldValue(field.id, $any($event.target).valueAsNumber)" />
+                             (input)="onFieldInput(field, $any($event.target).valueAsNumber)" />
                     }
                     @if (field.kind === 'boolean') {
                       <mat-slide-toggle
@@ -247,7 +247,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                     @if (field.kind === 'date') {
                       <input type="date" class="preview-text-input"
                              [value]="getFieldValue(field.id)"
-                             (input)="setFieldValue(field.id, $any($event.target).value)" />
+                             (input)="onFieldInput(field, $any($event.target).value)" />
                     }
                     @if (field.kind === 'select') {
                       <mat-form-field appearance="outline" class="preview-select-field">
@@ -805,6 +805,7 @@ export class SharedViewerComponent implements OnInit {
   readonly selectedTableRow = signal<{ fieldId: string; rowIndex: number } | null>(null);
   readonly formExecuting = signal(false);
   readonly formResponse = signal<{ status: string; data: unknown } | null>(null);
+  private onChangeScriptTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Workflow
   readonly workflowSteps = signal<WorkflowNode[]>([]);
@@ -1299,6 +1300,42 @@ export class SharedViewerComponent implements OnInit {
 
   setFieldValue(fieldId: string, value: unknown) {
     this.fieldValues.update(v => ({ ...v, [fieldId]: value }));
+  }
+
+  onFieldInput(field: any, value: unknown) {
+    this.setFieldValue(field.id, value);
+    if (field.onChangeScript?.trim()) {
+      if (this.onChangeScriptTimer) clearTimeout(this.onChangeScriptTimer);
+      this.onChangeScriptTimer = setTimeout(() => this.executeOnChangeScript(field, value), 500);
+    }
+  }
+
+  private async executeOnChangeScript(field: any, value: unknown) {
+    const code = field.onChangeScript ?? '';
+    if (!code.trim()) return;
+    try {
+      const proxies = this.buildScriptApiProxies();
+      const formFields: Record<string, unknown> = {};
+      const labelToId: Record<string, string> = {};
+      for (const f of this.formFields()) {
+        const key = f.label || f.id;
+        formFields[key] = this.fieldValues()[f.id] ?? '';
+        labelToId[key] = f.id;
+      }
+      const setField = (nameOrId: string, val: unknown) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.setFieldValue(id, val);
+        formFields[nameOrId] = val;
+      };
+      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, ...proxies };
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      await fn(...argValues);
+    } catch (err) {
+      console.error('[SharedViewer] onChange script error:', err);
+    }
   }
 
   onTableRowSelect(tableField: any, rowIndex: number, row: Record<string, string>) {

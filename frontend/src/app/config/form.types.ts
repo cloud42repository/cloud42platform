@@ -45,6 +45,9 @@ export interface FormField {
   /** JavaScript code for script data source (must return an array) */
   scriptCode?: string;
 
+  /** Script to run when the field value changes (text / number / date / boolean) */
+  onChangeScript?: string;
+
   /** For text/date: bind value to a selected row in a datatable field */
   boundFieldId?: string;
   /** For text/date: column name to extract from the selected datatable row */

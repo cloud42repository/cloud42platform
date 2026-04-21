@@ -731,6 +731,8 @@ export const EN = {
   'form.script-async-hint': 'Async — use await for API calls. Return value shown as response.',
   'form.field-script-hint': 'Write JavaScript that returns an array of objects. All API modules (e.g. ZohoBooks, ZohoCRM) are available as global objects.',
   'form.run-script': 'Run Script',
+  'form.on-change-script': 'On Change Script',
+  'form.on-change-hint': 'Script runs when the user changes the field value. "value" = current value, FormFields = all fields, setFieldValue(name, val) to update other fields. All API modules available.',
 
   /* ── API Tester page ── */
   'api-tester.history': 'History',

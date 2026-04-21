@@ -282,7 +282,7 @@ interface FieldTypeRef {
                     <input type="text" class="preview-text-input"
                            [placeholder]="field.placeholder || field.label || 'Text input'"
                            [value]="getFieldValue(field.id)"
-                           (input)="setFieldValue(field.id, $any($event.target).value)"
+                           (input)="onFieldInput(field, $any($event.target).value)"
                            (click)="$event.stopPropagation(); selectField(field.id)" />
                   </div>
                   @if (field.boundFieldId) {
@@ -307,7 +307,7 @@ interface FieldTypeRef {
                     <input type="number" class="preview-text-input"
                            [placeholder]="field.placeholder || field.label || '0'"
                            [value]="getFieldValue(field.id)"
-                           (input)="setFieldValue(field.id, $any($event.target).valueAsNumber)"
+                           (input)="onFieldInput(field, $any($event.target).valueAsNumber)"
                            (click)="$event.stopPropagation(); selectField(field.id)" />
                   </div>
                   @if (field.boundFieldId) {
@@ -341,7 +341,7 @@ interface FieldTypeRef {
                   <div class="preview-input preview-date">
                     <input type="date" class="preview-text-input"
                            [value]="getFieldValue(field.id)"
-                           (input)="setFieldValue(field.id, $any($event.target).value)"
+                           (input)="onFieldInput(field, $any($event.target).value)"
                            (click)="$event.stopPropagation(); selectField(field.id)" />
                   </div>
                   @if (field.boundFieldId) {
@@ -664,6 +664,24 @@ interface FieldTypeRef {
                     </mat-form-field>
                   }
                 }
+              }
+
+              <!-- On Change Script (text / number / date) -->
+              @if (field.kind === 'text' || field.kind === 'number' || field.kind === 'date') {
+                <mat-divider class="section-divider" />
+                <div class="config-section-label">{{ 'form.on-change-script' | t }}</div>
+                <p class="config-hint">{{ 'form.on-change-hint' | t }}</p>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                  <mat-label>{{ 'form.on-change-script' | t }}</mat-label>
+                  <textarea matInput rows="8"
+                            [value]="field.onChangeScript ?? ''"
+                            (input)="onFieldOnChangeScriptInput($any($event.target), field.id)"
+                            (keydown)="onScriptKeydown($event)"
+                            (blur)="closeAc()"
+                            placeholder="// Runs when the user changes the field value&#10;// 'value' = current field value&#10;// setFieldValue('Field Name', newVal) to update other fields&#10;&#10;const res = await ZohoBooks.SearchContacts({ contact_name: value });&#10;setFieldValue('Contact ID', res.contacts[0]?.contact_id);"
+                            class="script-textarea"></textarea>
+                  <mat-hint>{{ 'form.script-async-hint' | t }}</mat-hint>
+                </mat-form-field>
               }
 
               @if (field.kind === 'select') {
@@ -2129,6 +2147,35 @@ export class FormBuilderComponent implements OnInit {
     }
   }
 
+  /** Execute an onChange script for a field when its value changes */
+  private async executeOnChangeScript(field: FormField, value: unknown) {
+    const code = field.onChangeScript ?? '';
+    if (!code.trim()) return;
+    try {
+      const apiProxies = this.buildScriptApiProxies();
+      const formFields: Record<string, unknown> = {};
+      const labelToId: Record<string, string> = {};
+      for (const f of this.fields()) {
+        const key = f.label || f.id;
+        formFields[key] = this.fieldValues()[f.id] ?? '';
+        labelToId[key] = f.id;
+      }
+      const setField = (nameOrId: string, val: unknown) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.setFieldValue(id, val);
+        formFields[nameOrId] = val;
+      };
+      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, ...apiProxies };
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      await fn(...argValues);
+    } catch (err) {
+      console.error('Failed to run onChange script', err);
+    }
+  }
+
   /** Store fetched data and, for text/date fields, extract a single value via valueField */
   private applyFetchedData(field: FormField, res: unknown) {
     if (field.kind === 'label' || field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date') {
@@ -2226,6 +2273,15 @@ export class FormBuilderComponent implements OnInit {
 
   setFieldValue(fieldId: string, value: unknown) {
     this.fieldValues.update(v => ({ ...v, [fieldId]: value }));
+  }
+
+  /** Called on text/number/date input — sets value and triggers onChange script if configured */
+  onFieldInput(field: FormField, value: unknown) {
+    this.setFieldValue(field.id, value);
+    if (field.onChangeScript?.trim()) {
+      if (this.onChangeScriptTimer) clearTimeout(this.onChangeScriptTimer);
+      this.onChangeScriptTimer = setTimeout(() => this.executeOnChangeScript(field, value), 500);
+    }
   }
 
   getBooleanFieldValue(fieldId: string): boolean {
@@ -2525,6 +2581,7 @@ export class FormBuilderComponent implements OnInit {
   private rawBodyTimer: ReturnType<typeof setTimeout> | null = null;
   private scriptFieldTimer: ReturnType<typeof setTimeout> | null = null;
   private scriptActionTimer: ReturnType<typeof setTimeout> | null = null;
+  private onChangeScriptTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** Debounced setRawBody to prevent Angular change detection from resetting textarea cursor */
   private setRawBodyDebounced(actionId: string, value: string) {
@@ -2852,6 +2909,20 @@ export class FormBuilderComponent implements OnInit {
     this.updateAcPosition();
     const pos = textarea.selectionStart ?? 0;
     const suggestions = this.buildScriptSuggestions(textarea.value, pos, false);
+    this.acSuggestions.set(suggestions);
+    this.acIndex.set(0);
+  }
+
+  /** Handle input in an onChange script textarea */
+  onFieldOnChangeScriptInput(textarea: HTMLTextAreaElement, fieldId: string) {
+    this.acInput = textarea;
+    this.acCallback = null;
+    this.scriptAcMode = true;
+    if (this.scriptFieldTimer) clearTimeout(this.scriptFieldTimer);
+    this.scriptFieldTimer = setTimeout(() => this.updateField(fieldId, 'onChangeScript', textarea.value), 400);
+    this.updateAcPosition();
+    const pos = textarea.selectionStart ?? 0;
+    const suggestions = this.buildScriptSuggestions(textarea.value, pos, true);
     this.acSuggestions.set(suggestions);
     this.acIndex.set(0);
   }
