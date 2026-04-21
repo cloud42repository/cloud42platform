@@ -1,5 +1,5 @@
 /** Form field types */
-export type FormFieldKind = 'text' | 'number' | 'boolean' | 'date' | 'select' | 'datatable';
+export type FormFieldKind = 'label' | 'text' | 'number' | 'boolean' | 'date' | 'select' | 'datatable';
 
 /** Data source mode: call an API endpoint or run a script */
 export type FieldDataSourceMode = 'api' | 'script';

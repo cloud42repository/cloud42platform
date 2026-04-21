@@ -15,6 +15,8 @@ import { ShareService, SharedItemData } from '../../services/share.service';
 import { WorkflowService } from '../../services/workflow.service';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { ApiService } from '../../services/api.service';
+import { MODULES, extractPathParams } from '../../config/endpoints';
+import { firstValueFrom } from 'rxjs';
 import type { Dashboard, DashboardWidget } from '../../config/dashboard.types';
 import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock, MapperBlock, FilterBlock, SubWorkflowBlock, WorkflowRunLog, WorkflowInput, WorkflowOutput } from '../../config/workflow.types';
 
@@ -201,7 +203,8 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                      [style.grid-row]="'span ' + (field.height || 1)">
                   <div class="field-header">
                     <mat-icon class="field-type-icon">
-                      @if (field.kind === 'text') { text_fields }
+                      @if (field.kind === 'label') { label }
+                      @else if (field.kind === 'text') { text_fields }
                       @else if (field.kind === 'number') { pin }
                       @else if (field.kind === 'boolean') { toggle_on }
                       @else if (field.kind === 'date') { calendar_today }
@@ -210,13 +213,18 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                     </mat-icon>
                     <span class="field-title">{{ field.label || field.kind }}</span>
                     @if (field.required) { <span class="required-mark">*</span> }
-                    @if (field.dataSource) {
+                    @if (field.dataSource || field.dataSourceMode === 'script') {
                       <button mat-icon-button class="widget-refresh-btn" (click)="refreshFieldData(field)" matTooltip="Refresh data">
                         <mat-icon>refresh</mat-icon>
                       </button>
                     }
                   </div>
                   <div class="field-preview">
+                    @if (field.kind === 'label') {
+                      <div class="preview-label-value">
+                        {{ getFieldValue(field.id) || field.placeholder || field.label || 'Label' }}
+                      </div>
+                    }
                     @if (field.kind === 'text') {
                       <input type="text" class="preview-text-input"
                              [placeholder]="field.placeholder || field.label || 'Text input'"
@@ -651,6 +659,10 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
     .field-title { font-size: 13px; font-weight: 600; color: #334155; }
     .required-mark { color: #dc2626; font-weight: 700; }
     .field-preview { flex: 1; }
+    .preview-label-value {
+      font-size: 14px; color: #1e293b; padding: 6px 0;
+      line-height: 1.5; word-break: break-word;
+    }
     .preview-text-input {
       width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;
       font-size: 13px; outline: none; box-sizing: border-box;
@@ -821,6 +833,10 @@ export class SharedViewerComponent implements OnInit {
         const fields = (d['fields'] || []) as any[];
         this.formFields.set(fields);
         this.formActions.set(d['submitActions'] || []);
+        // Auto-fetch data for fields with a dataSource or script
+        for (const f of fields) {
+          if (f.dataSource || f.dataSourceMode === 'script') this.fetchFieldData(f);
+        }
       } else if (result.itemType === 'workflow') {
         this.workflowSteps.set((d['steps'] || []) as WorkflowNode[]);
         this.wfInputs.set((d['inputs'] || []) as WorkflowInput[]);
@@ -1110,6 +1126,12 @@ export class SharedViewerComponent implements OnInit {
   }
 
   private async fetchFieldData(field: any) {
+    const mode = field.dataSourceMode ?? 'api';
+
+    if (mode === 'script') {
+      return this.fetchFieldDataFromScript(field);
+    }
+
     if (!field.dataSource) return;
     const ds = field.dataSource;
     try {
@@ -1123,6 +1145,32 @@ export class SharedViewerComponent implements OnInit {
       if (ds.dataPath) {
         data = this.getPath(res, ds.dataPath);
       }
+
+      // For label/text/number/boolean/date: extract a single value
+      if (field.kind === 'label' || field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date') {
+        // Auto-unwrap common wrapper keys when dataPath is not set
+        if (!Array.isArray(data) && data && typeof data === 'object') {
+          const obj = data as Record<string, unknown>;
+          for (const key of ['data', 'records', 'items', 'result']) {
+            if (Array.isArray(obj[key])) { data = obj[key]; break; }
+          }
+          if (!Array.isArray(data)) {
+            const firstArr = Object.values(obj).find(v => Array.isArray(v));
+            if (firstArr) data = firstArr;
+          }
+        }
+        if (Array.isArray(data) && data.length > 0) data = data[0];
+        let value: unknown = data;
+        if (field.valueField && data && typeof data === 'object') {
+          value = this.getPath(data, field.valueField);
+        }
+        this.setFieldValue(field.id, value != null ? String(value) : '');
+        this.formFields.update(fs =>
+          fs.map(f => f.id === field.id ? { ...f, lastData: res } : f)
+        );
+        return;
+      }
+
       if (data && typeof data === 'object' && !Array.isArray(data)) {
         const obj = data as Record<string, unknown>;
         if (Array.isArray(obj['data'])) {
@@ -1138,6 +1186,113 @@ export class SharedViewerComponent implements OnInit {
     } catch { /* ignore fetch errors in shared view */ }
   }
 
+  private async fetchFieldDataFromScript(field: any) {
+    const code = field.scriptCode ?? '';
+    if (!code.trim()) return;
+    try {
+      const proxies = this.buildScriptApiProxies();
+      const formFields: Record<string, unknown> = {};
+      for (const f of this.formFields()) {
+        formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
+      }
+      const args: Record<string, unknown> = { FormFields: formFields, ...proxies };
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      const res = await fn(...argValues);
+      this.applyFetchedFieldData(field, res);
+    } catch (err) { console.error('[SharedViewer] script error:', err); }
+  }
+
+  private applyFetchedFieldData(field: any, res: unknown) {
+    if (field.kind === 'label' || field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date') {
+      let data: unknown = res;
+      if (field.dataSource?.dataPath) {
+        data = this.getPath(res, field.dataSource.dataPath);
+      }
+      if (!Array.isArray(data) && data && typeof data === 'object') {
+        const obj = data as Record<string, unknown>;
+        for (const key of ['data', 'records', 'items', 'result']) {
+          if (Array.isArray(obj[key])) { data = obj[key]; break; }
+        }
+        if (!Array.isArray(data)) {
+          const firstArr = Object.values(obj).find(v => Array.isArray(v));
+          if (firstArr) data = firstArr;
+        }
+      }
+      if (Array.isArray(data) && data.length > 0) data = data[0];
+      let value: unknown = data;
+      if (field.valueField && data && typeof data === 'object') {
+        value = this.getPath(data, field.valueField);
+      }
+      this.setFieldValue(field.id, value != null ? String(value) : '');
+      this.formFields.update(fs => fs.map(f => f.id === field.id ? { ...f, lastData: res } : f));
+    } else {
+      let data: unknown = res;
+      if (field.dataSource?.dataPath) {
+        data = this.getPath(res, field.dataSource.dataPath);
+      }
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const obj = data as Record<string, unknown>;
+        if (Array.isArray(obj['data'])) { data = obj['data']; }
+        else {
+          const firstArr = Object.values(obj).find(v => Array.isArray(v));
+          if (firstArr) data = firstArr;
+        }
+      }
+      this.formFields.update(fs => fs.map(f => f.id === field.id ? { ...f, lastData: data } : f));
+    }
+  }
+
+  private buildScriptApiProxies(): Record<string, Record<string, (...a: unknown[]) => Promise<unknown>>> {
+    const proxies: Record<string, Record<string, (...a: unknown[]) => Promise<unknown>>> = {};
+    for (const mod of MODULES) {
+      const proxyName = mod.label.split(/\s+/).join('');
+      const obj: Record<string, (...a: unknown[]) => Promise<unknown>> = {};
+      for (const ep of mod.endpoints) {
+        const methodName = ep.label.split(/\s+/).join('');
+        const httpMethod = ep.method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
+        const paramNames = extractPathParams(ep.pathTemplate);
+        const hasParams = paramNames.length > 0;
+        const hasBody = (ep as any).hasBody ?? false;
+        obj[methodName] = async (...args: unknown[]): Promise<unknown> => {
+          const pathParams: Record<string, string> = {};
+          if (hasParams && args[0] && typeof args[0] === 'object') {
+            for (const [k, v] of Object.entries(args[0] as Record<string, unknown>)) {
+              pathParams[k] = v != null ? String(v) : '';
+            }
+          }
+          const body = hasBody ? (hasParams ? args[1] : args[0]) as Record<string, unknown> | undefined : undefined;
+          let res: unknown;
+          if (httpMethod === 'get' || httpMethod === 'delete') {
+            res = await firstValueFrom(this.api[httpMethod](mod.apiPrefix, ep.pathTemplate, pathParams));
+          } else {
+            const call = ({ post: this.api.post, put: this.api.put, patch: this.api.patch } as Record<string, typeof this.api.post>)[httpMethod] ?? this.api.post;
+            res = await firstValueFrom(call.call(this.api, mod.apiPrefix, ep.pathTemplate, pathParams, body ?? {}));
+          }
+          return this.unwrapProxyResponse(res);
+        };
+      }
+      proxies[proxyName] = obj;
+    }
+    return proxies;
+  }
+
+  /** Auto-unwrap common wrapper objects so scripts get arrays directly */
+  private unwrapProxyResponse(res: unknown): unknown {
+    if (Array.isArray(res)) return res;
+    if (res && typeof res === 'object') {
+      const obj = res as Record<string, unknown>;
+      for (const key of ['data', 'records', 'items', 'result']) {
+        if (Array.isArray(obj[key])) return obj[key];
+      }
+      const firstArr = Object.values(obj).find(v => Array.isArray(v));
+      if (firstArr) return firstArr;
+    }
+    return res;
+  }
+
   getFieldValue(fieldId: string): string {
     return String(this.fieldValues()[fieldId] ?? '');
   }
@@ -1148,6 +1303,10 @@ export class SharedViewerComponent implements OnInit {
 
   onTableRowSelect(tableField: any, rowIndex: number, row: Record<string, string>) {
     this.selectedTableRow.set({ fieldId: tableField.id, rowIndex });
+    // Store column-level values for {{field.tableId.col}} refs
+    for (const [col, val] of Object.entries(row)) {
+      this.setFieldValue(`${tableField.id}.${col}`, val ?? '');
+    }
     for (const f of this.formFields()) {
       if (f.boundFieldId === tableField.id && f.boundColumn) {
         const value = row[f.boundColumn] ?? '';
@@ -1195,25 +1354,61 @@ export class SharedViewerComponent implements OnInit {
   }
 
   async executeFormAction(action: any) {
+    const mode = action.actionMode ?? 'api';
+
+    if (mode === 'script') {
+      return this.executeFormScriptAction(action);
+    }
+
     if (!action.moduleApiPrefix || !action.pathTemplate) return;
     this.formExecuting.set(true);
     this.formResponse.set(null);
     try {
       const body = this.buildFormRequestBody(action);
+      const values = this.fieldValues();
+      const resolvedPathParams: Record<string, string> = {};
+      for (const [key, val] of Object.entries((action.pathParams || {}) as Record<string, string>)) {
+        resolvedPathParams[key] = this.resolveFieldRefs(val, values);
+      }
       const method = (action.method || 'POST').toUpperCase();
       let result: unknown;
       if (method === 'DELETE') {
-        result = await this.api.delete(action.moduleApiPrefix, action.pathTemplate, action.pathParams || {}).toPromise();
+        result = await this.api.delete(action.moduleApiPrefix, action.pathTemplate, resolvedPathParams).toPromise();
       } else if (method === 'PUT') {
-        result = await this.api.put(action.moduleApiPrefix, action.pathTemplate, action.pathParams || {}, body).toPromise();
+        result = await this.api.put(action.moduleApiPrefix, action.pathTemplate, resolvedPathParams, body).toPromise();
       } else if (method === 'PATCH') {
-        result = await this.api.patch(action.moduleApiPrefix, action.pathTemplate, action.pathParams || {}, body).toPromise();
+        result = await this.api.patch(action.moduleApiPrefix, action.pathTemplate, resolvedPathParams, body).toPromise();
       } else {
-        result = await this.api.post(action.moduleApiPrefix, action.pathTemplate, action.pathParams || {}, body).toPromise();
+        result = await this.api.post(action.moduleApiPrefix, action.pathTemplate, resolvedPathParams, body).toPromise();
       }
       this.formResponse.set({ status: 'success', data: result });
     } catch (e: any) {
       this.formResponse.set({ status: 'error', data: e?.error || e?.message || 'Error' });
+    } finally {
+      this.formExecuting.set(false);
+    }
+  }
+
+  private async executeFormScriptAction(action: any) {
+    const code = action.scriptCode ?? '';
+    if (!code.trim()) return;
+    this.formExecuting.set(true);
+    this.formResponse.set(null);
+    try {
+      const proxies = this.buildScriptApiProxies();
+      const formFields: Record<string, unknown> = {};
+      for (const f of this.formFields()) {
+        formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
+      }
+      const args: Record<string, unknown> = { FormFields: formFields, ...proxies };
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      const result = await fn(...argValues);
+      this.formResponse.set({ status: 'success', data: result });
+    } catch (e: any) {
+      this.formResponse.set({ status: 'error', data: e?.error || e?.message || 'Script error' });
     } finally {
       this.formExecuting.set(false);
     }

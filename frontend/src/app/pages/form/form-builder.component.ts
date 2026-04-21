@@ -230,7 +230,10 @@ interface FieldTypeRef {
                  (click)="!previewMode() && selectField(field.id)">
               <div class="field-header">
                 <mat-icon class="field-type-icon">
-                  @if (field.kind === 'text') { text_fields }
+                  @if (field.kind === 'label') { label }
+                  @else if (field.kind === 'text') { text_fields }
+                  @else if (field.kind === 'number') { pin }
+                  @else if (field.kind === 'boolean') { toggle_on }
                   @else if (field.kind === 'date') { calendar_today }
                   @else if (field.kind === 'select') { arrow_drop_down_circle }
                   @else { table_chart }
@@ -253,6 +256,27 @@ interface FieldTypeRef {
 
               <!-- Field preview -->
               <div class="field-preview">
+                @if (field.kind === 'label') {
+                  <div class="preview-label-value" (click)="$event.stopPropagation(); selectField(field.id)">
+                    {{ getFieldValue(field.id) || field.placeholder || field.label || 'Label' }}
+                  </div>
+                  @if (field.boundFieldId) {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">table_chart</mat-icon>
+                      {{ getBoundTableLabel(field) }} → {{ field.boundColumn || '?' }}
+                    </span>
+                  } @else if (field.dataSourceMode === 'script') {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
+                      Script → {{ field.valueField || '?' }}
+                    </span>
+                  } @else if (field.dataSource) {
+                    <span class="data-source-tag">
+                      <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
+                      {{ field.dataSource.moduleLabel }} › {{ field.valueField || '?' }}
+                    </span>
+                  }
+                }
                 @if (field.kind === 'text') {
                   <div class="preview-input">
                     <input type="text" class="preview-text-input"
@@ -514,8 +538,8 @@ interface FieldTypeRef {
             <mat-divider class="section-divider" />
 
             <!-- Data Source / Data Binding -->
-            @if (field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date' || field.kind === 'select' || field.kind === 'datatable') {
-              <div class="config-section-label">{{ field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date' ? ('form.data-binding' | t) : ('form.data-source' | t) }}</div>
+            @if (field.kind === 'label' || field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date' || field.kind === 'select' || field.kind === 'datatable') {
+              <div class="config-section-label">{{ field.kind === 'label' || field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date' ? ('form.data-binding' | t) : ('form.data-source' | t) }}</div>
 
               <!-- Data source mode toggle -->
               <div class="body-mode-toggle">
@@ -605,7 +629,7 @@ interface FieldTypeRef {
               </mat-form-field>
               } <!-- end API MODE -->
 
-              @if (field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date') {
+              @if (field.kind === 'label' || field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date') {
                 <mat-divider class="section-divider" />
                 <div class="config-section-label">{{ 'form.text-binding' | t }}</div>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
@@ -1406,6 +1430,11 @@ interface FieldTypeRef {
     .data-table tbody tr { cursor: pointer; }
     .data-table tbody tr.row-selected td { background: #dbeafe; font-weight: 500; }
 
+    .preview-label-value {
+      font-size: 13px; color: #1e293b; padding: 6px 0;
+      line-height: 1.5; word-break: break-word;
+    }
+
     .preview-boolean {
       display: flex; align-items: center; padding: 4px 0;
     }
@@ -1427,6 +1456,7 @@ export class FormBuilderComponent implements OnInit {
   readonly formModePlaceholder = '{ "key": "{{field.myField}}" }';
 
   readonly fieldTypes: FieldTypeRef[] = [
+    { kind: 'label',      label: 'Label',         icon: 'label',                 color: '#64748b' },
     { kind: 'text',       label: 'Text Input',    icon: 'text_fields',           color: '#2563eb' },
     { kind: 'number',     label: 'Number',        icon: 'pin',                   color: '#0d9488' },
     { kind: 'boolean',    label: 'Boolean',       icon: 'toggle_on',             color: '#e11d48' },
@@ -1919,6 +1949,7 @@ export class FormBuilderComponent implements OnInit {
   /** Get Material icon for a field kind */
   private getFieldIcon(kind: FormFieldKind): string {
     switch (kind) {
+      case 'label': return 'label';
       case 'text': return 'text_fields';
       case 'number': return 'pin';
       case 'boolean': return 'toggle_on';
@@ -2076,7 +2107,11 @@ export class FormBuilderComponent implements OnInit {
     this.fetching.set(true);
     try {
       const apiProxies = this.buildScriptApiProxies();
-      const args: Record<string, unknown> = { ...apiProxies };
+      const formFields: Record<string, unknown> = {};
+      for (const f of this.fields()) {
+        formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
+      }
+      const args: Record<string, unknown> = { FormFields: formFields, ...apiProxies };
 
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
@@ -2096,10 +2131,22 @@ export class FormBuilderComponent implements OnInit {
 
   /** Store fetched data and, for text/date fields, extract a single value via valueField */
   private applyFetchedData(field: FormField, res: unknown) {
-    if (field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date') {
+    if (field.kind === 'label' || field.kind === 'text' || field.kind === 'number' || field.kind === 'boolean' || field.kind === 'date') {
       let data: unknown = res;
       if (field.dataSource?.dataPath) {
         data = this.svc.getPath(res, field.dataSource.dataPath);
+      }
+      // Auto-unwrap common wrapper keys when dataPath is not set
+      if (!Array.isArray(data) && data && typeof data === 'object') {
+        const obj = data as Record<string, unknown>;
+        for (const key of ['data', 'records', 'items', 'result']) {
+          if (Array.isArray(obj[key])) { data = obj[key]; break; }
+        }
+        // If still not an array, try the first array-valued property
+        if (!Array.isArray(data)) {
+          const firstArr = Object.values(obj).find(v => Array.isArray(v));
+          if (firstArr) data = firstArr;
+        }
       }
       // If the result is an array, take the first element
       if (Array.isArray(data) && data.length > 0) data = data[0];
@@ -2362,17 +2409,34 @@ export class FormBuilderComponent implements OnInit {
     return (bodyArg && typeof bodyArg === 'object') ? bodyArg as Record<string, unknown> : undefined;
   }
 
-  private callProxyApi(
+  private async callProxyApi(
     apiPrefix: string, pathTemplate: string,
     httpMethod: 'get' | 'post' | 'put' | 'patch' | 'delete',
     pathParams: Record<string, string>,
     body: Record<string, unknown> | undefined,
   ): Promise<unknown> {
+    let res: unknown;
     if (httpMethod === 'get' || httpMethod === 'delete') {
-      return firstValueFrom(this.api[httpMethod](apiPrefix, pathTemplate, pathParams));
+      res = await firstValueFrom(this.api[httpMethod](apiPrefix, pathTemplate, pathParams));
+    } else {
+      const call = ({ post: this.api.post, put: this.api.put, patch: this.api.patch } as Record<string, typeof this.api.post>)[httpMethod] ?? this.api.post;
+      res = await firstValueFrom(call.call(this.api, apiPrefix, pathTemplate, pathParams, body ?? {}));
     }
-    const call = ({ post: this.api.post, put: this.api.put, patch: this.api.patch } as Record<string, typeof this.api.post>)[httpMethod] ?? this.api.post;
-    return firstValueFrom(call.call(this.api, apiPrefix, pathTemplate, pathParams, body ?? {}));
+    return this.unwrapProxyResponse(res);
+  }
+
+  /** Auto-unwrap common wrapper objects so scripts get arrays directly */
+  private unwrapProxyResponse(res: unknown): unknown {
+    if (Array.isArray(res)) return res;
+    if (res && typeof res === 'object') {
+      const obj = res as Record<string, unknown>;
+      for (const key of ['data', 'records', 'items', 'result']) {
+        if (Array.isArray(obj[key])) return obj[key];
+      }
+      const firstArr = Object.values(obj).find(v => Array.isArray(v));
+      if (firstArr) return firstArr;
+    }
+    return res;
   }
 
   private buildRequestBody(action: FormSubmitAction): unknown {
