@@ -11,6 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import {
   CdkDragDrop,
   CdkDrag,
@@ -32,6 +33,7 @@ import {
 } from '../../config/dashboard.types';
 import { MODULES, ModuleDef, EndpointDef, extractPathParams } from '../../config/endpoints';
 import { TranslatePipe } from '../../i18n/translate.pipe';
+import { ScriptEditorDialogComponent, ScriptEditorDialogData } from '../../shared/script-editor-dialog.component';
 import { firstValueFrom } from 'rxjs';
 
 interface WidgetTypeRef {
@@ -52,7 +54,7 @@ interface EndpointRef {
   imports: [
     CommonModule, RouterLink, FormsModule,
     MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatTooltipModule, MatDividerModule, MatProgressSpinnerModule, MatCheckboxModule,
+    MatSelectModule, MatTooltipModule, MatDividerModule, MatProgressSpinnerModule, MatCheckboxModule, MatDialogModule,
     CdkDrag, CdkDropList, CdkDropListGroup, CdkDragPlaceholder, CdkDragHandle,
     TranslatePipe,
   ],
@@ -478,7 +480,14 @@ interface EndpointRef {
             <!-- ── SCRIPT MODE ── -->
             @if (getDataSourceMode(widget) === 'script') {
               <mat-divider class="section-divider" />
-              <div class="config-section-label">{{ 'dashboard.script-code' | t }}</div>
+              <div class="config-section-label">
+                {{ 'dashboard.script-code' | t }}
+                <button mat-icon-button class="open-editor-btn"
+                        matTooltip="Open Editor"
+                        (click)="openScriptEditor(widget)">
+                  <mat-icon>open_in_new</mat-icon>
+                </button>
+              </div>
               <p class="config-hint">{{ 'dashboard.script-hint' | t }}</p>
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                 <mat-label>{{ 'dashboard.script-code' | t }}</mat-label>
@@ -920,6 +929,7 @@ interface EndpointRef {
     .config-section-label {
       font-size: 10px; font-weight: 700; text-transform: uppercase;
       color: #94a3b8; letter-spacing: .06em; margin-top: 4px;
+      display: flex; align-items: center; gap: 4px;
     }
     .section-divider { margin: 8px 0; }
     .full-width { width: 100%; }
@@ -996,6 +1006,10 @@ interface EndpointRef {
       font-family: 'Cascadia Code', 'Fira Code', monospace;
       font-size: 11px; line-height: 1.5;
       min-height: 200px; resize: vertical; tab-size: 2;
+    }
+    .open-editor-btn {
+      width: 24px; height: 24px; line-height: 24px;
+      mat-icon { font-size: 16px; width: 16px; height: 16px; }
     }
     .body-mode-toggle {
       display: flex; gap: 4px; margin-bottom: 12px;
@@ -1894,6 +1908,7 @@ export class DashboardBuilderComponent implements OnInit {
   // ── Export PDF ───────────────────────────────────────────────────────────
 
   private readonly el = inject(ElementRef);
+  private readonly dialog = inject(MatDialog);
   readonly exporting = signal(false);
 
   async exportPdf() {
@@ -2340,6 +2355,22 @@ export class DashboardBuilderComponent implements OnInit {
     const suggestions = this.buildScriptSuggestions(textarea.value, pos);
     this.scriptAcSuggestions.set(suggestions);
     this.scriptAcIndex.set(0);
+  }
+
+  /** Open the Monaco script editor popup */
+  openScriptEditor(widget: DashboardWidget) {
+    const ref = this.dialog.open(ScriptEditorDialogComponent, {
+      data: { code: widget.scriptCode ?? '', title: 'Script Editor' } as ScriptEditorDialogData,
+      panelClass: 'script-editor-dialog-panel',
+      width: '80vw',
+      maxWidth: '1200px',
+      height: '85vh',
+      autoFocus: false,
+    });
+    ref.afterClosed().subscribe((result: string | undefined) => {
+      if (result === undefined) return;
+      this.updateWidget(widget.id, 'scriptCode', result);
+    });
   }
 
   onScriptKeydown(event: KeyboardEvent) {

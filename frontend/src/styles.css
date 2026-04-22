@@ -268,3 +268,24 @@ mat-card {
 .mat-mdc-chip.method-put    { --mdc-chip-label-text-color: #fff; background: #f59e0b !important; }
 .mat-mdc-chip.method-patch  { --mdc-chip-label-text-color: #fff; background: #8b5cf6 !important; }
 .mat-mdc-chip.method-delete { --mdc-chip-label-text-color: #fff; background: #ef4444 !important; }
+
+/* ── Script editor dialog ── */
+.script-editor-dialog-panel .mat-mdc-dialog-container {
+  height: 100%;
+}
+.script-editor-dialog-panel .mat-mdc-dialog-container .mdc-dialog__surface {
+  padding: 0 !important;
+  overflow: visible;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.script-editor-dialog-panel .mat-mdc-dialog-container .mdc-dialog__content {
+  padding: 0 !important;
+  max-height: none !important;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}

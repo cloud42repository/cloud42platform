@@ -732,6 +732,7 @@ export const FR: Record<TranslationKey, string> = {
   'form.script-async-hint': 'Async — utiliser await pour les appels API. La valeur de retour est affichée comme réponse.',
   'form.field-script-hint': 'Écrire du JavaScript qui retourne un tableau d\'objets. Tous les modules API (ex. ZohoBooks, ZohoCRM) sont disponibles comme objets globaux.',
   'form.run-script': 'Exécuter le script',
+  'form.open-editor': 'Ouvrir l\'éditeur de script',
   'form.on-change-script': 'Script au changement',
   'form.on-change-hint': 'Le script s\'ex\u00e9cute quand la valeur change. "value" = valeur actuelle, FormFields = tous les champs, setFieldValue(nom, val) pour modifier d\'autres champs. Tous les modules API disponibles.',
 

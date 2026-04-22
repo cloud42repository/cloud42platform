@@ -12,6 +12,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import {
   CdkDragDrop,
   CdkDrag,
@@ -38,6 +39,7 @@ import { MODULES, EndpointDef, extractPathParams } from '../../config/endpoints'
 import { getEndpointPayload } from '../../config/endpoint-payloads';
 import { getEndpointInputSchema } from '../../config/endpoint-schemas';
 import { TranslatePipe } from '../../i18n/translate.pipe';
+import { ScriptEditorDialogComponent, ScriptEditorDialogData } from '../../shared/script-editor-dialog.component';
 import { firstValueFrom } from 'rxjs';
 
 interface FieldTypeRef {
@@ -54,7 +56,7 @@ interface FieldTypeRef {
     CommonModule, RouterLink, FormsModule,
     MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatTooltipModule, MatDividerModule, MatCheckboxModule,
-    MatSlideToggleModule, MatProgressSpinnerModule,
+    MatSlideToggleModule, MatProgressSpinnerModule, MatDialogModule,
     CdkDrag, CdkDropList, CdkDropListGroup, CdkDragPlaceholder, CdkDragHandle,
     TranslatePipe,
   ],
@@ -461,7 +463,9 @@ interface FieldTypeRef {
             <div class="submit-row" [style.grid-column]="'1 / -1'">
               @for (action of submitActions(); track action.id) {
                 <div class="action-btn-group" [class.selected-action]="selectedActionId() === action.id">
-                  <button mat-flat-button [color]="action.color"
+                  <button mat-flat-button
+                          [class.btn-color-accent]="action.color === 'accent'"
+                          [class.btn-color-warn]="action.color === 'warn'"
                           (click)="executeAction(action)"
                           [disabled]="executing()"
                           class="action-run-btn">
@@ -564,7 +568,14 @@ interface FieldTypeRef {
               <!-- ── SCRIPT MODE ── -->
               @if (getFieldDataSourceMode(field) === 'script') {
                 <mat-divider class="section-divider" />
-                <div class="config-section-label">{{ 'form.script-code' | t }}</div>
+                <div class="config-section-label">
+                  {{ 'form.script-code' | t }}
+                  <button mat-icon-button class="open-editor-btn"
+                          matTooltip="{{ 'form.open-editor' | t }}"
+                          (click)="openScriptEditor(field.scriptCode ?? '', 'field-script', field.id)">
+                    <mat-icon>open_in_new</mat-icon>
+                  </button>
+                </div>
                 <p class="config-hint">{{ 'form.field-script-hint' | t }}</p>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                   <mat-label>{{ 'form.script-code' | t }}</mat-label>
@@ -675,7 +686,14 @@ interface FieldTypeRef {
               <!-- On Change Script (text / number / date) -->
               @if (field.kind === 'text' || field.kind === 'number' || field.kind === 'date') {
                 <mat-divider class="section-divider" />
-                <div class="config-section-label">{{ 'form.on-change-script' | t }}</div>
+                <div class="config-section-label">
+                  {{ 'form.on-change-script' | t }}
+                  <button mat-icon-button class="open-editor-btn"
+                          matTooltip="{{ 'form.open-editor' | t }}"
+                          (click)="openScriptEditor(field.onChangeScript ?? '', 'field-onChange', field.id, { value: 'unknown', FormFields: 'Record<string, unknown>', setFieldValue: '(name: string, value: unknown) => void' })">
+                    <mat-icon>open_in_new</mat-icon>
+                  </button>
+                </div>
                 <p class="config-hint">{{ 'form.on-change-hint' | t }}</p>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                   <mat-label>{{ 'form.on-change-script' | t }}</mat-label>
@@ -809,7 +827,14 @@ interface FieldTypeRef {
             <!-- ── SCRIPT MODE ── -->
             @if (getActionMode(action) === 'script') {
               <mat-divider class="section-divider" />
-              <div class="config-section-label">{{ 'form.script-code' | t }}</div>
+              <div class="config-section-label">
+                {{ 'form.script-code' | t }}
+                <button mat-icon-button class="open-editor-btn"
+                        matTooltip="{{ 'form.open-editor' | t }}"
+                        (click)="openScriptEditor(action.scriptCode ?? '', 'action-script', action.id, { FormFields: 'Record<string, unknown>' })">
+                  <mat-icon>open_in_new</mat-icon>
+                </button>
+              </div>
               <p class="config-hint">{{ 'form.script-hint' | t }}</p>
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
                 <mat-label>{{ 'form.script-code' | t }}</mat-label>
@@ -1253,6 +1278,18 @@ interface FieldTypeRef {
     }
     .action-btn-group.selected-action { outline: 2px solid #0891b2; outline-offset: 2px; }
     .action-run-btn { border-radius: 8px 0 0 8px !important; min-width: 100px; }
+    .action-run-btn.btn-color-accent {
+      --mat-button-filled-container-color: var(--mat-sys-tertiary);
+      --mat-button-filled-label-text-color: var(--mat-sys-on-tertiary);
+      --mat-button-filled-state-layer-color: var(--mat-sys-on-tertiary);
+      --mat-button-filled-ripple-color: color-mix(in srgb, var(--mat-sys-on-tertiary) 12%, transparent);
+    }
+    .action-run-btn.btn-color-warn {
+      --mat-button-filled-container-color: var(--mat-sys-error);
+      --mat-button-filled-label-text-color: var(--mat-sys-on-error);
+      --mat-button-filled-state-layer-color: var(--mat-sys-on-error);
+      --mat-button-filled-ripple-color: color-mix(in srgb, var(--mat-sys-on-error) 12%, transparent);
+    }
     .action-config-btn {
       border-radius: 0 8px 8px 0 !important;
       border: 1px solid #e2e8f0; border-left: none;
@@ -1319,6 +1356,7 @@ interface FieldTypeRef {
     .config-section-label {
       font-size: 10px; font-weight: 700; text-transform: uppercase;
       color: #94a3b8; letter-spacing: .06em; margin-top: 4px;
+      display: flex; align-items: center; gap: 4px;
     }
     .config-hint { font-size: 11px; color: #64748b; margin: 0; }
     .section-divider { margin: 8px 0; }
@@ -1433,6 +1471,10 @@ interface FieldTypeRef {
       min-height: 200px; resize: vertical;
       tab-size: 2;
     }
+    .open-editor-btn {
+      width: 24px; height: 24px; line-height: 24px;
+      mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    }
 
     .ep-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -1472,6 +1514,7 @@ export class FormBuilderComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly el = inject(ElementRef);
   private readonly userMgmt = inject(UserManagementService);
+  private readonly dialog = inject(MatDialog);
 
   readonly allModules = MODULES;
   readonly widthOptions = [3, 4, 6, 8, 12];
@@ -2903,6 +2946,24 @@ export class FormBuilderComponent implements OnInit {
     }
 
     return suggestions.slice(0, 20);
+  }
+
+  /** Open the Monaco script editor popup */
+  openScriptEditor(code: string, mode: 'field-script' | 'field-onChange' | 'action-script', id: string, extraGlobals?: Record<string, string>) {
+    const ref = this.dialog.open(ScriptEditorDialogComponent, {
+      data: { code, title: 'Script Editor', extraGlobals } as ScriptEditorDialogData,
+      panelClass: 'script-editor-dialog-panel',
+      width: '80vw',
+      maxWidth: '1200px',
+      height: '85vh',
+      autoFocus: false,
+    });
+    ref.afterClosed().subscribe((result: string | undefined) => {
+      if (result === undefined) return;
+      if (mode === 'field-script') this.updateField(id, 'scriptCode', result);
+      else if (mode === 'field-onChange') this.updateField(id, 'onChangeScript', result);
+      else if (mode === 'action-script') this.updateAction(id, 'scriptCode', result);
+    });
   }
 
   /** Handle input in a field-data-source script textarea */

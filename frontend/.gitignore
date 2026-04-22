@@ -39,6 +39,9 @@ testem.log
 /typings
 __screenshots__/
 
+# Monaco editor (copied from node_modules at install time)
+/public/assets/monaco/
+
 # System files
 .DS_Store
 Thumbs.db

@@ -18,6 +18,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import {
   CdkDragDrop, DragDropModule, moveItemInArray,
 } from '@angular/cdk/drag-drop';
@@ -33,6 +34,7 @@ import {
 } from '../../config/workflow.types';
 import { FormViewComponent, StepRefSuggestion } from '../../shared/form-view/form-view.component';
 import { TranslatePipe } from '../../i18n/translate.pipe';
+import { ScriptEditorDialogComponent, ScriptEditorDialogData } from '../../shared/script-editor-dialog.component';
 import { SchemaService } from '../../services/schema.service';
 
 interface AutocompleteSuggestion {
@@ -54,7 +56,7 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
     MatButtonModule, MatIconModule, MatInputModule, MatFormFieldModule,
     MatSelectModule, MatTooltipModule, MatChipsModule,
     MatProgressSpinnerModule, MatSnackBarModule, MatDividerModule, MatRadioModule,
-    DragDropModule, FormViewComponent, MatButtonToggleModule,
+    DragDropModule, FormViewComponent, MatButtonToggleModule, MatDialogModule,
     TranslatePipe,
   ],
   template: `
@@ -1430,7 +1432,14 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
               </mat-form-field>
 
               <!-- Code editor (shown first so it stays visible) -->
-              <div class="config-section-label">{{ 'workflow.script-code' | t }}</div>
+              <div class="config-section-label">
+                {{ 'workflow.script-code' | t }}
+                <button mat-icon-button class="open-editor-btn"
+                        matTooltip="Open Editor"
+                        (click)="openScriptEditor(block)">
+                  <mat-icon>open_in_new</mat-icon>
+                </button>
+              </div>
               <p class="config-hint">{{ 'workflow.script-code-hint' | t }}</p>
               <div class="script-editor-wrapper">
                 <div class="script-editor-gutter">
@@ -1902,6 +1911,11 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
     .config-section-label {
       font-size: 11px; font-weight: 700; text-transform: uppercase;
       letter-spacing: .08em; color: #64748b; margin-bottom: -4px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .open-editor-btn {
+      width: 24px; height: 24px; line-height: 24px;
+      mat-icon { font-size: 16px; width: 16px; height: 16px; }
     }
     .section-divider { margin: 4px 0 8px !important; }
 
@@ -2381,6 +2395,7 @@ export class WorkflowBuilderComponent implements OnInit {
   private readonly shareSvc = inject(ShareService);
   private readonly snack = inject(MatSnackBar);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly dialog = inject(MatDialog);
 
   // ── Workflow state ────────────────────────────────────────────────────────
   private workflowId: string | null = null;
@@ -3847,6 +3862,26 @@ export class WorkflowBuilderComponent implements OnInit {
   }
   getScriptVarNames(block: ScriptBlock): string[] {
     return block.inputBindings.map(b => b.name).filter(Boolean);
+  }
+
+  /** Open the Monaco script editor popup */
+  openScriptEditor(block: ScriptBlock) {
+    const extras: Record<string, string> = {};
+    for (const b of block.inputBindings) {
+      if (b.name) extras[b.name] = 'any';
+    }
+    const ref = this.dialog.open(ScriptEditorDialogComponent, {
+      data: { code: block.code || '', title: 'Script Editor', extraGlobals: Object.keys(extras).length ? extras : undefined } as ScriptEditorDialogData,
+      panelClass: 'script-editor-dialog-panel',
+      width: '80vw',
+      maxWidth: '1200px',
+      height: '85vh',
+      autoFocus: false,
+    });
+    ref.afterClosed().subscribe((result: string | undefined) => {
+      if (result === undefined) return;
+      this.mutateBlock(block.id, result, 'code');
+    });
   }
 
   // ── Save / Run ────────────────────────────────────────────────────────────

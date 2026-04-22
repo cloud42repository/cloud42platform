@@ -309,7 +309,9 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
               <div class="submit-row" [style.grid-column]="'1 / -1'">
                 @if (formActions().length > 0) {
                   @for (action of formActions(); track action.id) {
-                    <button mat-flat-button [color]="action.color || 'primary'"
+                    <button mat-flat-button
+                            [class.btn-color-accent]="action.color === 'accent'"
+                            [class.btn-color-warn]="action.color === 'warn'"
                             (click)="executeFormAction(action)"
                             [disabled]="formExecuting()"
                             class="action-run-btn">
@@ -626,10 +628,10 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
     .search-widget .search-input::placeholder { color: #94a3b8; }
     .search-widget .search-clear { display: flex; align-items: center; border: none; background: none; cursor: pointer; color: #94a3b8; padding: 0; }
     .search-widget .search-clear mat-icon { font-size: 18px; width: 18px; height: 18px; }
-    .table-container { width: 100%; overflow: auto; }
+    .table-container { width: 100%; overflow-x: auto; max-height: 300px; overflow-y: auto; }
     .data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    .data-table th { background: #f8fafc; font-weight: 600; text-align: left; padding: 6px 8px; border-bottom: 2px solid #e2e8f0; }
-    .data-table td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; }
+    .data-table th { background: #f8fafc; font-weight: 600; text-align: left; padding: 6px 8px; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 1; }
+    .data-table td { padding: 4px 8px; border-bottom: 1px solid #f1f5f9; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .data-table tbody tr { cursor: pointer; }
     .data-table tbody tr:hover td { background: #f0f9ff; }
     .data-table tbody tr.row-selected td { background: #dbeafe; font-weight: 500; }
@@ -679,6 +681,18 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
     }
     .submit-row { display: flex; gap: 8px; padding: 12px 0; }
     .action-run-btn { min-width: 120px; }
+    .action-run-btn.btn-color-accent {
+      --mat-button-filled-container-color: var(--mat-sys-tertiary);
+      --mat-button-filled-label-text-color: var(--mat-sys-on-tertiary);
+      --mat-button-filled-state-layer-color: var(--mat-sys-on-tertiary);
+      --mat-button-filled-ripple-color: color-mix(in srgb, var(--mat-sys-on-tertiary) 12%, transparent);
+    }
+    .action-run-btn.btn-color-warn {
+      --mat-button-filled-container-color: var(--mat-sys-error);
+      --mat-button-filled-label-text-color: var(--mat-sys-on-error);
+      --mat-button-filled-state-layer-color: var(--mat-sys-on-error);
+      --mat-button-filled-ripple-color: color-mix(in srgb, var(--mat-sys-on-error) 12%, transparent);
+    }
     .response-panel { border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
     .response-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; }
     .response-success .response-header { background: #f0fdf4; color: #15803d; }

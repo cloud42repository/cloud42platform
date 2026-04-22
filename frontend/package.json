@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "postinstall": "node -e \"const fs=require('fs');const src='node_modules/monaco-editor/min/vs';const dst='public/assets/monaco/vs';if(fs.existsSync(src)){fs.cpSync(src,dst,{recursive:true,force:true});console.log('Copied Monaco editor to public/assets/monaco/vs')}\"",
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
@@ -26,6 +27,7 @@
     "file-saver": "^2.0.5",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.0",
+    "monaco-editor": "^0.55.1",
     "ng2-charts": "^5.0.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
