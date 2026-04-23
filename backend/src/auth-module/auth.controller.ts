@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -119,6 +120,15 @@ export class AuthController {
     this.setRefreshCookie(res, refreshToken);
 
     return { accessToken, refreshToken, user };
+  }
+
+  /* ── GET /api/auth/me ── current user's fresh profile from DB */
+
+  @Get('me')
+  async me(@Req() req: Request & { user?: JwtPayload }) {
+    const email = req.user?.sub;
+    if (!email) throw new UnauthorizedException();
+    return this.authService.me(email);
   }
 
   /* ── POST /api/auth/logout ── */

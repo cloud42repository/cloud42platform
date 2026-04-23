@@ -21,6 +21,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { firstValueFrom } from 'rxjs';
 import { UserApiService, UserResponse } from '../../services/user-api.service';
 import { UserManagementService } from '../../services/user-management.service';
+import { AuthService } from '../../services/auth.service';
 import { MODULES } from '../../config/endpoints';
 import { UserRole, USER_ROLE_LABELS, USER_ROLE_DESCRIPTIONS } from '../../config/user.types';
 import { TranslatePipe } from '../../i18n/translate.pipe';
@@ -682,6 +683,7 @@ import { TranslateService } from '../../services/translate.service';
 export class UserManagementComponent implements OnInit {
   private readonly userApi = inject(UserApiService);
   readonly userMgmt = inject(UserManagementService);
+  private readonly auth = inject(AuthService);
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   readonly i18n = inject(TranslateService);
@@ -849,6 +851,10 @@ export class UserManagementComponent implements OnInit {
       this.updateLocal(email, updated);
       // also update local service for sidebar reactivity
       this.userMgmt.setRole(email, newRole);
+      // If this is the currently logged-in user, sync AuthService too
+      if (email === this.auth.user()?.email) {
+        this.auth.patchRole(newRole);
+      }
       this.snack.open(this.i18n.t('users.role-updated', { role: this.roleLabel(newRole) }), 'OK', { duration: 3000 });
     } catch {
       this.snack.open(this.i18n.t('users.update-error'), 'OK', { duration: 4000 });

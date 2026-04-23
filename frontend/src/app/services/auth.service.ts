@@ -239,6 +239,24 @@ export class AuthService {
     this.saveProfile(updated);
   }
 
+  /* ── Sync profile from backend ── */
+
+  /** Fetch the current user's fresh profile from the DB and update local state */
+  async syncProfile(): Promise<void> {
+    if (!this.isLoggedIn() || !this._accessToken()) return;
+    try {
+      const res = await firstValueFrom(
+        this.http.get<AuthResponse['user']>(`${environment.apiBase}/auth/me`),
+      );
+      const current = this._user();
+      if (current && res.role && res.role !== current.role) {
+        this.saveProfile({ ...current, role: res.role });
+      }
+    } catch {
+      // Token expired or network error — ignore, the interceptor will handle 401
+    }
+  }
+
   /* ── Logout ── */
 
   async logout(): Promise<void> {

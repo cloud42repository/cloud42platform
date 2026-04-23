@@ -1,5 +1,5 @@
-import { Component, signal, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, signal, inject, OnInit } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { filter } from 'rxjs';
 import { AuthService } from './services/auth.service';
 import { AgentComponent } from './pages/agent/agent.component';
 import { ModuleVisibilityService } from './services/module-visibility.service';
@@ -244,7 +245,8 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
   `,
   styleUrl: './app.css'
 })
-export class App {
+export class App implements OnInit {
+  private readonly router = inject(Router);
   private readonly visibilitySvc = inject(ModuleVisibilityService);
   readonly theme = inject(ThemeService);
   readonly userMgmt = inject(UserManagementService);
@@ -255,6 +257,13 @@ export class App {
   readonly sidenavOpen = signal(true);
   readonly agentOpen = signal(false);
   readonly auth = inject(AuthService);
+
+  ngOnInit(): void {
+    // Sync the user's role from the backend on every navigation
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe(() => this.auth.syncProfile());
+  }
 
   setLang(lang: Lang): void {
     this.i18n.setLang(lang);

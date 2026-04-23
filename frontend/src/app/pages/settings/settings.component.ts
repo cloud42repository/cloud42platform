@@ -25,6 +25,7 @@ import {
 import { AuthConfigService } from '../../services/auth-config.service';
 import { ModuleVisibilityService } from '../../services/module-visibility.service';
 import { UserManagementService } from '../../services/user-management.service';
+import { AuthService } from '../../services/auth.service';
 import { UserRole, USER_ROLE_LABELS, StoredUser } from '../../config/user.types';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { ThemeService, type ThemeColor } from '../../services/theme.service';
@@ -863,6 +864,7 @@ export interface ServiceGroupState {
 })
 export class SettingsComponent implements OnInit {
   private readonly svc = inject(AuthConfigService);
+  private readonly auth = inject(AuthService);
   private readonly snack = inject(MatSnackBar);
   readonly visibility = inject(ModuleVisibilityService);
   readonly userMgmt = inject(UserManagementService);
@@ -1044,6 +1046,9 @@ export class SettingsComponent implements OnInit {
 
   changeRole(email: string, role: UserRole): void {
     this.userMgmt.setRole(email, role);
+    if (email === this.auth.user()?.email) {
+      this.auth.patchRole(role);
+    }
     this.snack.open(`✓ Role updated to ${USER_ROLE_LABELS[role]}`, '', { duration: 2500 });
   }
 

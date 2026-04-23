@@ -196,6 +196,12 @@ export class AuthService {
     return { accessToken: newAccessToken, refreshToken: newRefreshToken, user };
   }
 
+  /* ── Current user profile ── */
+
+  async me(email: string) {
+    return this.userService.findByEmail(email);
+  }
+
   /* ── Logout ── */
 
   async logout(email: string): Promise<void> {

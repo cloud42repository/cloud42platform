@@ -1,4 +1,4 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, signal, computed, inject, effect, untracked } from '@angular/core';
 import { StoredUser, UserRole } from '../config/user.types';
 import { AuthService } from './auth.service';
 
@@ -12,6 +12,40 @@ export class UserManagementService {
   private readonly _users = signal<StoredUser[]>(this.loadFromStorage());
 
   readonly users = this._users.asReadonly();
+
+  constructor() {
+    // Keep _users in sync with the role returned by the backend (login / token refresh).
+    effect(() => {
+      const u = this.auth.user();
+      if (!u?.email || !u.role) return;
+
+      const users = untracked(() => this._users());
+      const existing = users.find(s => s.email === u.email);
+
+      if (existing) {
+        if (existing.role !== u.role) {
+          // Role changed on the backend — sync it locally
+          const updated = users.map(s =>
+            s.email === u.email ? { ...s, role: u.role! } : s,
+          );
+          untracked(() => this.save(updated));
+        }
+      } else {
+        // First time this user appears — add them
+        const now = new Date().toISOString();
+        const newUser: StoredUser = {
+          email: u.email,
+          name: u.name,
+          photoUrl: u.photoUrl ?? '',
+          role: u.role,
+          moduleVisibility: {},
+          createdAt: now,
+          lastLoginAt: now,
+        };
+        untracked(() => this.save([...users, newUser]));
+      }
+    });
+  }
 
   /** The currently logged-in stored user (with role info) */
   readonly currentUser = computed<StoredUser | null>(() => {
