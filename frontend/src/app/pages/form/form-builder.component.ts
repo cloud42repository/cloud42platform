@@ -40,6 +40,15 @@ import { getEndpointPayload } from '../../config/endpoint-payloads';
 import { getEndpointInputSchema } from '../../config/endpoint-schemas';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { ScriptEditorDialogComponent, ScriptEditorDialogData } from '../../shared/script-editor-dialog.component';
+import {
+  LabelFieldComponent,
+  TextFieldComponent,
+  NumberFieldComponent,
+  BooleanFieldComponent,
+  DateFieldComponent,
+  SelectFieldComponent,
+  DatatableFieldComponent,
+} from './fields';
 import { firstValueFrom } from 'rxjs';
 
 interface FieldTypeRef {
@@ -59,6 +68,8 @@ interface FieldTypeRef {
     MatSlideToggleModule, MatProgressSpinnerModule, MatDialogModule,
     CdkDrag, CdkDropList, CdkDropListGroup, CdkDragPlaceholder, CdkDragHandle,
     TranslatePipe,
+    LabelFieldComponent, TextFieldComponent, NumberFieldComponent,
+    BooleanFieldComponent, DateFieldComponent, SelectFieldComponent, DatatableFieldComponent,
   ],
   template: `
     <div class="builder-shell" cdkDropListGroup>
@@ -258,191 +269,47 @@ interface FieldTypeRef {
 
               <!-- Field preview -->
               <div class="field-preview">
-                @if (field.kind === 'label') {
-                  <div class="preview-label-value" (click)="$event.stopPropagation(); selectField(field.id)">
-                    {{ getFieldValue(field.id) || field.placeholder || field.label || 'Label' }}
-                  </div>
-                  @if (field.boundFieldId) {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">table_chart</mat-icon>
-                      {{ getBoundTableLabel(field) }} → {{ field.boundColumn || '?' }}
-                    </span>
-                  } @else if (field.dataSourceMode === 'script') {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
-                      Script → {{ field.valueField || '?' }}
-                    </span>
-                  } @else if (field.dataSource) {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
-                      {{ field.dataSource.moduleLabel }} › {{ field.valueField || '?' }}
-                    </span>
+                @switch (field.kind) {
+                  @case ('label') {
+                    <app-label-field [field]="field" [value]="getFieldValue(field.id)"
+                                     [boundTableLabel]="getBoundTableLabel(field)"
+                                     (selectField)="selectField(field.id)" />
                   }
-                }
-                @if (field.kind === 'text') {
-                  <div class="preview-input">
-                    <input [type]="field.masked ? 'password' : 'text'" class="preview-text-input"
-                           [placeholder]="field.placeholder || field.label || 'Text input'"
-                           [value]="getFieldValue(field.id)"
-                           (input)="onFieldInput(field, $any($event.target).value)"
-                           (click)="$event.stopPropagation(); selectField(field.id)" />
-                  </div>
-                  @if (field.boundFieldId) {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">table_chart</mat-icon>
-                      {{ getBoundTableLabel(field) }} → {{ field.boundColumn || '?' }}
-                    </span>
-                  } @else if (field.dataSourceMode === 'script') {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
-                      Script → {{ field.valueField || '?' }}
-                    </span>
-                  } @else if (field.dataSource) {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
-                      {{ field.dataSource.moduleLabel }} › {{ field.valueField || '?' }}
-                    </span>
+                  @case ('text') {
+                    <app-text-field [field]="field" [value]="getFieldValue(field.id)"
+                                    [boundTableLabel]="getBoundTableLabel(field)"
+                                    (inputChange)="onFieldInput(field, $event)"
+                                    (selectField)="selectField(field.id)" />
                   }
-                }
-                @if (field.kind === 'number') {
-                  <div class="preview-input">
-                    <input type="number" class="preview-text-input"
-                           [placeholder]="field.placeholder || field.label || '0'"
-                           [value]="getFieldValue(field.id)"
-                           (input)="onFieldInput(field, $any($event.target).valueAsNumber)"
-                           (click)="$event.stopPropagation(); selectField(field.id)" />
-                  </div>
-                  @if (field.boundFieldId) {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">table_chart</mat-icon>
-                      {{ getBoundTableLabel(field) }} → {{ field.boundColumn || '?' }}
-                    </span>
-                  } @else if (field.dataSourceMode === 'script') {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
-                      Script → {{ field.valueField || '?' }}
-                    </span>
-                  } @else if (field.dataSource) {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
-                      {{ field.dataSource.moduleLabel }} › {{ field.valueField || '?' }}
-                    </span>
+                  @case ('number') {
+                    <app-number-field [field]="field" [value]="getFieldValue(field.id)"
+                                      [boundTableLabel]="getBoundTableLabel(field)"
+                                      (inputChange)="onFieldInput(field, $event)"
+                                      (selectField)="selectField(field.id)" />
                   }
-                }
-                @if (field.kind === 'boolean') {
-                  <div class="preview-boolean" (click)="$event.stopPropagation(); toggleBooleanField(field.id)">
-                    <mat-slide-toggle
-                      [checked]="getBooleanFieldValue(field.id)"
-                      (change)="setFieldValue(field.id, $event.checked)"
-                      (click)="$event.stopPropagation()">
-                      {{ field.label || 'Toggle' }}
-                    </mat-slide-toggle>
-                  </div>
-                }
-                @if (field.kind === 'date') {
-                  <div class="preview-input preview-date">
-                    <input type="date" class="preview-text-input"
-                           [value]="getFieldValue(field.id)"
-                           (input)="onFieldInput(field, $any($event.target).value)"
-                           (click)="$event.stopPropagation(); selectField(field.id)" />
-                  </div>
-                  @if (field.boundFieldId) {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">table_chart</mat-icon>
-                      {{ getBoundTableLabel(field) }} → {{ field.boundColumn || '?' }}
-                    </span>
-                  } @else if (field.dataSourceMode === 'script') {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
-                      Script → {{ field.valueField || '?' }}
-                    </span>
-                  } @else if (field.dataSource) {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
-                      {{ field.dataSource.moduleLabel }} › {{ field.valueField || '?' }}
-                    </span>
+                  @case ('boolean') {
+                    <app-boolean-field [field]="field" [checked]="getBooleanFieldValue(field.id)"
+                                       (toggle)="toggleBooleanField($event)"
+                                       (valueChange)="setFieldValue($event.fieldId, $event.value)" />
                   }
-                }
-                @if (field.kind === 'select') {
-                  <mat-form-field appearance="outline" class="preview-select-field" (click)="$event.stopPropagation()">
-                    <mat-select [value]="getFieldValue(field.id)"
-                                (selectionChange)="setFieldValue(field.id, $event.value)"
-                                [placeholder]="field.placeholder || 'Select…'">
-                      @for (opt of getSelectOptions(field); track $index) {
-                        <mat-option [value]="opt.value">{{ opt.display }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                  @if (field.dataSourceMode === 'script') {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
-                      Script
-                    </span>
-                  } @else if (field.dataSource) {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
-                      {{ field.dataSource.moduleLabel }} › {{ field.dataSource.endpointLabel }}
-                    </span>
+                  @case ('date') {
+                    <app-date-field [field]="field" [value]="getFieldValue(field.id)"
+                                    [boundTableLabel]="getBoundTableLabel(field)"
+                                    (inputChange)="onFieldInput(field, $event)"
+                                    (selectField)="selectField(field.id)" />
                   }
-                  @if (field.lastData && isArray(field.lastData)) {
-                    <div class="select-options-preview">
-                      @for (opt of getSelectOptions(field); track $index) {
-                        <div class="select-option-item">
-                          <span class="option-label">{{ opt.display }}</span>
-                          <span class="option-value">{{ opt.value }}</span>
-                        </div>
-                      }
-                      @if (asArray(field.lastData).length > 10) {
-                        <div class="select-option-more">+{{ asArray(field.lastData).length - 10 }} more</div>
-                      }
-                    </div>
+                  @case ('select') {
+                    <app-select-field [field]="field" [value]="getFieldValue(field.id)"
+                                      [options]="getSelectOptions(field)"
+                                      [totalCount]="asArray(field.lastData).length"
+                                      (valueChange)="setFieldValue(field.id, $event)" />
                   }
-                }
-                @if (field.kind === 'datatable') {
-                  @if (field.dataSourceMode === 'script') {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">code</mat-icon>
-                      Script
-                    </span>
-                  } @else if (field.dataSource) {
-                    <span class="data-source-tag">
-                      <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
-                      {{ field.dataSource.moduleLabel }} › {{ field.dataSource.endpointLabel }}
-                    </span>
-                  }
-                  @if (field.columns) {
-                    <div class="preview-table-cols">
-                      @for (col of field.columns.split(','); track $index) {
-                        <span class="col-tag">{{ col.trim() }}</span>
-                      }
-                    </div>
-                  } @else {
-                    <span class="no-source">{{ 'form.no-columns' | t }}</span>
-                  }
-
-                  <!-- Live data table preview -->
-                  @if (field.lastData && isArray(field.lastData)) {
-                    <div class="table-container">
-                      <table class="data-table">
-                        <thead>
-                          <tr>
-                            @for (col of getTableColumns(field); track col) {
-                              <th>{{ col }}</th>
-                            }
-                          </tr>
-                        </thead>
-                        <tbody>
-                          @for (row of getTableRows(field); track $index) {
-                            <tr [class.row-selected]="selectedTableRow()?.fieldId === field.id && selectedTableRow()?.rowIndex === $index"
-                                (click)="onTableRowSelect(field, $index, row); $event.stopPropagation()">
-                              @for (col of getTableColumns(field); track col) {
-                                <td>{{ row[col] }}</td>
-                              }
-                            </tr>
-                          }
-                        </tbody>
-                      </table>
-                    </div>
+                  @case ('datatable') {
+                    <app-datatable-field [field]="field"
+                                         [columns]="getTableColumns(field)"
+                                         [rows]="getTableRows(field)"
+                                         [selectedRow]="selectedTableRow()"
+                                         (rowSelect)="onTableRowSelect($event.field, $event.rowIndex, $event.row)" />
                   }
                 }
               </div>
@@ -690,7 +557,7 @@ interface FieldTypeRef {
                   {{ 'form.on-change-script' | t }}
                   <button mat-icon-button class="open-editor-btn"
                           matTooltip="{{ 'form.open-editor' | t }}"
-                          (click)="openScriptEditor(field.onChangeScript ?? '', 'field-onChange', field.id, { value: 'unknown', FormFields: 'Record<string, unknown>', setFieldValue: '(name: string, value: unknown) => void' })">
+                          (click)="openScriptEditor(field.onChangeScript ?? '', 'field-onChange', field.id, { value: 'unknown', FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void' })">
                     <mat-icon>open_in_new</mat-icon>
                   </button>
                 </div>
@@ -831,7 +698,7 @@ interface FieldTypeRef {
                 {{ 'form.script-code' | t }}
                 <button mat-icon-button class="open-editor-btn"
                         matTooltip="{{ 'form.open-editor' | t }}"
-                        (click)="openScriptEditor(action.scriptCode ?? '', 'action-script', action.id, { FormFields: 'Record<string, unknown>' })">
+                        (click)="openScriptEditor(action.scriptCode ?? '', 'action-script', action.id, { FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void' })">
                   <mat-icon>open_in_new</mat-icon>
                 </button>
               </div>
@@ -1208,29 +1075,9 @@ interface FieldTypeRef {
     }
     .no-source { font-size: 11px; color: #94a3b8; font-style: italic; }
 
-    .select-options-preview {
-      margin-top: 6px; border: 1px solid #e2e8f0; border-radius: 6px;
-      max-height: 180px; overflow-y: auto; background: white;
-    }
-    .select-option-item {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 5px 10px; font-size: 11px; border-bottom: 1px solid #f1f5f9;
-    }
-    .select-option-item:last-child { border-bottom: none; }
-    .select-option-item:hover { background: #f0f9ff; }
-    .option-label { color: #1e293b; font-weight: 500; }
-    .option-value { color: #94a3b8; font-size: 10px; font-family: monospace; }
-    .select-option-more {
-      padding: 4px 10px; font-size: 10px; color: #64748b;
-      text-align: center; background: #f8fafc;
-      border-top: 1px solid #e2e8f0; border-radius: 0 0 6px 6px;
-    }
+    .select-options-preview { display: none; }
 
     .preview-table-cols { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
-    .col-tag {
-      font-size: 10px; padding: 2px 6px; border-radius: 4px;
-      background: #ecfdf5; color: #059669; font-family: monospace;
-    }
 
     .field-drag-placeholder {
       background: #e0f2fe; border: 2px dashed #38bdf8;
@@ -1496,13 +1343,8 @@ interface FieldTypeRef {
     .data-table tbody tr { cursor: pointer; }
     .data-table tbody tr.row-selected td { background: #dbeafe; font-weight: 500; }
 
-    .preview-label-value {
-      font-size: 13px; color: #1e293b; padding: 6px 0;
-      line-height: 1.5; word-break: break-word;
-    }
-
     .preview-boolean {
-      display: flex; align-items: center; padding: 4px 0;
+      display: none;
     }
   `]
 })
@@ -2041,7 +1883,8 @@ export class FormBuilderComponent implements OnInit {
       return field.columns.split(',').map(c => c.trim()).filter(Boolean);
     }
     const items = Array.isArray(field.lastData) ? field.lastData as Record<string, unknown>[] : [];
-    if (items.length > 0) return Object.keys(items[0]).slice(0, 8);
+    const first = items.find(i => i != null && typeof i === 'object');
+    if (first) return Object.keys(first).slice(0, 8);
     return [];
   }
 
@@ -2429,15 +2272,24 @@ export class FormBuilderComponent implements OnInit {
     try {
       // Build FormFields object from current field values + metadata
       const formFields: Record<string, unknown> = {};
+      const labelToId: Record<string, string> = {};
       for (const field of this.fields()) {
         formFields[field.label || field.id] = this.fieldValues()[field.id] ?? '';
+        if (field.label) labelToId[field.label] = field.id;
+        labelToId[field.id] = field.id;
       }
 
       // Build API proxy objects (same as workflow scripts)
       const apiProxies = this.buildScriptApiProxies();
 
+      const setField = (nameOrId: string, val: unknown) => {
+        const id = labelToId[nameOrId] ?? nameOrId;
+        this.setFieldValue(id, val);
+      };
+
       const args: Record<string, unknown> = {
         FormFields: formFields,
+        setFieldValue: setField,
         ...apiProxies,
       };
 

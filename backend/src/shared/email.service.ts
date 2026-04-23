@@ -23,6 +23,10 @@ export class EmailService {
     }
   }
 
+  getFrontendUrl(): string {
+    return this.frontendUrl;
+  }
+
   /**
    * Send the "Set your password" email after admin approval.
    */

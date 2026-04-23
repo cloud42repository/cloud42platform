@@ -199,7 +199,7 @@ export class UserService {
 
   /* ── Admin: Re-send invite ── */
 
-  async resendInvite(email: string): Promise<UserResponseDto> {
+  async resendInvite(email: string): Promise<UserResponseDto & { passwordSetLink: string }> {
     const user = await this.repo.findOneBy({ email });
     if (!user) throw new NotFoundException(`User ${email} not found`);
 
@@ -211,7 +211,10 @@ export class UserService {
     const saved = await this.repo.save(user);
 
     await this.emailService.sendPasswordSetEmail(email, user.name, rawToken);
-    return this.toDto(saved);
+
+    const frontendUrl = this.emailService.getFrontendUrl();
+    const passwordSetLink = `${frontendUrl}/set-password?token=${encodeURIComponent(rawToken)}&email=${encodeURIComponent(email)}`;
+    return { ...this.toDto(saved), passwordSetLink };
   }
 
   /* ── Set password (via token) ── */

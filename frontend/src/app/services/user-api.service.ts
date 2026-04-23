@@ -72,8 +72,8 @@ export class UserApiService {
   }
 
   /** POST /api/users/:email/resend-invite — admin re-sends the password-set email */
-  resendInvite(email: string): Observable<UserResponse> {
-    return this.api.post(this.prefix, '/:email/resend-invite', { email }) as Observable<UserResponse>;
+  resendInvite(email: string): Observable<UserResponse & { passwordSetLink: string }> {
+    return this.api.post(this.prefix, '/:email/resend-invite', { email }) as Observable<UserResponse & { passwordSetLink: string }>;
   }
 
   /** POST /api/users/:email/set-password — set password with token (public) */

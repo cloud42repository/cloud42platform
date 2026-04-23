@@ -218,11 +218,14 @@ export class ScriptEditorDialogComponent implements AfterViewInit, OnDestroy {
           if (this.data.extraGlobals) {
             for (const [name, type] of Object.entries(this.data.extraGlobals)) {
               if (!partial || name.toLowerCase().includes(partial)) {
+                const isFunc = type.startsWith('(');
                 suggestions.push({
                   label: name,
-                  kind: monaco.languages.CompletionItemKind.Variable,
-                  insertText: name,
+                  kind: isFunc ? monaco.languages.CompletionItemKind.Function : monaco.languages.CompletionItemKind.Variable,
+                  insertText: isFunc ? `${name}(\${1})` : name,
+                  insertTextRules: isFunc ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet : undefined,
                   detail: type,
+                  documentation: isFunc ? `${name}${type}` : undefined,
                 });
               }
             }

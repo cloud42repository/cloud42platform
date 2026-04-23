@@ -310,6 +310,7 @@ export const DE: Record<TranslationKey, string> = {
   'users.user-revoked': 'Benutzer widerrufen',
   'users.revoke-confirm': 'Zugang für "{{name}}" widerrufen?',
   'users.invite-sent': 'Einladungs-E-Mail erneut gesendet',
+  'users.invite-link': 'Passwort-Link',
   'users.filter-status': 'Nach Status filtern',
   'users.all-statuses': 'Alle Status',
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, signal, computed, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
@@ -320,6 +320,22 @@ import { TranslateService } from '../../services/translate.service';
         </div>
       }
     </div>
+
+    <!-- Invite link dialog -->
+    <ng-template #inviteLinkTpl>
+      <h2 mat-dialog-title>{{ 'users.invite-link' | t }}</h2>
+      <mat-dialog-content>
+        <div class="invite-link-box">
+          <input readonly class="invite-link-input" [value]="inviteLink()" (click)="$event.target.select()" />
+          <button mat-icon-button (click)="copyInviteLink()" [matTooltip]="'Copy'">
+            <mat-icon>{{ linkCopied() ? 'check' : 'content_copy' }}</mat-icon>
+          </button>
+        </div>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button mat-dialog-close>{{ 'common.close' | t }}</button>
+      </mat-dialog-actions>
+    </ng-template>
   `,
   styles: [`
     .user-mgmt-root {
@@ -642,13 +658,37 @@ import { TranslateService } from '../../services/translate.service';
       gap: 8px;
       flex-wrap: wrap;
     }
+
+    /* ── Invite link dialog ── */
+    .invite-link-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .invite-link-input {
+      flex: 1;
+      font-size: 13px;
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #f8fafc;
+      color: #1e293b;
+      min-width: 400px;
+      cursor: text;
+    }
   `],
 })
 export class UserManagementComponent implements OnInit {
   private readonly userApi = inject(UserApiService);
   readonly userMgmt = inject(UserManagementService);
   private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
   readonly i18n = inject(TranslateService);
+
+  readonly inviteLinkTpl = viewChild<TemplateRef<unknown>>('inviteLinkTpl');
+  readonly inviteLink = signal('');
+  readonly linkCopied = signal(false);
 
   readonly allModules = MODULES;
   readonly loading = signal(false);
@@ -784,10 +824,22 @@ export class UserManagementComponent implements OnInit {
 
   async resendInvite(email: string): Promise<void> {
     try {
-      await firstValueFrom(this.userApi.resendInvite(email));
-      this.snack.open(this.i18n.t('users.invite-sent'), 'OK', { duration: 3000 });
+      const result = await firstValueFrom(this.userApi.resendInvite(email));
+      this.inviteLink.set(result.passwordSetLink);
+      this.linkCopied.set(false);
+      const tpl = this.inviteLinkTpl();
+      if (tpl) this.dialog.open(tpl, { width: '560px' });
     } catch {
       this.snack.open(this.i18n.t('users.update-error'), 'OK', { duration: 4000 });
+    }
+  }
+
+  async copyInviteLink(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(this.inviteLink());
+      this.linkCopied.set(true);
+    } catch {
+      /* fallback: already displayed in the input */
     }
   }
 

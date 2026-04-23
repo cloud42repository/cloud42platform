@@ -308,6 +308,7 @@ export const EN = {
   'users.user-revoked': 'User revoked',
   'users.revoke-confirm': 'Revoke access for "{{name}}"?',
   'users.invite-sent': 'Invite email resent',
+  'users.invite-link': 'Password Set Link',
   'users.filter-status': 'Filter by status',
   'users.all-statuses': 'All statuses',
 

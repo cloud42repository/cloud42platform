@@ -250,15 +250,17 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                              (input)="onFieldInput(field, $any($event.target).value)" />
                     }
                     @if (field.kind === 'select') {
-                      <mat-form-field appearance="outline" class="preview-select-field">
-                        <mat-select [value]="getFieldValue(field.id)"
-                                    (selectionChange)="setFieldValue(field.id, $event.value)"
-                                    [placeholder]="field.placeholder || 'Select…'">
+                      <div class="select-wrapper">
+                        <select class="native-select"
+                                [value]="getFieldValue(field.id)"
+                                (change)="setFieldValue(field.id, $any($event.target).value)">
+                          <option value="" disabled selected>{{ field.placeholder || 'Select…' }}</option>
                           @for (opt of getSelectOptions(field); track $index) {
-                            <mat-option [value]="opt.value">{{ opt.display }}</mat-option>
+                            <option [value]="opt.value">{{ opt.display }}</option>
                           }
-                        </mat-select>
-                      </mat-form-field>
+                        </select>
+                        <span class="select-arrow">▾</span>
+                      </div>
                       @if (field.dataSource) {
                         <span class="data-source-tag">
                           <mat-icon style="font-size:12px;width:12px;height:12px">cloud</mat-icon>
@@ -670,10 +672,22 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
       font-size: 13px; outline: none; box-sizing: border-box;
     }
     .preview-text-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
-    .preview-select-field {
-      width: 100%; font-size: 13px;
+    .select-wrapper {
+      position: relative; display: flex; align-items: center;
+      border: 1px solid #e2e8f0; border-radius: 8px;
+      background: white; width: 100%;
     }
-    .preview-select-field .mat-mdc-form-field-subscript-wrapper { display: none; }
+    .native-select {
+      width: 100%; border: none; outline: none; background: transparent;
+      color: #1e293b; font-size: 13px; padding: 8px 28px 8px 12px;
+      appearance: none; cursor: pointer;
+    }
+    .native-select:focus { outline: none; }
+    .select-wrapper:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
+    .select-arrow {
+      position: absolute; right: 10px; pointer-events: none;
+      color: #94a3b8; font-size: 14px;
+    }
     .data-source-tag {
       display: inline-flex; align-items: center; gap: 4px;
       font-size: 10px; color: #64748b; background: #f1f5f9;

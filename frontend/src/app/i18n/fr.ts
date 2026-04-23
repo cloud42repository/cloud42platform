@@ -309,8 +309,7 @@ export const FR: Record<TranslationKey, string> = {
   'users.user-approved': 'Utilisateur approuvé — e-mail de mot de passe envoyé',
   'users.user-revoked': 'Utilisateur révoqué',
   'users.revoke-confirm': 'Révoquer l\'accès de "{{name}}" ?',
-  'users.invite-sent': 'E-mail d\'invitation renvoyé',
-  'users.filter-status': 'Filtrer par statut',
+  'users.invite-sent': 'E-mail d\'invitation renvoyé',  'users.invite-link': 'Lien de mot de passe',  'users.filter-status': 'Filtrer par statut',
   'users.all-statuses': 'Tous les statuts',
 
   /* ── Dashboards (generic) ── */
