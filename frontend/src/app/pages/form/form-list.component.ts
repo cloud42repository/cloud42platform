@@ -1,6 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -26,10 +26,16 @@ import { TranslateService } from '../../services/translate.service';
           <p>{{ 'form.list-subtitle' | t }}</p>
         </div>
       </div>
-      <button mat-flat-button color="primary" routerLink="/forms/new">
-        <mat-icon>add</mat-icon> {{ 'form.new' | t }}
-      </button>
+      <div style="display:flex;gap:8px">
+        <button mat-stroked-button (click)="fileInput.click()" matTooltip="Import form JSON">
+          <mat-icon>upload_file</mat-icon> {{ 'common.import' | t }}
+        </button>
+        <button mat-flat-button color="primary" routerLink="/forms/new">
+          <mat-icon>add</mat-icon> {{ 'form.new' | t }}
+        </button>
+      </div>
     </div>
+    <input #fileInput type="file" accept=".json" hidden (change)="importFile($event)">
 
     @if (svc.forms().length === 0) {
       <div class="empty-state">
@@ -78,6 +84,11 @@ import { TranslateService } from '../../services/translate.service';
             <div class="frm-actions">
               <button mat-stroked-button [routerLink]="['/forms', frm.id, 'edit']">
                 <mat-icon>edit</mat-icon> {{ 'form.edit-btn' | t }}
+              </button>
+              <button mat-icon-button
+                      (click)="exportItem(frm)"
+                      [matTooltip]="'common.export' | t">
+                <mat-icon>download</mat-icon>
               </button>
               <button mat-icon-button color="warn"
                       (click)="delete(frm)"
@@ -158,11 +169,51 @@ import { TranslateService } from '../../services/translate.service';
 })
 export class FormListComponent {
   readonly svc = inject(FormService);
+  private readonly router = inject(Router);
   private readonly i18n = inject(TranslateService);
 
   delete(form: FormDefinition) {
     if (confirm(this.i18n.t('form.confirm-delete' as any, { name: form.name }))) {
       this.svc.remove(form.id);
     }
+  }
+
+  exportItem(form: FormDefinition): void {
+    const { createdAt, updatedAt, ...data } = form as any;
+    const blob = new Blob([JSON.stringify({ _type: 'form', ...data }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${form.name || 'form'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  importFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const json = JSON.parse(reader.result as string);
+        if (json._type && json._type !== 'form') { alert('This file is not a form export.'); return; }
+        delete json._type;
+        const now = new Date().toISOString();
+        const imported: FormDefinition = {
+          ...json,
+          id: crypto.randomUUID(),
+          status: 'draft',
+          createdAt: now,
+          updatedAt: now,
+        };
+        this.svc.upsert(imported);
+        this.router.navigate(['/forms', imported.id, 'edit']);
+      } catch {
+        alert('Invalid JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    input.value = '';
   }
 }

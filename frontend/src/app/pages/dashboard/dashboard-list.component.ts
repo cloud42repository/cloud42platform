@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -26,10 +26,16 @@ import { TranslateService } from '../../services/translate.service';
           <p>{{ 'dashboard.list-subtitle' | t }}</p>
         </div>
       </div>
-      <button mat-flat-button color="primary" routerLink="/dashboards/new">
-        <mat-icon>add</mat-icon> {{ 'dashboard.new' | t }}
-      </button>
+      <div style="display:flex;gap:8px">
+        <button mat-stroked-button (click)="fileInput.click()" matTooltip="Import dashboard JSON">
+          <mat-icon>upload_file</mat-icon> {{ 'common.import' | t }}
+        </button>
+        <button mat-flat-button color="primary" routerLink="/dashboards/new">
+          <mat-icon>add</mat-icon> {{ 'dashboard.new' | t }}
+        </button>
+      </div>
     </div>
+    <input #fileInput type="file" accept=".json" hidden (change)="importFile($event)">
 
     @if (svc.dashboards().length === 0) {
       <div class="empty-state">
@@ -75,6 +81,11 @@ import { TranslateService } from '../../services/translate.service';
             <div class="db-actions">
               <button mat-stroked-button [routerLink]="['/dashboards', db.id, 'edit']">
                 <mat-icon>edit</mat-icon> {{ 'dashboard.edit-btn' | t }}
+              </button>
+              <button mat-icon-button
+                      (click)="exportItem(db)"
+                      [matTooltip]="'common.export' | t">
+                <mat-icon>download</mat-icon>
               </button>
               <button mat-icon-button color="warn"
                       (click)="delete(db)"
@@ -165,11 +176,51 @@ import { TranslateService } from '../../services/translate.service';
 })
 export class DashboardListComponent {
   readonly svc = inject(DashboardService);
+  private readonly router = inject(Router);
   readonly i18n = inject(TranslateService);
 
   delete(db: Dashboard) {
     if (confirm(this.i18n.t('dashboard.confirm-delete', { name: db.name }))) {
       this.svc.remove(db.id);
     }
+  }
+
+  exportItem(db: Dashboard): void {
+    const { createdAt, updatedAt, ...data } = db as any;
+    const blob = new Blob([JSON.stringify({ _type: 'dashboard', ...data }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${db.name || 'dashboard'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  importFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const json = JSON.parse(reader.result as string);
+        if (json._type && json._type !== 'dashboard') { alert('This file is not a dashboard export.'); return; }
+        delete json._type;
+        const now = new Date().toISOString();
+        const imported: Dashboard = {
+          ...json,
+          id: crypto.randomUUID(),
+          status: 'draft',
+          createdAt: now,
+          updatedAt: now,
+        };
+        this.svc.upsert(imported);
+        this.router.navigate(['/dashboards', imported.id, 'edit']);
+      } catch {
+        alert('Invalid JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    input.value = '';
   }
 }

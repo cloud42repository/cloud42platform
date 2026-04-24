@@ -33,10 +33,16 @@ import { TranslateService } from '../../services/translate.service';
           <p>{{ 'workflow.list-subtitle' | t }}</p>
         </div>
       </div>
-      <button mat-flat-button color="primary" routerLink="/workflows/new">
-        <mat-icon>add</mat-icon> {{ 'workflow.new' | t }}
-      </button>
+      <div style="display:flex;gap:8px">
+        <button mat-stroked-button (click)="fileInput.click()" matTooltip="Import workflow JSON">
+          <mat-icon>upload_file</mat-icon> {{ 'common.import' | t }}
+        </button>
+        <button mat-flat-button color="primary" routerLink="/workflows/new">
+          <mat-icon>add</mat-icon> {{ 'workflow.new' | t }}
+        </button>
+      </div>
     </div>
+    <input #fileInput type="file" accept=".json" hidden (change)="importFile($event)">
 
     @if (svc.workflows().length === 0) {
       <div class="empty-state">
@@ -138,6 +144,11 @@ import { TranslateService } from '../../services/translate.service';
                   <mat-icon>cloud_upload</mat-icon>
                 }
                 {{ 'workflow.run-backend' | t }}
+              </button>
+              <button mat-icon-button
+                      (click)="exportItem(wf)"
+                      [matTooltip]="'common.export' | t">
+                <mat-icon>download</mat-icon>
               </button>
               <button mat-icon-button color="warn"
                       (click)="delete(wf)"
@@ -286,6 +297,47 @@ export class WorkflowListComponent {
     if (confirm(this.i18n.t('workflow.confirm-delete', { name: wf.name }))) {
       this.svc.remove(wf.id);
     }
+  }
+
+  exportItem(wf: Workflow): void {
+    const { createdAt, updatedAt, lastRunLog, ...data } = wf as any;
+    const blob = new Blob([JSON.stringify({ _type: 'workflow', ...data }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${wf.name || 'workflow'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  importFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const json = JSON.parse(reader.result as string);
+        if (json._type && json._type !== 'workflow') { alert('This file is not a workflow export.'); return; }
+        delete json._type;
+        const now = new Date().toISOString();
+        const imported: Workflow = {
+          ...json,
+          id: crypto.randomUUID(),
+          status: 'draft',
+          scheduledAt: null,
+          lastRunLog: undefined,
+          createdAt: now,
+          updatedAt: now,
+        };
+        this.svc.upsert(imported);
+        this.router.navigate(['/workflows', imported.id, 'edit']);
+      } catch {
+        alert('Invalid JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    input.value = '';
   }
 
 }

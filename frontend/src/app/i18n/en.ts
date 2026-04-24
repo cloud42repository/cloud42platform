@@ -218,6 +218,8 @@ export const EN = {
   'common.cancel': 'Cancel',
   'common.confirm': 'Confirm',
   'common.close': 'Close',
+  'common.import': 'Import',
+  'common.export': 'Export',
   'common.loading': 'Loading…',
   'common.no-data': 'No data',
   'common.error': 'Error',

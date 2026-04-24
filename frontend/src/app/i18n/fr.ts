@@ -220,6 +220,8 @@ export const FR: Record<TranslationKey, string> = {
   'common.cancel': 'Annuler',
   'common.confirm': 'Confirmer',
   'common.close': 'Fermer',
+  'common.import': 'Importer',
+  'common.export': 'Exporter',
   'common.loading': 'Chargement…',
   'common.no-data': 'Aucune donnée',
   'common.error': 'Erreur',
