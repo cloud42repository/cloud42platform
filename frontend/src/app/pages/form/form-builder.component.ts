@@ -278,23 +278,27 @@ interface FieldTypeRef {
                   @case ('text') {
                     <app-text-field [field]="field" [value]="getFieldValue(field.id)"
                                     [boundTableLabel]="getBoundTableLabel(field)"
+                                    [disabled]="isFieldDisabled(field.id)"
                                     (inputChange)="onFieldInput(field, $event)"
                                     (selectField)="selectField(field.id)" />
                   }
                   @case ('number') {
                     <app-number-field [field]="field" [value]="getFieldValue(field.id)"
                                       [boundTableLabel]="getBoundTableLabel(field)"
+                                      [disabled]="isFieldDisabled(field.id)"
                                       (inputChange)="onFieldInput(field, $event)"
                                       (selectField)="selectField(field.id)" />
                   }
                   @case ('boolean') {
                     <app-boolean-field [field]="field" [checked]="getBooleanFieldValue(field.id)"
+                                       [disabled]="isFieldDisabled(field.id)"
                                        (toggle)="toggleBooleanField($event)"
                                        (valueChange)="setFieldValue($event.fieldId, $event.value)" />
                   }
                   @case ('date') {
                     <app-date-field [field]="field" [value]="getFieldValue(field.id)"
                                     [boundTableLabel]="getBoundTableLabel(field)"
+                                    [disabled]="isFieldDisabled(field.id)"
                                     (inputChange)="onFieldInput(field, $event)"
                                     (selectField)="selectField(field.id)" />
                   }
@@ -302,6 +306,7 @@ interface FieldTypeRef {
                     <app-select-field [field]="field" [value]="getFieldValue(field.id)"
                                       [options]="getSelectOptions(field)"
                                       [totalCount]="asArray(field.lastData).length"
+                                      [disabled]="isFieldDisabled(field.id)"
                                       (valueChange)="setFieldValue(field.id, $event)" />
                   }
                   @case ('datatable') {
@@ -309,6 +314,7 @@ interface FieldTypeRef {
                                          [columns]="getTableColumns(field)"
                                          [rows]="getTableRows(field)"
                                          [selectedRow]="selectedTableRow()"
+                                         [disabled]="isFieldDisabled(field.id)"
                                          (rowSelect)="onTableRowSelect($event.field, $event.rowIndex, $event.row)" />
                   }
                 }
@@ -557,7 +563,7 @@ interface FieldTypeRef {
                   {{ 'form.on-change-script' | t }}
                   <button mat-icon-button class="open-editor-btn"
                           matTooltip="{{ 'form.open-editor' | t }}"
-                          (click)="openScriptEditor(field.onChangeScript ?? '', 'field-onChange', field.id, { value: 'unknown', FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void' })">
+                          (click)="openScriptEditor(field.onChangeScript ?? '', 'field-onChange', field.id, { value: 'unknown', FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void', setFieldEnabled: '(nameOrId: string, enabled: boolean) => void' })">
                     <mat-icon>open_in_new</mat-icon>
                   </button>
                 </div>
@@ -698,7 +704,7 @@ interface FieldTypeRef {
                 {{ 'form.script-code' | t }}
                 <button mat-icon-button class="open-editor-btn"
                         matTooltip="{{ 'form.open-editor' | t }}"
-                        (click)="openScriptEditor(action.scriptCode ?? '', 'action-script', action.id, { FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void' })">
+                        (click)="openScriptEditor(action.scriptCode ?? '', 'action-script', action.id, { FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void', setFieldEnabled: '(nameOrId: string, enabled: boolean) => void' })">
                   <mat-icon>open_in_new</mat-icon>
                 </button>
               </div>
@@ -1388,6 +1394,8 @@ export class FormBuilderComponent implements OnInit {
   readonly lastResponse = signal<{ actionId: string; status: 'success' | 'error'; data: unknown } | null>(null);
   /** Runtime values entered in the form fields */
   readonly fieldValues = signal<Record<string, unknown>>({});
+  /** Runtime disabled state per field (fieldId → true means disabled) */
+  readonly fieldDisabled = signal<Record<string, boolean>>({});
   /** Currently selected datatable row: { fieldId, rowIndex } */
   readonly selectedTableRow = signal<{ fieldId: string; rowIndex: number } | null>(null);
 
@@ -2057,7 +2065,11 @@ export class FormBuilderComponent implements OnInit {
         this.setFieldValue(id, val);
         formFields[nameOrId] = val;
       };
-      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, ...apiProxies };
+      const enableField = (nameOrId: string, enabled: boolean) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.setFieldEnabled(id, enabled);
+      };
+      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, setFieldEnabled: enableField, ...apiProxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -2165,6 +2177,14 @@ export class FormBuilderComponent implements OnInit {
 
   setFieldValue(fieldId: string, value: unknown) {
     this.fieldValues.update(v => ({ ...v, [fieldId]: value }));
+  }
+
+  isFieldDisabled(fieldId: string): boolean {
+    return !!this.fieldDisabled()[fieldId];
+  }
+
+  setFieldEnabled(fieldId: string, enabled: boolean) {
+    this.fieldDisabled.update(d => ({ ...d, [fieldId]: !enabled }));
   }
 
   /** Called on text/number/date input — sets value and triggers onChange script if configured */
@@ -2287,9 +2307,15 @@ export class FormBuilderComponent implements OnInit {
         this.setFieldValue(id, val);
       };
 
+      const enableField = (nameOrId: string, enabled: boolean) => {
+        const id = labelToId[nameOrId] ?? nameOrId;
+        this.setFieldEnabled(id, enabled);
+      };
+
       const args: Record<string, unknown> = {
         FormFields: formFields,
         setFieldValue: setField,
+        setFieldEnabled: enableField,
         ...apiProxies,
       };
 
@@ -2803,10 +2829,10 @@ export class FormBuilderComponent implements OnInit {
   /** Open the Monaco script editor popup */
   openScriptEditor(code: string, mode: 'field-script' | 'field-onChange' | 'action-script', id: string, extraGlobals?: Record<string, string>) {
     const ref = this.dialog.open(ScriptEditorDialogComponent, {
-      data: { code, title: 'Script Editor', extraGlobals } as ScriptEditorDialogData,
+      data: { code, title: 'Script Editor', mode, extraGlobals } as ScriptEditorDialogData,
       panelClass: 'script-editor-dialog-panel',
-      width: '80vw',
-      maxWidth: '1200px',
+      width: '85vw',
+      maxWidth: '1400px',
       height: '85vh',
       autoFocus: false,
     });

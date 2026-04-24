@@ -275,7 +275,7 @@ mat-card {
 }
 .script-editor-dialog-panel .mat-mdc-dialog-container .mdc-dialog__surface {
   padding: 0 !important;
-  overflow: visible;
+  overflow: hidden;
   border-radius: 12px;
   display: flex;
   flex-direction: column;

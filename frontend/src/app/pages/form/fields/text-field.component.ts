@@ -7,10 +7,11 @@ import { DataSourceTagComponent } from './data-source-tag.component';
   standalone: true,
   imports: [DataSourceTagComponent],
   template: `
-    <div class="preview-input">
+    <div class="preview-input" [class.field-disabled]="disabled">
       <input [type]="field.masked ? 'password' : 'text'" class="preview-text-input"
              [placeholder]="field.placeholder || field.label || 'Text input'"
              [value]="value"
+             [disabled]="disabled"
              (input)="inputChange.emit($any($event.target).value)"
              (click)="$event.stopPropagation(); selectField.emit(field.id)" />
     </div>
@@ -26,12 +27,14 @@ import { DataSourceTagComponent } from './data-source-tag.component';
       color: #1e293b; font-size: 12px; width: 100%; cursor: text;
     }
     .preview-text-input::placeholder { color: #94a3b8; }
+    .field-disabled { opacity: 0.5; pointer-events: none; }
   `],
 })
 export class TextFieldComponent {
   @Input() field!: FormField;
   @Input() value = '';
   @Input() boundTableLabel = '';
+  @Input() disabled = false;
   @Output() inputChange = new EventEmitter<string>();
   @Output() selectField = new EventEmitter<string>();
 }

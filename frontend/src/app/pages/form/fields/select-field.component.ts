@@ -9,9 +9,10 @@ import { DataSourceTagComponent } from './data-source-tag.component';
   standalone: true,
   imports: [CommonModule, MatIconModule, DataSourceTagComponent],
   template: `
-    <div class="select-wrapper" (click)="$event.stopPropagation()">
+    <div class="select-wrapper" [class.field-disabled]="disabled" (click)="$event.stopPropagation()">
       <select class="native-select"
               [value]="value"
+              [disabled]="disabled"
               (change)="valueChange.emit($any($event.target).value)">
         <option value="" disabled selected>{{ field.placeholder || 'Select…' }}</option>
         @for (opt of options; track $index) {
@@ -69,6 +70,7 @@ import { DataSourceTagComponent } from './data-source-tag.component';
       text-align: center; background: #f8fafc;
       border-top: 1px solid #e2e8f0; border-radius: 0 0 6px 6px;
     }
+    .field-disabled { opacity: 0.5; pointer-events: none; }
   `],
 })
 export class SelectFieldComponent {
@@ -76,6 +78,7 @@ export class SelectFieldComponent {
   @Input() value = '';
   @Input() options: { display: string; value: string }[] = [];
   @Input() totalCount = 0;
+  @Input() disabled = false;
   @Output() valueChange = new EventEmitter<string>();
 
   isArray(data: unknown): boolean { return Array.isArray(data); }

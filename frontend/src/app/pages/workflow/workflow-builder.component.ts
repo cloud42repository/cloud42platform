@@ -3871,10 +3871,10 @@ export class WorkflowBuilderComponent implements OnInit {
       if (b.name) extras[b.name] = 'any';
     }
     const ref = this.dialog.open(ScriptEditorDialogComponent, {
-      data: { code: block.code || '', title: 'Script Editor', extraGlobals: Object.keys(extras).length ? extras : undefined } as ScriptEditorDialogData,
+      data: { code: block.code || '', title: 'Script Editor', mode: 'workflow-script' as const, extraGlobals: Object.keys(extras).length ? extras : undefined } as ScriptEditorDialogData,
       panelClass: 'script-editor-dialog-panel',
-      width: '80vw',
-      maxWidth: '1200px',
+      width: '85vw',
+      maxWidth: '1400px',
       height: '85vh',
       autoFocus: false,
     });

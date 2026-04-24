@@ -7,9 +7,10 @@ import { DataSourceTagComponent } from './data-source-tag.component';
   standalone: true,
   imports: [DataSourceTagComponent],
   template: `
-    <div class="preview-input preview-date">
+    <div class="preview-input preview-date" [class.field-disabled]="disabled">
       <input type="date" class="preview-text-input"
              [value]="value"
+             [disabled]="disabled"
              (input)="inputChange.emit($any($event.target).value)"
              (click)="$event.stopPropagation(); selectField.emit(field.id)" />
     </div>
@@ -26,12 +27,14 @@ import { DataSourceTagComponent } from './data-source-tag.component';
     }
     .preview-text-input::placeholder { color: #94a3b8; }
     .preview-date { position: relative; }
+    .field-disabled { opacity: 0.5; pointer-events: none; }
   `],
 })
 export class DateFieldComponent {
   @Input() field!: FormField;
   @Input() value = '';
   @Input() boundTableLabel = '';
+  @Input() disabled = false;
   @Output() inputChange = new EventEmitter<string>();
   @Output() selectField = new EventEmitter<string>();
 }

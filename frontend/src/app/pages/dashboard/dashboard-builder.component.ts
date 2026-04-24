@@ -2360,10 +2360,10 @@ export class DashboardBuilderComponent implements OnInit {
   /** Open the Monaco script editor popup */
   openScriptEditor(widget: DashboardWidget) {
     const ref = this.dialog.open(ScriptEditorDialogComponent, {
-      data: { code: widget.scriptCode ?? '', title: 'Script Editor' } as ScriptEditorDialogData,
+      data: { code: widget.scriptCode ?? '', title: 'Script Editor', mode: 'dashboard-script' as const } as ScriptEditorDialogData,
       panelClass: 'script-editor-dialog-panel',
-      width: '80vw',
-      maxWidth: '1200px',
+      width: '85vw',
+      maxWidth: '1400px',
       height: '85vh',
       autoFocus: false,
     });

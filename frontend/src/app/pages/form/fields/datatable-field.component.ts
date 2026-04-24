@@ -10,6 +10,7 @@ import { TranslatePipe } from '../../../i18n/translate.pipe';
   standalone: true,
   imports: [CommonModule, MatIconModule, DataSourceTagComponent, TranslatePipe],
   template: `
+    <div [class.field-disabled]="disabled">
     <app-data-source-tag [field]="field" />
     @if (field.columns) {
       <div class="preview-table-cols">
@@ -44,6 +45,7 @@ import { TranslatePipe } from '../../../i18n/translate.pipe';
         </table>
       </div>
     }
+    </div>
   `,
   styles: [`
     .preview-table-cols { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
@@ -66,6 +68,7 @@ import { TranslatePipe } from '../../../i18n/translate.pipe';
     .data-table tbody tr:hover td { background: #f0f9ff; }
     .data-table tbody tr { cursor: pointer; }
     .data-table tbody tr.row-selected td { background: #dbeafe; font-weight: 500; }
+    .field-disabled { opacity: 0.5; pointer-events: none; }
   `],
 })
 export class DatatableFieldComponent {
@@ -73,6 +76,7 @@ export class DatatableFieldComponent {
   @Input() columns: string[] = [];
   @Input() rows: Record<string, string>[] = [];
   @Input() selectedRow: { fieldId: string; rowIndex: number } | null = null;
+  @Input() disabled = false;
   @Output() rowSelect = new EventEmitter<{ field: FormField; rowIndex: number; row: Record<string, string> }>();
 
   isArray(data: unknown): boolean { return Array.isArray(data); }
