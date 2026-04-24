@@ -48,6 +48,9 @@ export interface FormField {
   /** Script to run when the field value changes (text / number / date / boolean) */
   onChangeScript?: string;
 
+  /** Script to run when a datatable row is selected */
+  onRowSelectScript?: string;
+
   /** For text fields: mask input with asterisks (password-style) */
   masked?: boolean;
 

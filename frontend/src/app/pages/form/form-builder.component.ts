@@ -445,7 +445,7 @@ interface FieldTypeRef {
                   {{ 'form.script-code' | t }}
                   <button mat-icon-button class="open-editor-btn"
                           matTooltip="{{ 'form.open-editor' | t }}"
-                          (click)="openScriptEditor(field.scriptCode ?? '', 'field-script', field.id)">
+                          (click)="openScriptEditor(field.scriptCode ?? '', 'field-script', field.id, { FormFields: 'Record<string, unknown>' })">
                     <mat-icon>open_in_new</mat-icon>
                   </button>
                 </div>
@@ -606,6 +606,28 @@ interface FieldTypeRef {
                   <input matInput [value]="field.columns || ''"
                          (input)="updateField(field.id, 'columns', $any($event.target).value)"
                          placeholder="{{ 'form.columns-hint' | t }}" />
+                </mat-form-field>
+
+                <mat-divider class="section-divider" />
+                <div class="config-section-label">
+                  {{ 'form.on-row-select-script' | t }}
+                  <button mat-icon-button class="open-editor-btn"
+                          matTooltip="{{ 'form.open-editor' | t }}"
+                          (click)="openScriptEditor(field.onRowSelectScript ?? '', 'field-rowSelect', field.id, { row: 'Record<string, string>', rowIndex: 'number', FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void', setFieldEnabled: '(nameOrId: string, enabled: boolean) => void' })">
+                    <mat-icon>open_in_new</mat-icon>
+                  </button>
+                </div>
+                <p class="config-hint">{{ 'form.on-row-select-hint' | t }}</p>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                  <mat-label>{{ 'form.on-row-select-script' | t }}</mat-label>
+                  <textarea matInput rows="8"
+                            [value]="field.onRowSelectScript ?? ''"
+                            (input)="onFieldRowSelectScriptInput($any($event.target), field.id)"
+                            (keydown)="onScriptKeydown($event)"
+                            (blur)="closeAc()"
+                            placeholder="// Runs when the user selects a datatable row&#10;// 'row' = selected row object, 'rowIndex' = row index&#10;// setFieldValue('Field Name', newVal) to update other fields&#10;&#10;setFieldValue('Customer', row['Name']);&#10;setFieldValue('Email', row['Email']);"
+                            class="script-textarea"></textarea>
+                  <mat-hint>{{ 'form.script-async-hint' | t }}</mat-hint>
                 </mat-form-field>
               }
 
@@ -1923,6 +1945,10 @@ export class FormBuilderComponent implements OnInit {
         this.setFieldValue(f.id, value);
       }
     }
+    // Execute the onRowSelect script if configured
+    if (tableField.onRowSelectScript?.trim()) {
+      this.executeRowSelectScript(tableField, row, rowIndex);
+    }
   }
 
   /** Get datatable fields for the "Bind to Table" dropdown */
@@ -2077,6 +2103,39 @@ export class FormBuilderComponent implements OnInit {
       await fn(...argValues);
     } catch (err) {
       console.error('Failed to run onChange script', err);
+    }
+  }
+
+  /** Execute an onRowSelect script for a datatable field when a row is selected */
+  private async executeRowSelectScript(field: FormField, row: Record<string, string>, rowIndex: number) {
+    const code = field.onRowSelectScript ?? '';
+    if (!code.trim()) return;
+    try {
+      const apiProxies = this.buildScriptApiProxies();
+      const formFields: Record<string, unknown> = {};
+      const labelToId: Record<string, string> = {};
+      for (const f of this.fields()) {
+        const key = f.label || f.id;
+        formFields[key] = this.fieldValues()[f.id] ?? '';
+        labelToId[key] = f.id;
+      }
+      const setField = (nameOrId: string, val: unknown) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.setFieldValue(id, val);
+        formFields[nameOrId] = val;
+      };
+      const enableField = (nameOrId: string, enabled: boolean) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.setFieldEnabled(id, enabled);
+      };
+      const args: Record<string, unknown> = { row, rowIndex, FormFields: formFields, setFieldValue: setField, setFieldEnabled: enableField, ...apiProxies };
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      await fn(...argValues);
+    } catch (err) {
+      console.error('Failed to run onRowSelect script', err);
     }
   }
 
@@ -2827,7 +2886,7 @@ export class FormBuilderComponent implements OnInit {
   }
 
   /** Open the Monaco script editor popup */
-  openScriptEditor(code: string, mode: 'field-script' | 'field-onChange' | 'action-script', id: string, extraGlobals?: Record<string, string>) {
+  openScriptEditor(code: string, mode: 'field-script' | 'field-onChange' | 'field-rowSelect' | 'action-script', id: string, extraGlobals?: Record<string, string>) {
     const ref = this.dialog.open(ScriptEditorDialogComponent, {
       data: { code, title: 'Script Editor', mode, extraGlobals } as ScriptEditorDialogData,
       panelClass: 'script-editor-dialog-panel',
@@ -2840,6 +2899,7 @@ export class FormBuilderComponent implements OnInit {
       if (result === undefined) return;
       if (mode === 'field-script') this.updateField(id, 'scriptCode', result);
       else if (mode === 'field-onChange') this.updateField(id, 'onChangeScript', result);
+      else if (mode === 'field-rowSelect') this.updateField(id, 'onRowSelectScript', result);
       else if (mode === 'action-script') this.updateAction(id, 'scriptCode', result);
     });
   }
@@ -2865,6 +2925,20 @@ export class FormBuilderComponent implements OnInit {
     this.scriptAcMode = true;
     if (this.scriptFieldTimer) clearTimeout(this.scriptFieldTimer);
     this.scriptFieldTimer = setTimeout(() => this.updateField(fieldId, 'onChangeScript', textarea.value), 400);
+    this.updateAcPosition();
+    const pos = textarea.selectionStart ?? 0;
+    const suggestions = this.buildScriptSuggestions(textarea.value, pos, true);
+    this.acSuggestions.set(suggestions);
+    this.acIndex.set(0);
+  }
+
+  /** Handle input in a row-select script textarea */
+  onFieldRowSelectScriptInput(textarea: HTMLTextAreaElement, fieldId: string) {
+    this.acInput = textarea;
+    this.acCallback = null;
+    this.scriptAcMode = true;
+    if (this.scriptFieldTimer) clearTimeout(this.scriptFieldTimer);
+    this.scriptFieldTimer = setTimeout(() => this.updateField(fieldId, 'onRowSelectScript', textarea.value), 400);
     this.updateAcPosition();
     const pos = textarea.selectionStart ?? 0;
     const suggestions = this.buildScriptSuggestions(textarea.value, pos, true);

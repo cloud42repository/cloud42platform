@@ -14,7 +14,7 @@ export interface ScriptEditorDialogData {
   code: string;
   title?: string;
   /** Script type so the help panel can show relevant docs */
-  mode?: 'field-script' | 'field-onChange' | 'action-script' | 'workflow-script' | 'dashboard-script';
+  mode?: 'field-script' | 'field-onChange' | 'field-rowSelect' | 'action-script' | 'workflow-script' | 'dashboard-script';
   /** Extra global variables available in the script (e.g. { value: 'string', FormFields: 'Record<string, unknown>' }) */
   extraGlobals?: Record<string, string>;
 }
@@ -54,21 +54,25 @@ export interface ScriptEditorDialogData {
                   @if (data.mode === 'field-onChange') {
                     <tr><td><code>value</code></td><td>Current value of the changed field</td></tr>
                   }
-                  @if (data.mode === 'field-script' || data.mode === 'field-onChange' || data.mode === 'action-script') {
-                    <tr><td><code>FormFields</code></td><td>Object with all field values keyed by label</td></tr>
+                  @if (data.mode === 'field-rowSelect') {
+                    <tr><td><code>row</code></td><td>Selected row object (column name → value)</td></tr>
+                    <tr><td><code>rowIndex</code></td><td>Zero-based index of the selected row</td></tr>
                   }
-                  @if (data.mode === 'field-onChange' || data.mode === 'action-script') {
+                  @if (data.mode === 'field-script' || data.mode === 'field-onChange' || data.mode === 'field-rowSelect' || data.mode === 'action-script') {
+                    <tr><td><code>FormFields</code></td><td>All field values as <code>Record&lt;string, unknown&gt;</code> keyed by label</td></tr>
+                  }
+                  @if (data.mode === 'field-onChange' || data.mode === 'field-rowSelect' || data.mode === 'action-script') {
                     <tr><td><code>setFieldValue(name, val)</code></td><td>Set another field's value by label or ID</td></tr>
                     <tr><td><code>setFieldEnabled(name, enabled)</code></td><td>Enable or disable a field by label or ID</td></tr>
                   }
                   @if (data.mode === 'workflow-script') {
                     <tr><td><code>[input bindings]</code></td><td>Variables from connected steps (configured in Input Bindings)</td></tr>
-                    <tr><td><code>return</code></td><td>Return a value to pass it to the next step</td></tr>
                   }
-                  @if (data.mode === 'dashboard-script') {
-                    <tr><td><code>return</code></td><td>Return an array to populate the widget</td></tr>
+                  @if (data.mode === 'field-script' || data.mode === 'workflow-script' || data.mode === 'dashboard-script') {
+                    <tr><td><code>return</code></td><td>Return a value to set the result data</td></tr>
                   }
-                  <tr><td><code>await</code></td><td>All scripts are async — use await for API calls</td></tr>
+                  <tr><td><code>await</code></td><td>All scripts are async — use <code>await</code> for API calls</td></tr>
+                  <tr><td colspan="2" style="color:#64748b;font-size:10px;border:none;padding-top:6px;">+ all API modules (see below)</td></tr>
                 </table>
               </div>
 
@@ -90,6 +94,15 @@ export interface ScriptEditorDialogData {
                     <div class="example-title">Load contacts into a select</div>
                     <pre><code>const res = await ZohoBooks.ListContacts();
 return res;</code></pre>
+                  </div>
+                  <div class="help-example">
+                    <div class="example-title">Filter based on another field</div>
+                    <pre><code>// Use FormFields to read other field values
+const type = FormFields['Type'];
+const items = await ZohoCRM.ListModuleRecords(
+  &#123; module: type || 'Leads' &#125;
+);
+return items;</code></pre>
                   </div>
                   <div class="help-example">
                     <div class="example-title">Filter data with ChatGPT</div>
@@ -138,6 +151,45 @@ if (value === 'VIP') &#123;
                     <pre><code>// price * quantity → total
 const qty = FormFields['Quantity'] || 0;
 setFieldValue('Total', Number(value) * Number(qty));</code></pre>
+                  </div>
+                </div>
+              }
+
+              @if (data.mode === 'field-rowSelect') {
+                <div class="help-section">
+                  <h4>On Row Select Script</h4>
+                  <p class="help-hint">Runs when the user clicks a row in the datatable. Use the selected row data to populate other fields, call APIs, or enable/disable fields.</p>
+                  <div class="help-example">
+                    <div class="example-title">Populate fields from row</div>
+                    <pre><code>setFieldValue('Customer', row['Name']);
+setFieldValue('Email', row['Email']);
+setFieldValue('Phone', row['Phone']);</code></pre>
+                  </div>
+                  <div class="help-example">
+                    <div class="example-title">Look up details from API</div>
+                    <pre><code>// Fetch full contact from Zoho CRM
+const contact = await ZohoCRM.GetContact(&#123;
+  id: row['Contact_ID']
+&#125;);
+setFieldValue('Company', contact.Account_Name);
+setFieldValue('Owner', contact.Owner?.name);</code></pre>
+                  </div>
+                  <div class="help-example">
+                    <div class="example-title">Enable fields conditionally</div>
+                    <pre><code>// Enable edit fields only for "Draft" rows
+const isDraft = row['Status'] === 'Draft';
+setFieldEnabled('Edit Name', isDraft);
+setFieldEnabled('Edit Price', isDraft);
+setFieldEnabled('Submit', isDraft);</code></pre>
+                  </div>
+                  <div class="help-example">
+                    <div class="example-title">Compute from row data</div>
+                    <pre><code>const price = Number(row['Price']) || 0;
+const qty = Number(row['Quantity']) || 0;
+const tax = price * qty * 0.19;
+setFieldValue('Subtotal', price * qty);
+setFieldValue('Tax', tax.toFixed(2));
+setFieldValue('Total', (price * qty + tax).toFixed(2));</code></pre>
                   </div>
                 </div>
               }
@@ -364,8 +416,14 @@ const accounts =
                     <li>Use <code>return</code> to pass data to the next step</li>
                     <li>Input bindings provide variables from previous steps</li>
                   }
-                  @if (data.mode === 'field-onChange' || data.mode === 'action-script') {
+                  @if (data.mode === 'field-onChange' || data.mode === 'field-rowSelect' || data.mode === 'action-script') {
                     <li>Reference fields by their <strong>label</strong> or <strong>ID</strong></li>
+                  }
+                  @if (data.mode === 'field-rowSelect') {
+                    <li>Access columns via <code>row['ColumnName']</code></li>
+                  }
+                  @if (data.mode === 'field-script') {
+                    <li>Read existing values via <code>FormFields['Label']</code></li>
                   }
                   <li>API responses are auto-unwrapped — arrays are returned directly</li>
                   <li>Use <code>try/catch</code> for error handling</li>
@@ -373,9 +431,7 @@ const accounts =
                   @if (data.mode === 'dashboard-script') {
                     <li>Return <code>[&#123; name, value &#125;]</code> arrays for chart widgets</li>
                   }
-                  @if (data.mode === 'workflow-script') {
-                    <li>Use <code>Promise.all()</code> for parallel API calls</li>
-                  }
+                  <li>Use <code>Promise.all()</code> for parallel API calls</li>
                 </ul>
               </div>
             </div>

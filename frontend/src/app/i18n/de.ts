@@ -740,6 +740,8 @@ export const DE: Record<TranslationKey, string> = {
   'form.open-editor': 'Skript-Editor öffnen',
   'form.on-change-script': 'Bei Änderung Skript',
   'form.on-change-hint': 'Skript wird ausgeführt, wenn der Feldwert geändert wird. "value" = aktueller Wert, FormFields = alle Felder, setFieldValue(name, val) um andere Felder zu aktualisieren. Alle API-Module verfügbar.',
+  'form.on-row-select-script': 'Bei Zeilenauswahl Skript',
+  'form.on-row-select-hint': 'Skript wird ausgeführt, wenn eine Tabellenzeile ausgewählt wird. "row" = ausgewählte Zeile, "rowIndex" = Zeilenindex, FormFields = alle Felder. Verwenden Sie setFieldValue / setFieldEnabled.',
 
   /* ── API Tester Seite ── */
   'api-tester.history': 'Verlauf',

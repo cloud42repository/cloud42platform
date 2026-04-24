@@ -738,6 +738,8 @@ export const EN = {
   'form.open-editor': 'Open Script Editor',
   'form.on-change-script': 'On Change Script',
   'form.on-change-hint': 'Script runs when the user changes the field value. "value" = current value, FormFields = all fields, setFieldValue(name, val) to update other fields. All API modules available.',
+  'form.on-row-select-script': 'On Row Select Script',
+  'form.on-row-select-hint': 'Script runs when a datatable row is selected. "row" = selected row object, "rowIndex" = row index, FormFields = all fields. Use setFieldValue / setFieldEnabled to update other fields.',
 
   /* ── API Tester page ── */
   'api-tester.history': 'History',

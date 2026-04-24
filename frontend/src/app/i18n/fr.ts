@@ -735,8 +735,8 @@ export const FR: Record<TranslationKey, string> = {
   'form.run-script': 'Exécuter le script',
   'form.open-editor': 'Ouvrir l\'éditeur de script',
   'form.on-change-script': 'Script au changement',
-  'form.on-change-hint': 'Le script s\'ex\u00e9cute quand la valeur change. "value" = valeur actuelle, FormFields = tous les champs, setFieldValue(nom, val) pour modifier d\'autres champs. Tous les modules API disponibles.',
-
+  'form.on-change-hint': 'Le script s\'ex\u00e9cute quand la valeur change. "value" = valeur actuelle, FormFields = tous les champs, setFieldValue(nom, val) pour modifier d\'autres champs. Tous les modules API disponibles.',  'form.on-row-select-script': 'Script à la sélection de ligne',
+  'form.on-row-select-hint': 'Le script s\'exécute quand une ligne du tableau est sélectionnée. "row" = ligne sélectionnée, "rowIndex" = index, FormFields = tous les champs. Utilisez setFieldValue / setFieldEnabled.',
   /* ── Page Testeur API ── */
   'api-tester.history': 'Historique',
   'api-tester.clear': 'Effacer l\'historique',
