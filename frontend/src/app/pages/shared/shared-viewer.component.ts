@@ -15,6 +15,7 @@ import { ShareService, SharedItemData } from '../../services/share.service';
 import { WorkflowService } from '../../services/workflow.service';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { ApiService } from '../../services/api.service';
+import { NotificationService } from '../../services/notification.service';
 import { MODULES, extractPathParams } from '../../config/endpoints';
 import { firstValueFrom } from 'rxjs';
 import type { Dashboard, DashboardWidget } from '../../config/dashboard.types';
@@ -816,6 +817,7 @@ export class SharedViewerComponent implements OnInit {
   private readonly shareSvc = inject(ShareService);
   private readonly wfSvc = inject(WorkflowService);
   private readonly api = inject(ApiService);
+  private readonly notifSvc = inject(NotificationService);
 
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
@@ -1224,7 +1226,7 @@ export class SharedViewerComponent implements OnInit {
       for (const f of this.formFields()) {
         formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
       }
-      const args: Record<string, unknown> = { FormFields: formFields, ...proxies };
+      const args: Record<string, unknown> = { FormFields: formFields, addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), ...proxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -1355,7 +1357,7 @@ export class SharedViewerComponent implements OnInit {
         this.setFieldValue(id, val);
         formFields[nameOrId] = val;
       };
-      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, ...proxies };
+      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), ...proxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -1425,6 +1427,10 @@ export class SharedViewerComponent implements OnInit {
       return this.executeFormScriptAction(action);
     }
 
+    if (mode === 'notification') {
+      return this.executeFormNotificationAction(action);
+    }
+
     if (!action.moduleApiPrefix || !action.pathTemplate) return;
     this.formExecuting.set(true);
     this.formResponse.set(null);
@@ -1465,7 +1471,7 @@ export class SharedViewerComponent implements OnInit {
       for (const f of this.formFields()) {
         formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
       }
-      const args: Record<string, unknown> = { FormFields: formFields, ...proxies };
+      const args: Record<string, unknown> = { FormFields: formFields, addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), ...proxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -1477,6 +1483,35 @@ export class SharedViewerComponent implements OnInit {
     } finally {
       this.formExecuting.set(false);
     }
+  }
+
+  private async executeFormNotificationAction(action: any) {
+    const title = this.interpolateFieldRefs(action.notificationTitle ?? '');
+    const message = this.interpolateFieldRefs(action.notificationMessage ?? '');
+    const type = action.notificationType ?? 'info';
+    if (!title.trim()) {
+      this.formResponse.set({ status: 'error', data: 'Notification title is required' });
+      return;
+    }
+    this.formExecuting.set(true);
+    this.formResponse.set(null);
+    try {
+      const result = await this.notifSvc.addNotification(title, message, type);
+      this.formResponse.set({ status: 'success', data: result });
+    } catch (e: any) {
+      this.formResponse.set({ status: 'error', data: e?.message || 'Notification error' });
+    } finally {
+      this.formExecuting.set(false);
+    }
+  }
+
+  private interpolateFieldRefs(text: string): string {
+    return text.replace(/\{\{field\.([^}]+)\}\}/g, (_, name) => {
+      const field = this.formFields().find((f: any) => f.label === name || f.id === name);
+      if (!field) return '';
+      const val = this.fieldValues()[field.id];
+      return val == null ? '' : String(val);
+    });
   }
 
   submitForm() {
