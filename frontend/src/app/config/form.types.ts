@@ -66,8 +66,8 @@ export interface FormField {
 /** How the request body is configured for a submit action */
 export type BodyMode = 'fields' | 'text' | 'form';
 
-/** Whether the action calls an API endpoint or runs a script */
-export type ActionMode = 'api' | 'script';
+/** Whether the action calls an API endpoint, runs a script, or sends a notification */
+export type ActionMode = 'api' | 'script' | 'notification';
 
 /** Source for a single body field value */
 export type BodyFieldSource =
@@ -96,6 +96,12 @@ export interface FormSubmitAction {
   rawBody?: string;
   /** JavaScript code to execute (script mode). Must return a value. */
   scriptCode?: string;
+  /** Notification title (notification mode) */
+  notificationTitle?: string;
+  /** Notification message (notification mode) */
+  notificationMessage?: string;
+  /** Notification type (notification mode) */
+  notificationType?: 'info' | 'success' | 'warning' | 'error';
   /** Legacy mapping — kept for backward compat */
   bodyMapping: Record<string, string>;
   color: 'primary' | 'accent' | 'warn';

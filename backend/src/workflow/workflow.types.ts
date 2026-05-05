@@ -7,7 +7,7 @@ export type PayloadSource =
   | { type: 'hardcoded'; value: string }
   | { type: 'from-step'; stepId: string; field: string };
 
-export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow' | 'script';
+export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow' | 'script' | 'notification';
 
 export type BodyMode = 'fields' | 'text' | 'form';
 
@@ -118,7 +118,19 @@ export interface WorkflowOutput {
   source: PayloadSource;
 }
 
-export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock | MapperBlock | FilterBlock | SubWorkflowBlock | ScriptBlock;
+export interface NotificationBlock {
+  id: string;
+  kind: 'notification';
+  label?: string;
+  notificationType: 'info' | 'success' | 'warning' | 'error';
+  titleSource: PayloadSource;
+  messageSource: PayloadSource;
+  targetUserSource?: PayloadSource;
+  metadataKeys: string[];
+  metadataSources: Record<string, PayloadSource>;
+}
+
+export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock | MapperBlock | FilterBlock | SubWorkflowBlock | ScriptBlock | NotificationBlock;
 
 export interface WorkflowRunStepLog {
   stepId: string;

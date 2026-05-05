@@ -36,6 +36,7 @@ import { FormModule } from './form/form.module';
 import { ShareModule } from './share/share.module';
 import { AuthConfigModule } from './auth-config/auth-config.module';
 import { ZohoOAuthModule } from './zoho-oauth/zoho-oauth.module';
+import { NotificationModule } from './notification/notification.module';
 
 import { UserEntity } from './user/user.entity';
 import { WorkflowEntity } from './workflow/workflow.entity';
@@ -43,6 +44,7 @@ import { DashboardEntity } from './dashboard/dashboard.entity';
 import { FormEntity } from './form/form.entity';
 import { ShareEntity } from './share/share.entity';
 import { AuthConfigEntity } from './auth-config/auth-config.entity';
+import { NotificationEntity } from './notification/notification.entity';
 
 @Module({
   imports: [
@@ -57,7 +59,7 @@ import { AuthConfigEntity } from './auth-config/auth-config.entity';
         username: config.get<string>('AZURE_POSTGRESQL_USER', 'postgres'),
         password: config.get<string>('AZURE_POSTGRESQL_PASSWORD', 'Password1'),
         database: config.get<string>('AZURE_POSTGRESQL_DATABASE', 'postgres'),
-        entities: [UserEntity, WorkflowEntity, DashboardEntity, FormEntity, ShareEntity, AuthConfigEntity],
+        entities: [UserEntity, WorkflowEntity, DashboardEntity, FormEntity, ShareEntity, AuthConfigEntity, NotificationEntity],
         synchronize: config.get<string>('AZURE_POSTGRESQL_SYNC', 'true') === 'true',
         ssl: config.get<string>('AZURE_POSTGRESQL_SSL', 'false') === 'true'
           ? { rejectUnauthorized: false }
@@ -96,6 +98,7 @@ import { AuthConfigEntity } from './auth-config/auth-config.entity';
     ShareModule,
     AuthConfigModule,
     ZohoOAuthModule,
+    NotificationModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: UserContextInterceptor },

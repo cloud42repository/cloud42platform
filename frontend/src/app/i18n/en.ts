@@ -194,6 +194,7 @@ export const EN = {
   'workflow.script-var-name': 'Variable name',
   'workflow.script-no-inputs': 'No input bindings — add one to pass data into the script',
   'workflow.script-result-hint': 'The returned value will be available as this step\'s result for downstream steps',
+  'workflow.notification': 'Notification',
 
   /* ── Calendar ── */
   'calendar.title': 'Schedule Calendar',

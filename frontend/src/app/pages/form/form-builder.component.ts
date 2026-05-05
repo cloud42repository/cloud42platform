@@ -40,6 +40,7 @@ import { getEndpointPayload } from '../../config/endpoint-payloads';
 import { getEndpointInputSchema } from '../../config/endpoint-schemas';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { ScriptEditorDialogComponent, ScriptEditorDialogData } from '../../shared/script-editor-dialog.component';
+import { NotificationService } from '../../services/notification.service';
 import {
   LabelFieldComponent,
   TextFieldComponent,
@@ -345,7 +346,7 @@ interface FieldTypeRef {
                     @if (executing() && lastResponse()?.actionId === action.id) {
                       <mat-spinner diameter="16" />
                     } @else {
-                      <mat-icon>{{ action.actionMode === 'script' ? 'code' : 'send' }}</mat-icon>
+                      <mat-icon>{{ action.actionMode === 'script' ? 'code' : action.actionMode === 'notification' ? 'notifications' : 'send' }}</mat-icon>
                     }
                     {{ action.label || action.method }}
                   </button>
@@ -704,7 +705,7 @@ interface FieldTypeRef {
 
             <mat-divider class="section-divider" />
 
-            <!-- Action mode toggle: API vs Script -->
+            <!-- Action mode toggle: API vs Script vs Notification -->
             <div class="config-section-label">{{ 'form.action-mode' | t }}</div>
             <div class="body-mode-toggle">
               <button mat-stroked-button
@@ -717,7 +718,42 @@ interface FieldTypeRef {
                       (click)="updateAction(action.id, 'actionMode', 'script')">
                 <mat-icon>code</mat-icon> {{ 'form.script-mode' | t }}
               </button>
+              <button mat-stroked-button
+                      [class.active-mode]="getActionMode(action) === 'notification'"
+                      (click)="updateAction(action.id, 'actionMode', 'notification')">
+                <mat-icon>notifications</mat-icon> Notification
+              </button>
             </div>
+
+            <!-- ── NOTIFICATION MODE ── -->
+            @if (getActionMode(action) === 'notification') {
+              <mat-divider class="section-divider" />
+              <div class="config-section-label">Notification Settings</div>
+              <div class="body-mode-toggle" style="margin-bottom: 12px;">
+                <button mat-stroked-button [class.active-mode]="(action.notificationType ?? 'info') === 'info'" (click)="updateAction(action.id, 'notificationType', 'info')">
+                  <mat-icon style="color:#2196f3">info</mat-icon> Info
+                </button>
+                <button mat-stroked-button [class.active-mode]="action.notificationType === 'success'" (click)="updateAction(action.id, 'notificationType', 'success')">
+                  <mat-icon style="color:#4caf50">check_circle</mat-icon> Success
+                </button>
+                <button mat-stroked-button [class.active-mode]="action.notificationType === 'warning'" (click)="updateAction(action.id, 'notificationType', 'warning')">
+                  <mat-icon style="color:#ff9800">warning</mat-icon> Warning
+                </button>
+                <button mat-stroked-button [class.active-mode]="action.notificationType === 'error'" (click)="updateAction(action.id, 'notificationType', 'error')">
+                  <mat-icon style="color:#f44336">error</mat-icon> Error
+                </button>
+              </div>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>Title</mat-label>
+                <input matInput [value]="action.notificationTitle ?? ''" (input)="updateAction(action.id, 'notificationTitle', $any($event.target).value)" placeholder="Notification title" />
+                <mat-hint>Use {{'{{field.name}}'}} to interpolate form field values</mat-hint>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width" style="margin-top: 12px;">
+                <mat-label>Message</mat-label>
+                <textarea matInput rows="3" [value]="action.notificationMessage ?? ''" (input)="updateAction(action.id, 'notificationMessage', $any($event.target).value)" placeholder="Notification message"></textarea>
+                <mat-hint>Use {{'{{field.name}}'}} to interpolate form field values</mat-hint>
+              </mat-form-field>
+            }
 
             <!-- ── SCRIPT MODE ── -->
             @if (getActionMode(action) === 'script') {
@@ -1385,6 +1421,7 @@ export class FormBuilderComponent implements OnInit {
   private readonly el = inject(ElementRef);
   private readonly userMgmt = inject(UserManagementService);
   private readonly dialog = inject(MatDialog);
+  private readonly notifSvc = inject(NotificationService);
 
   readonly allModules = MODULES;
   readonly widthOptions = [3, 4, 6, 8, 12];
@@ -2055,7 +2092,7 @@ export class FormBuilderComponent implements OnInit {
       for (const f of this.fields()) {
         formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
       }
-      const args: Record<string, unknown> = { FormFields: formFields, ...apiProxies };
+      const args: Record<string, unknown> = { FormFields: formFields, addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), ...apiProxies };
 
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
@@ -2275,6 +2312,10 @@ export class FormBuilderComponent implements OnInit {
       return this.executeScriptAction(action);
     }
 
+    if (mode === 'notification') {
+      return this.executeNotificationAction(action);
+    }
+
     console.log('[FormBuilder] executeAction called:', {
       moduleApiPrefix: action.moduleApiPrefix,
       pathTemplate: action.pathTemplate,
@@ -2375,6 +2416,8 @@ export class FormBuilderComponent implements OnInit {
         FormFields: formFields,
         setFieldValue: setField,
         setFieldEnabled: enableField,
+        addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) =>
+          this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}),
         ...apiProxies,
       };
 
@@ -2400,6 +2443,37 @@ export class FormBuilderComponent implements OnInit {
     } finally {
       this.executing.set(false);
     }
+  }
+
+  private async executeNotificationAction(action: FormSubmitAction) {
+    const title = this.interpolateFieldRefs(action.notificationTitle ?? '');
+    const message = this.interpolateFieldRefs(action.notificationMessage ?? '');
+    const type = action.notificationType ?? 'info';
+
+    if (!title.trim()) {
+      this.lastResponse.set({ actionId: action.id, status: 'error', data: { error: 'Notification title is required' } });
+      return;
+    }
+
+    this.executing.set(true);
+    try {
+      const result = await this.notifSvc.addNotification(title, message, type);
+      this.lastResponse.set({ actionId: action.id, status: 'success', data: result });
+    } catch (err: unknown) {
+      const errorData = err instanceof Error ? err.message : err;
+      this.lastResponse.set({ actionId: action.id, status: 'error', data: errorData });
+    } finally {
+      this.executing.set(false);
+    }
+  }
+
+  private interpolateFieldRefs(text: string): string {
+    return text.replace(/\{\{field\.([^}]+)\}\}/g, (_, name) => {
+      const field = this.fields().find(f => f.label === name || f.id === name);
+      if (!field) return '';
+      const val = this.fieldValues()[field.id];
+      return val == null ? '' : String(val);
+    });
   }
 
   /**

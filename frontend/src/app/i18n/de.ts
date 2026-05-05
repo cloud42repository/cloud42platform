@@ -196,6 +196,7 @@ export const DE: Record<TranslationKey, string> = {
   'workflow.script-var-name': 'Variablenname',
   'workflow.script-no-inputs': 'Keine Eingabe-Bindungen — fügen Sie eine hinzu, um Daten an das Script zu übergeben',
   'workflow.script-result-hint': 'Der Rückgabewert ist als Ergebnis dieses Schritts für nachfolgende Schritte verfügbar',
+  'workflow.notification': 'Benachrichtigung',
 
   /* ── Calendar ── */
   'calendar.title': 'Terminkalender',

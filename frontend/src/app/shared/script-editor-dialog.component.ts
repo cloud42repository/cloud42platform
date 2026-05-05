@@ -65,6 +65,7 @@ export interface ScriptEditorDialogData {
                     <tr><td><code>setFieldValue(name, val)</code></td><td>Set another field's value by label or ID</td></tr>
                     <tr><td><code>setFieldEnabled(name, enabled)</code></td><td>Enable or disable a field by label or ID</td></tr>
                   }
+                  <tr><td><code>addNotification(title, message?, type?, metadata?)</code></td><td>Create a notification. Type: 'info' | 'success' | 'warning' | 'error'</td></tr>
                   @if (data.mode === 'workflow-script') {
                     <tr><td><code>[input bindings]</code></td><td>Variables from connected steps (configured in Input Bindings)</td></tr>
                   }
@@ -379,6 +380,56 @@ return Object.entries(byMonth)
               }
 
               <div class="help-section">
+                <h4>Notifications</h4>
+                <p class="help-hint">Use <code>addNotification()</code> to create in-app notifications stored in the database. They appear in the bell icon in the toolbar.</p>
+                <table class="help-table">
+                  <tr><td><code>title</code></td><td>Required — notification title</td></tr>
+                  <tr><td><code>message</code></td><td>Optional — detailed message body</td></tr>
+                  <tr><td><code>type</code></td><td>Optional — <code>'info'</code> | <code>'success'</code> | <code>'warning'</code> | <code>'error'</code> (default: <code>'info'</code>)</td></tr>
+                  <tr><td><code>metadata</code></td><td>Optional — extra data as <code>Record&lt;string, unknown&gt;</code></td></tr>
+                </table>
+                <div class="help-example">
+                  <div class="example-title">Simple notification</div>
+                  <pre><code>await addNotification('Task completed');</code></pre>
+                </div>
+                <div class="help-example">
+                  <div class="example-title">With message and type</div>
+                  <pre><code>await addNotification(
+  'Invoice Created',
+  'Invoice #1234 for $500 was created',
+  'success'
+);</code></pre>
+                </div>
+                <div class="help-example">
+                  <div class="example-title">With metadata</div>
+                  <pre><code>const contact = await ZohoBooks.GetContact(&#123;
+  contact_id: '12345'
+&#125;);
+await addNotification(
+  'Contact synced',
+  contact.contact_name + ' was updated',
+  'info',
+  &#123; contactId: contact.contact_id &#125;
+);</code></pre>
+                </div>
+                <div class="help-example">
+                  <div class="example-title">Error notification in try/catch</div>
+                  <pre><code>try &#123;
+  await ZohoCRM.CreateLeads(&#123;&#125;, &#123;
+    data: [&#123; Last_Name: 'Doe' &#125;]
+  &#125;);
+  await addNotification('Lead created', '', 'success');
+&#125; catch (e) &#123;
+  await addNotification(
+    'Lead creation failed',
+    e.message,
+    'error'
+  );
+&#125;</code></pre>
+                </div>
+              </div>
+
+              <div class="help-section">
                 <h4>API Call Patterns</h4>
                 <div class="help-example">
                   <div class="example-title">GET (no params)</div>
@@ -432,6 +483,7 @@ const accounts =
                     <li>Return <code>[&#123; name, value &#125;]</code> arrays for chart widgets</li>
                   }
                   <li>Use <code>Promise.all()</code> for parallel API calls</li>
+                  <li>Use <code>await addNotification(title, message, type)</code> to notify users</li>
                 </ul>
               </div>
             </div>
@@ -730,6 +782,9 @@ export class ScriptEditorDialogComponent implements AfterViewInit, OnDestroy {
         lines.push(`declare const ${name}: ${type};`);
       }
     }
+
+    // addNotification helper
+    lines.push(`declare function addNotification(title: string, message?: string, type?: 'info' | 'success' | 'warning' | 'error', metadata?: Record<string, unknown>): Promise<{ id: string; title: string; message: string; type: string; createdAt: string }>;`);
 
     return lines.join('\n');
   }

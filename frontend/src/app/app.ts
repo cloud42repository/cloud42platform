@@ -19,6 +19,8 @@ import { USER_ROLE_LABELS } from './config/user.types';
 import { TranslateService, type Lang } from './services/translate.service';
 import { TranslatePipe } from './i18n/translate.pipe';
 import { ThemeService } from './services/theme.service';
+import { NotificationService } from './services/notification.service';
+import { NotificationPanelComponent } from './shared/notification-panel/notification-panel.component';
 
 interface ModuleSubViews {
   dashboard?: { route: string; label: string };
@@ -55,7 +57,7 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
     CommonModule, RouterOutlet, RouterLink, RouterLinkActive,
     MatSidenavModule, MatListModule, MatToolbarModule,
     MatIconModule, MatButtonModule, MatTooltipModule, MatMenuModule, MatDividerModule,
-    MatExpansionModule, AgentComponent, TranslatePipe,
+    MatExpansionModule, AgentComponent, TranslatePipe, NotificationPanelComponent,
   ],
   template: `
     <mat-toolbar color="primary" class="app-toolbar">
@@ -73,6 +75,7 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
         <button mat-icon-button (click)="agentOpen.set(!agentOpen())" [matTooltip]="'app.agent' | t" style="color:white" [class.agent-btn-active]="agentOpen()">
           <mat-icon>smart_toy</mat-icon>
         </button>
+        <app-notification-panel />
       }
       @if (auth.isLoggedIn()) {
         <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-btn">

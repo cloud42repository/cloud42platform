@@ -7,10 +7,11 @@ import { WorkflowEntity } from './workflow.entity';
 import { MODULES, extractPathParams } from './workflow.endpoints';
 import type {
   WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
-  MapperBlock, FilterBlock, SubWorkflowBlock, ScriptBlock,
+  MapperBlock, FilterBlock, SubWorkflowBlock, ScriptBlock, NotificationBlock,
   WorkflowRunLog, WorkflowRunStepLog, PayloadSource,
   WorkflowInput, WorkflowOutput,
 } from './workflow.types';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class WorkflowExecutionService {
@@ -22,6 +23,7 @@ export class WorkflowExecutionService {
     @InjectRepository(WorkflowEntity)
     private readonly repo: Repository<WorkflowEntity>,
     private readonly config: ConfigService,
+    private readonly notificationService: NotificationService,
   ) {
     const port = this.config.get<string>('PORT', '3000');
     this.baseUrl = `http://localhost:${port}/api`;
@@ -58,6 +60,7 @@ export class WorkflowExecutionService {
       resolvedInputs[inp.name] = inputValues?.[inp.name] ?? inp.defaultValue ?? '';
     }
     stepResults.set('__input__', resolvedInputs);
+    stepResults.set('__owner__', wf.userEmail);
 
     this.executingSteps = steps;
     const success = await this.executeNodes(steps, stepResults, log);
@@ -136,6 +139,8 @@ export class WorkflowExecutionService {
         return this.executeSubWorkflow(node as SubWorkflowBlock, stepResults, log);
       case 'script':
         return this.executeScript(node as ScriptBlock, stepResults, log);
+      case 'notification':
+        return this.executeNotification(node as NotificationBlock, stepResults, log);
       default:
         return true;
     }
@@ -448,6 +453,18 @@ export class WorkflowExecutionService {
         args[name] = proxy;
       }
 
+      // Inject addNotification helper
+      const ownerEmail = stepResults.get('__owner__') as string | undefined;
+      args['addNotification'] = async (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => {
+        return this.notificationService.create({
+          userEmail: ownerEmail || '',
+          type: (type as any) ?? 'info',
+          title,
+          message: message ?? '',
+          metadata: metadata ?? {},
+        });
+      };
+
       stepLog.resolvedParams = Object.fromEntries(
         Object.entries(args)
           .filter(([k]) => !apiProxies[k])
@@ -477,6 +494,78 @@ export class WorkflowExecutionService {
       log.error = `Step "${stepLog.label}" failed: ${stepLog.error}`;
     }
     return stepLog.success;
+  }
+
+  // ── Notification block ─────────────────────────────────────────────────────
+
+  private async executeNotification(
+    block: NotificationBlock,
+    stepResults: Map<string, unknown>,
+    log: WorkflowRunLog,
+  ): Promise<boolean> {
+    const stepLog: WorkflowRunStepLog = {
+      stepId: block.id,
+      label: block.label || 'Notification',
+      startedAt: new Date().toISOString(),
+      resolvedParams: {},
+      success: false,
+    };
+
+    try {
+      const title = this.resolveString(block.titleSource, stepResults);
+      const message = this.resolveString(block.messageSource, stepResults);
+      let userEmail: string | undefined;
+      if (block.targetUserSource) {
+        userEmail = this.resolveString(block.targetUserSource, stepResults);
+      }
+
+      // If no target user specified, use workflow owner
+      if (!userEmail) {
+        userEmail = stepResults.get('__owner__') as string | undefined;
+      }
+
+      // Build optional metadata
+      const metadata: Record<string, unknown> = {};
+      for (const key of block.metadataKeys ?? []) {
+        const src = block.metadataSources?.[key];
+        if (src) {
+          metadata[key] = src.type === 'hardcoded' ? src.value : this.resolveRaw(src, stepResults);
+        }
+      }
+
+      const notification = await this.notificationService.create({
+        userEmail: userEmail || '',
+        type: block.notificationType ?? 'info',
+        title,
+        message,
+        metadata,
+      });
+
+      stepLog.response = notification;
+      stepLog.resolvedParams = { title, message, type: block.notificationType, userEmail: userEmail || '' };
+      stepLog.success = true;
+      stepResults.set(block.id, notification);
+    } catch (err: unknown) {
+      stepLog.error = this.extractErrorMessage(err);
+      stepLog.success = false;
+    }
+
+    stepLog.finishedAt = new Date().toISOString();
+    log.steps.push(stepLog);
+
+    if (!stepLog.success) {
+      log.error = `Step "${stepLog.label}" failed: ${stepLog.error}`;
+    }
+    return stepLog.success;
+  }
+
+  private resolveString(source: PayloadSource, stepResults: Map<string, unknown>): string {
+    if (source.type === 'hardcoded') return source.value;
+    const result = stepResults.get(source.stepId);
+    if (result == null) return '';
+    if (!source.field) return String(result);
+    const val = this.getPathRaw(result, source.field);
+    return val == null ? '' : String(val);
   }
 
   // ── API proxy builder for scripts ──────────────────────────────────────────

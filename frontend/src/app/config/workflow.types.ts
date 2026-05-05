@@ -7,7 +7,7 @@ export type PayloadSource =
   | { type: 'from-step'; stepId: string; field: string };
 
 /** Discriminator for workflow canvas nodes */
-export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow' | 'script';
+export type StepKind = 'endpoint' | 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow' | 'script' | 'notification';
 
 /** How the request body is configured for a POST / PUT / PATCH step */
 export type BodyMode = 'fields' | 'text' | 'form';
@@ -176,8 +176,29 @@ export interface WorkflowOutput {
   source: PayloadSource;
 }
 
+/**
+ * Notification block — creates a notification for a user.
+ * Title and message can reference prior step results via PayloadSource.
+ */
+export interface NotificationBlock {
+  id: string;
+  kind: 'notification';
+  label?: string;
+  /** Notification type: info, success, warning, error */
+  notificationType: 'info' | 'success' | 'warning' | 'error';
+  /** Title source (hardcoded or from a prior step) */
+  titleSource: PayloadSource;
+  /** Message source (hardcoded or from a prior step) */
+  messageSource: PayloadSource;
+  /** Optional target user email (defaults to workflow owner). Hardcoded or from-step. */
+  targetUserSource?: PayloadSource;
+  /** Optional metadata key-value pairs */
+  metadataKeys: string[];
+  metadataSources: Record<string, PayloadSource>;
+}
+
 /** Any top-level canvas node (endpoint step or control-flow block) */
-export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock | MapperBlock | FilterBlock | SubWorkflowBlock | ScriptBlock;
+export type WorkflowNode = WorkflowStep | TryCatchBlock | LoopBlock | IfElseBlock | MapperBlock | FilterBlock | SubWorkflowBlock | ScriptBlock | NotificationBlock;
 
 export type WorkflowStatus = 'draft' | 'scheduled' | 'running' | 'completed' | 'failed';
 

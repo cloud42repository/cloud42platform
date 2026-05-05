@@ -30,7 +30,7 @@ import { WorkflowService } from '../../services/workflow.service';
 import { ApiService } from '../../services/api.service';
 import { ShareService } from '../../services/share.service';
 import {
-  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FilterBlock, SubWorkflowBlock, ScriptBlock, WorkflowInput, WorkflowOutput, FieldMapping, PayloadSource, BodyMode,
+  Workflow, WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, LoopMode, IfElseBlock, MapperBlock, FilterBlock, SubWorkflowBlock, ScriptBlock, NotificationBlock, WorkflowInput, WorkflowOutput, FieldMapping, PayloadSource, BodyMode,
 } from '../../config/workflow.types';
 import { FormViewComponent, StepRefSuggestion } from '../../shared/form-view/form-view.component';
 import { TranslatePipe } from '../../i18n/translate.pipe';
@@ -46,7 +46,7 @@ interface AutocompleteSuggestion {
 }
 
 interface EndpointRef { module: ModuleDef; endpoint: EndpointDef; }
-interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow' | 'script'; label: string; icon: string; color: string; }
+interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | 'filter' | 'sub-workflow' | 'script' | 'notification'; label: string; icon: string; color: string; }
 
 @Component({
   selector: 'app-workflow-builder',
@@ -692,6 +692,32 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
                   </div>
                 }
 
+                <!-- ── NOTIFICATION BLOCK ── -->
+                @if (node.kind === 'notification') {
+                  @let block = asNotification(node);
+                  <div class="block-card block-card--notification" (click)="selectStep(node.id)" style="border-left: 4px solid #e11d48;">
+                    <div class="block-header">
+                      <mat-icon class="block-icon" style="color:#e11d48">notifications</mat-icon>
+                      <span class="block-title">{{ block.label || ('workflow.notification' | t) }}</span>
+                      <span class="block-badge">{{ block.notificationType }}</span>
+                      <div class="step-card-actions" (click)="$event.stopPropagation()">
+                        <button mat-icon-button (click)="selectStep(node.id)" matTooltip="{{ 'workflow.configure-step' | t }}">
+                          <mat-icon>settings</mat-icon>
+                        </button>
+                        <button mat-icon-button (click)="removeStep(node.id)" color="warn" matTooltip="{{ 'workflow.remove-step' | t }}">
+                          <mat-icon>delete_outline</mat-icon>
+                        </button>
+                        <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
+                      </div>
+                    </div>
+                    @if (block.titleSource.type === 'hardcoded' && block.titleSource.value) {
+                      <div class="script-preview">
+                        <code>{{ block.titleSource.value.substring(0, 60) }}{{ block.titleSource.value.length > 60 ? '…' : '' }}</code>
+                      </div>
+                    }
+                  </div>
+                }
+
                 <!-- DnD extras -->
                 <div *cdkDragPlaceholder class="drag-placeholder-canvas"></div>
 
@@ -739,6 +765,9 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
             } @else if (selectedStep()!.kind === 'script') {
               <mat-icon style="color:#0891b2">code</mat-icon>
               <span class="config-title">{{ asScript(selectedStep()!).label || ('workflow.script' | t) }}</span>
+            } @else if (selectedStep()!.kind === 'notification') {
+              <mat-icon style="color:#e11d48">notifications</mat-icon>
+              <span class="config-title">{{ asNotification(selectedStep()!).label || ('workflow.notification' | t) }}</span>
             }
             <button mat-icon-button (click)="selectedStepId.set(null)" style="margin-left:auto">
               <mat-icon>close</mat-icon>
@@ -1529,6 +1558,102 @@ interface ControlFlowRef { kind: 'try-catch' | 'loop' | 'if-else' | 'mapper' | '
               <button mat-stroked-button class="add-mapping-btn" (click)="addScriptBinding(block.id)" [disabled]="previousSteps().length === 0">
                 <mat-icon>add</mat-icon> {{ 'workflow.script-add-input' | t }}
               </button>
+            }
+
+            <!-- ── NOTIFICATION CONFIG ─────────────────────────────────────── -->
+            @if (selectedStep()!.kind === 'notification') {
+              @let block = asNotification(selectedStep()!);
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                <mat-label>{{ 'workflow.label' | t }}</mat-label>
+                <input matInput [value]="block.label ?? ''" (input)="mutateBlock(block.id, $any($event.target).value, 'label')" />
+              </mat-form-field>
+
+              <div class="config-section-label">Notification Type</div>
+              <div class="body-mode-toggle">
+                <button mat-stroked-button [class.active-mode]="block.notificationType === 'info'" (click)="mutateBlock(block.id, 'info', 'notificationType')">
+                  <mat-icon style="color:#2196f3">info</mat-icon> Info
+                </button>
+                <button mat-stroked-button [class.active-mode]="block.notificationType === 'success'" (click)="mutateBlock(block.id, 'success', 'notificationType')">
+                  <mat-icon style="color:#4caf50">check_circle</mat-icon> Success
+                </button>
+                <button mat-stroked-button [class.active-mode]="block.notificationType === 'warning'" (click)="mutateBlock(block.id, 'warning', 'notificationType')">
+                  <mat-icon style="color:#ff9800">warning</mat-icon> Warning
+                </button>
+                <button mat-stroked-button [class.active-mode]="block.notificationType === 'error'" (click)="mutateBlock(block.id, 'error', 'notificationType')">
+                  <mat-icon style="color:#f44336">error</mat-icon> Error
+                </button>
+              </div>
+
+              <mat-divider class="section-divider" />
+
+              <!-- Title -->
+              <div class="config-section-label">Title</div>
+              <div class="source-toggle">
+                <button mat-stroked-button [class.active-mode]="block.titleSource.type === 'hardcoded'" (click)="setNotificationSource(block.id, 'titleSource', 'hardcoded')">
+                  <mat-icon>text_fields</mat-icon> {{ 'workflow.hardcoded' | t }}
+                </button>
+                <button mat-stroked-button [class.active-mode]="block.titleSource.type === 'from-step'" (click)="setNotificationSource(block.id, 'titleSource', 'from-step')">
+                  <mat-icon>link</mat-icon> {{ 'workflow.from-step' | t }}
+                </button>
+              </div>
+              @if (block.titleSource.type === 'hardcoded') {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                  <mat-label>Title</mat-label>
+                  <input matInput [value]="block.titleSource.value" (input)="setNotificationHardcoded(block.id, 'titleSource', $any($event.target).value)" />
+                </mat-form-field>
+              }
+              @if (block.titleSource.type === 'from-step') {
+                <div class="from-step-row">
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="step-select">
+                    <mat-label>{{ 'workflow.step' | t }}</mat-label>
+                    <mat-select [value]="block.titleSource.stepId" (selectionChange)="setNotificationStepId(block.id, 'titleSource', $event.value)">
+                      @for (prev of previousSteps(); track prev.id; let si = $index) {
+                        <mat-option [value]="prev.id">Step {{ si + 1 }}: {{ getStepLabel(prev) }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field-input">
+                    <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
+                    <input matInput [value]="block.titleSource.field" (input)="setNotificationField(block.id, 'titleSource', $any($event.target).value)" placeholder="e.g. data.name" />
+                  </mat-form-field>
+                </div>
+              }
+
+              <mat-divider class="section-divider" />
+
+              <!-- Message -->
+              <div class="config-section-label">Message</div>
+              <div class="source-toggle">
+                <button mat-stroked-button [class.active-mode]="block.messageSource.type === 'hardcoded'" (click)="setNotificationSource(block.id, 'messageSource', 'hardcoded')">
+                  <mat-icon>text_fields</mat-icon> {{ 'workflow.hardcoded' | t }}
+                </button>
+                <button mat-stroked-button [class.active-mode]="block.messageSource.type === 'from-step'" (click)="setNotificationSource(block.id, 'messageSource', 'from-step')">
+                  <mat-icon>link</mat-icon> {{ 'workflow.from-step' | t }}
+                </button>
+              </div>
+              @if (block.messageSource.type === 'hardcoded') {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="full-width">
+                  <mat-label>Message</mat-label>
+                  <textarea matInput [value]="block.messageSource.value" (input)="setNotificationHardcoded(block.id, 'messageSource', $any($event.target).value)" rows="3"></textarea>
+                </mat-form-field>
+              }
+              @if (block.messageSource.type === 'from-step') {
+                <div class="from-step-row">
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="step-select">
+                    <mat-label>{{ 'workflow.step' | t }}</mat-label>
+                    <mat-select [value]="block.messageSource.stepId" (selectionChange)="setNotificationStepId(block.id, 'messageSource', $event.value)">
+                      @for (prev of previousSteps(); track prev.id; let si = $index) {
+                        <mat-option [value]="prev.id">Step {{ si + 1 }}: {{ getStepLabel(prev) }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="field-input">
+                    <mat-label>{{ 'workflow.field-path' | t }}</mat-label>
+                    <input matInput [value]="block.messageSource.field" (input)="setNotificationField(block.id, 'messageSource', $any($event.target).value)" placeholder="e.g. data.message" />
+                  </mat-form-field>
+                </div>
+              }
             }
 
           </div>
@@ -2427,6 +2552,7 @@ export class WorkflowBuilderComponent implements OnInit {
     { kind: 'filter',    label: 'Filter',       icon: 'filter_list', color: '#dc2626' },
     { kind: 'sub-workflow', label: 'Sub-Workflow', icon: 'account_tree', color: '#7c3aed' },
     { kind: 'script',       label: 'Script',       icon: 'code',         color: '#0891b2' },
+    { kind: 'notification', label: 'Notification', icon: 'notifications', color: '#e11d48' },
   ];
 
   // ── Browser state ─────────────────────────────────────────────────────────
@@ -2571,6 +2697,8 @@ export class WorkflowBuilderComponent implements OnInit {
       return { id, kind: 'sub-workflow', inputBindings: {} } as SubWorkflowBlock;
     } else if (ref.kind === 'script') {
       return { id, kind: 'script', inputBindings: [], code: '// Transform data here\nreturn input;' } as ScriptBlock;
+    } else if (ref.kind === 'notification') {
+      return { id, kind: 'notification', notificationType: 'info', titleSource: { type: 'hardcoded', value: '' }, messageSource: { type: 'hardcoded', value: '' }, metadataKeys: [], metadataSources: {} } as NotificationBlock;
     } else {
       return { id, kind: 'if-else', conditionOperator: '==', thenSteps: [], elseSteps: [] } as IfElseBlock;
     }
@@ -2721,6 +2849,7 @@ export class WorkflowBuilderComponent implements OnInit {
   asFilter(node: WorkflowNode): FilterBlock     { return node as FilterBlock; }
   asSubWorkflow(node: WorkflowNode): SubWorkflowBlock { return node as SubWorkflowBlock; }
   asScript(node: WorkflowNode): ScriptBlock     { return node as ScriptBlock; }
+  asNotification(node: WorkflowNode): NotificationBlock { return node as NotificationBlock; }
 
   getNodeLabel(node: WorkflowNode): string {
     if (node.kind === 'endpoint') return node.endpointLabel;
@@ -2731,6 +2860,7 @@ export class WorkflowBuilderComponent implements OnInit {
     if (node.kind === 'filter') return node.label || 'Filter';
     if (node.kind === 'sub-workflow') return node.label || node.workflowName || 'Sub-Workflow';
     if (node.kind === 'script') return node.label || 'Script';
+    if (node.kind === 'notification') return node.label || 'Notification';
     return 'Step';
   }
 
@@ -3882,6 +4012,31 @@ export class WorkflowBuilderComponent implements OnInit {
       if (result === undefined) return;
       this.mutateBlock(block.id, result, 'code');
     });
+  }
+
+  // ── Notification block helpers ────────────────────────────────────────────
+  setNotificationSource(blockId: string, field: 'titleSource' | 'messageSource', type: 'hardcoded' | 'from-step') {
+    const src: PayloadSource = type === 'hardcoded'
+      ? { type: 'hardcoded', value: '' }
+      : { type: 'from-step', stepId: '', field: '' };
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => ({ ...n, [field]: src }) as WorkflowNode));
+  }
+  setNotificationHardcoded(blockId: string, field: 'titleSource' | 'messageSource', value: string) {
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => ({ ...n, [field]: { type: 'hardcoded', value } }) as WorkflowNode));
+  }
+  setNotificationStepId(blockId: string, field: 'titleSource' | 'messageSource', stepId: string) {
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const existing = (n as NotificationBlock)[field];
+      const f = existing.type === 'from-step' ? existing.field : '';
+      return { ...n, [field]: { type: 'from-step', stepId, field: f } } as WorkflowNode;
+    }));
+  }
+  setNotificationField(blockId: string, field: 'titleSource' | 'messageSource', value: string) {
+    this.steps.update(ss => this.updateNodeDeep(ss, blockId, n => {
+      const existing = (n as NotificationBlock)[field];
+      const stepId = existing.type === 'from-step' ? existing.stepId : '';
+      return { ...n, [field]: { type: 'from-step', stepId, field: value } } as WorkflowNode;
+    }));
   }
 
   // ── Save / Run ────────────────────────────────────────────────────────────

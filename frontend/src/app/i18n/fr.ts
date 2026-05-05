@@ -196,6 +196,7 @@ export const FR: Record<TranslationKey, string> = {
   'workflow.script-var-name': 'Nom de variable',
   'workflow.script-no-inputs': 'Aucune liaison d\'entrée — ajoutez-en une pour transmettre des données au script',
   'workflow.script-result-hint': 'La valeur retournée sera disponible comme résultat de cette étape pour les étapes suivantes',
+  'workflow.notification': 'Notification',
 
   /* ── Calendar ── */
   'calendar.title': 'Calendrier de planification',
