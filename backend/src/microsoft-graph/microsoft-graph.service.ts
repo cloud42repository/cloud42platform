@@ -33,11 +33,11 @@ export class MicrosoftGraphService {
       throw new Error('Microsoft Graph not configured. Please add your credentials in Settings.');
     }
 
-    const c = row.config as Record<string, unknown>;
-    const clientId = (c['clientId'] as string) || this.config.get('MS_GRAPH_CLIENT_ID', '');
-    const clientSecret = (c['clientSecret'] as string) || this.config.get('MS_GRAPH_CLIENT_SECRET', '');
-    const tenantId = (c['tenantId'] as string) || this.config.get('MS_GRAPH_TENANT_ID', 'common');
-    const refreshToken = c['refreshToken'] as string;
+    const c = row.config;
+    const clientId = c.clientId || this.config.get('MS_GRAPH_CLIENT_ID', '');
+    const clientSecret = c.clientSecret || this.config.get('MS_GRAPH_CLIENT_SECRET', '');
+    const tenantId = (c as any).tenantId || this.config.get('MS_GRAPH_TENANT_ID', 'common');
+    const refreshToken = c.refreshToken;
 
     if (!clientId || !clientSecret || !refreshToken) {
       throw new Error('Microsoft Graph credentials incomplete (clientId, clientSecret, refreshToken required).');
@@ -65,7 +65,7 @@ export class MicrosoftGraphService {
       await this.authConfigService.save(email, '__microsoft-graph__', {
         ...c,
         refreshToken: res.data.refresh_token,
-      });
+      } as any);
     }
 
     this.tokenCache.set(email, {
