@@ -12,6 +12,7 @@ import type {
   WorkflowInput, WorkflowOutput,
 } from './workflow.types';
 import { NotificationService } from '../notification/notification.service';
+import { MicrosoftGraphService } from '../microsoft-graph/microsoft-graph.service';
 
 @Injectable()
 export class WorkflowExecutionService {
@@ -24,6 +25,7 @@ export class WorkflowExecutionService {
     private readonly repo: Repository<WorkflowEntity>,
     private readonly config: ConfigService,
     private readonly notificationService: NotificationService,
+    private readonly microsoftGraphService: MicrosoftGraphService,
   ) {
     const port = this.config.get<string>('PORT', '3000');
     this.baseUrl = `http://localhost:${port}/api`;
@@ -463,6 +465,11 @@ export class WorkflowExecutionService {
           message: message ?? '',
           metadata: metadata ?? {},
         });
+      };
+
+      // Inject sendMail helper (Microsoft Graph)
+      args['sendMail'] = async (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => {
+        return this.microsoftGraphService.sendMail(options as any);
       };
 
       stepLog.resolvedParams = Object.fromEntries(

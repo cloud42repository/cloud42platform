@@ -529,4 +529,10 @@ export const MODULES: ModuleDef[] = [
       { id: 'create-moderation', label: 'Create Moderation', method: 'POST', pathTemplate: '/moderations', hasBody: true },
     ],
   },
+  {
+    id: 'microsoft-graph', label: 'Microsoft Graph', apiPrefix: '/microsoft-graph',
+    endpoints: [
+      { id: 'send-mail', label: 'Send Mail', method: 'POST', pathTemplate: '/send-mail', hasBody: true },
+    ],
+  },
 ];

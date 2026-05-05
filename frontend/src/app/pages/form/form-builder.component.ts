@@ -2092,7 +2092,7 @@ export class FormBuilderComponent implements OnInit {
       for (const f of this.fields()) {
         formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
       }
-      const args: Record<string, unknown> = { FormFields: formFields, addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), ...apiProxies };
+      const args: Record<string, unknown> = { FormFields: formFields, addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...apiProxies };
 
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
@@ -2418,6 +2418,8 @@ export class FormBuilderComponent implements OnInit {
         setFieldEnabled: enableField,
         addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) =>
           this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}),
+        sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) =>
+          firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)),
         ...apiProxies,
       };
 

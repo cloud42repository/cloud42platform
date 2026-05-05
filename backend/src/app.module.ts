@@ -37,6 +37,7 @@ import { ShareModule } from './share/share.module';
 import { AuthConfigModule } from './auth-config/auth-config.module';
 import { ZohoOAuthModule } from './zoho-oauth/zoho-oauth.module';
 import { NotificationModule } from './notification/notification.module';
+import { MicrosoftGraphModule } from './microsoft-graph/microsoft-graph.module';
 
 import { UserEntity } from './user/user.entity';
 import { WorkflowEntity } from './workflow/workflow.entity';
@@ -99,6 +100,7 @@ import { NotificationEntity } from './notification/notification.entity';
     AuthConfigModule,
     ZohoOAuthModule,
     NotificationModule,
+    MicrosoftGraphModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: UserContextInterceptor },

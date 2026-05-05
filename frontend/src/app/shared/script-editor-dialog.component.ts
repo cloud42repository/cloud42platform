@@ -66,6 +66,7 @@ export interface ScriptEditorDialogData {
                     <tr><td><code>setFieldEnabled(name, enabled)</code></td><td>Enable or disable a field by label or ID</td></tr>
                   }
                   <tr><td><code>addNotification(title, message?, type?, metadata?)</code></td><td>Create a notification. Type: 'info' | 'success' | 'warning' | 'error'</td></tr>
+                  <tr><td><code>sendMail(&#123; to, subject, body, contentType?, cc?, bcc? &#125;)</code></td><td>Send email via Microsoft Graph</td></tr>
                   @if (data.mode === 'workflow-script') {
                     <tr><td><code>[input bindings]</code></td><td>Variables from connected steps (configured in Input Bindings)</td></tr>
                   }
@@ -245,6 +246,19 @@ setFieldEnabled('Phone', false);</code></pre>
 setFieldValue('Category',
   ai.choices[0].message.content);</code></pre>
                   </div>
+                  <div class="help-example">
+                    <div class="example-title">Send confirmation email</div>
+                    <pre><code>await sendMail(&#123;
+  to: FormFields['Email'],
+  subject: 'Submission Received',
+  body: '&lt;p&gt;Hi ' + FormFields['Name'] + ',&lt;/p&gt;'
+    + '&lt;p&gt;We received your request.&lt;/p&gt;',
+  contentType: 'html'
+&#125;);
+await addNotification('Email sent',
+  'Confirmation sent to ' + FormFields['Email'],
+  'success');</code></pre>
+                  </div>
                 </div>
               }
 
@@ -310,6 +324,23 @@ const ai = await ChatGPT.ChatCompletion(&#123;&#125;, &#123;
   &#125;]
 &#125;);
 return ai.choices[0].message.content;</code></pre>
+                  </div>
+                  <div class="help-example">
+                    <div class="example-title">Send report email</div>
+                    <pre><code>// 'report' and 'recipients' from input bindings
+const rows = report.map(r =>
+  '&lt;tr&gt;&lt;td&gt;' + r.name + '&lt;/td&gt;&lt;td&gt;'
+  + r.total + '&lt;/td&gt;&lt;/tr&gt;'
+).join('');
+await sendMail(&#123;
+  to: recipients,
+  subject: 'Weekly Report',
+  body: '&lt;table&gt;&lt;tr&gt;&lt;th&gt;Name&lt;/th&gt;'
+    + '&lt;th&gt;Total&lt;/th&gt;&lt;/tr&gt;' + rows
+    + '&lt;/table&gt;',
+  contentType: 'html'
+&#125;);
+return &#123; sent: true, to: recipients &#125;;</code></pre>
                   </div>
                 </div>
               }
@@ -430,6 +461,62 @@ await addNotification(
               </div>
 
               <div class="help-section">
+                <h4>Send Email (Microsoft Graph)</h4>
+                <p class="help-hint">Use <code>sendMail()</code> to send emails via Microsoft Graph API. Requires Microsoft Graph OAuth configured in Settings.</p>
+                <table class="help-table">
+                  <tr><td><code>to</code></td><td>Required — recipient email or array of emails</td></tr>
+                  <tr><td><code>subject</code></td><td>Required — email subject</td></tr>
+                  <tr><td><code>body</code></td><td>Required — email body content</td></tr>
+                  <tr><td><code>contentType</code></td><td>Optional — <code>'text'</code> | <code>'html'</code> (default: <code>'text'</code>)</td></tr>
+                  <tr><td><code>cc</code></td><td>Optional — CC recipients (string or string[])</td></tr>
+                  <tr><td><code>bcc</code></td><td>Optional — BCC recipients (string or string[])</td></tr>
+                </table>
+                <div class="help-example">
+                  <div class="example-title">Simple email</div>
+                  <pre><code>await sendMail(&#123;
+  to: 'user&#64;example.com',
+  subject: 'Hello',
+  body: 'This is a test email'
+&#125;);</code></pre>
+                </div>
+                <div class="help-example">
+                  <div class="example-title">HTML email with CC</div>
+                  <pre><code>await sendMail(&#123;
+  to: ['user1&#64;example.com', 'user2&#64;example.com'],
+  subject: 'Report Ready',
+  body: '&lt;h1&gt;Monthly Report&lt;/h1&gt;&lt;p&gt;Your report is attached.&lt;/p&gt;',
+  contentType: 'html',
+  cc: 'manager&#64;example.com'
+&#125;);</code></pre>
+                </div>
+                <div class="help-example">
+                  <div class="example-title">Send with form data</div>
+                  <pre><code>await sendMail(&#123;
+  to: FormFields['Email'],
+  subject: 'Form Submitted: ' + FormFields['Name'],
+  body: 'Thank you for your submission, ' + FormFields['Name']
+&#125;);</code></pre>
+                </div>
+                <div class="help-example">
+                  <div class="example-title">With error handling and notification</div>
+                  <pre><code>try &#123;
+  await sendMail(&#123;
+    to: FormFields['Email'],
+    subject: 'Your Order #' + FormFields['Order ID'],
+    body: '&lt;h2&gt;Order Confirmed&lt;/h2&gt;'
+      + '&lt;p&gt;Total: $' + FormFields['Total'] + '&lt;/p&gt;',
+    contentType: 'html',
+    bcc: 'archive&#64;company.com'
+  &#125;);
+  await addNotification('Email sent', '', 'success');
+&#125; catch (e) &#123;
+  await addNotification('Email failed',
+    e.message, 'error');
+&#125;</code></pre>
+                </div>
+              </div>
+
+              <div class="help-section">
                 <h4>API Call Patterns</h4>
                 <div class="help-example">
                   <div class="example-title">GET (no params)</div>
@@ -484,6 +571,7 @@ const accounts =
                   }
                   <li>Use <code>Promise.all()</code> for parallel API calls</li>
                   <li>Use <code>await addNotification(title, message, type)</code> to notify users</li>
+                  <li>Use <code>await sendMail(&#123; to, subject, body &#125;)</code> to send emails via Microsoft Graph</li>
                 </ul>
               </div>
             </div>
@@ -785,6 +873,7 @@ export class ScriptEditorDialogComponent implements AfterViewInit, OnDestroy {
 
     // addNotification helper
     lines.push(`declare function addNotification(title: string, message?: string, type?: 'info' | 'success' | 'warning' | 'error', metadata?: Record<string, unknown>): Promise<{ id: string; title: string; message: string; type: string; createdAt: string }>;`);
+    lines.push(`declare function sendMail(options: { to: string | string[]; subject: string; body: string; contentType?: 'text' | 'html'; cc?: string | string[]; bcc?: string | string[] }): Promise<{ success: boolean; message: string }>;`);
 
     return lines.join('\n');
   }

@@ -1,26 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import sgMail from '@sendgrid/mail';
+import { MicrosoftGraphService } from '../microsoft-graph/microsoft-graph.service';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly fromEmail: string;
   private readonly frontendUrl: string;
-  private readonly enabled: boolean;
 
-  constructor(private readonly config: ConfigService) {
-    const apiKey = this.config.get<string>('SENDGRID_API_KEY', '');
-    this.fromEmail = this.config.get<string>('SENDGRID_FROM_EMAIL', 'noreply@cloud42.dev');
+  constructor(
+    private readonly config: ConfigService,
+    private readonly graphService: MicrosoftGraphService,
+  ) {
     this.frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:4200');
-    this.enabled = !!apiKey;
-
-    if (apiKey) {
-      sgMail.setApiKey(apiKey);
-      this.logger.log('SendGrid configured');
-    } else {
-      this.logger.warn('SENDGRID_API_KEY not set — emails will be logged to console only');
-    }
   }
 
   getFrontendUrl(): string {
@@ -63,18 +54,12 @@ export class EmailService {
       </div>
     `;
 
-    if (!this.enabled) {
-      this.logger.log(`[EMAIL MOCK] To: ${toEmail} | Subject: ${subject}`);
-      this.logger.log(`[EMAIL MOCK] Set password link: ${link}`);
-      return;
-    }
-
     try {
-      await sgMail.send({
+      await this.graphService.sendMail({
         to: toEmail,
-        from: this.fromEmail,
         subject,
-        html,
+        body: html,
+        contentType: 'html',
       });
       this.logger.log(`Password-set email sent to ${toEmail}`);
     } catch (err) {

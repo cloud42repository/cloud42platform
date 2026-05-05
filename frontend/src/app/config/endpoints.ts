@@ -603,6 +603,15 @@ export const MODULES: ModuleDef[] = [
       { id: 'create-moderation', label: 'Create Moderation', method: 'POST', pathTemplate: '/moderations', hasBody: true },
     ]
   },
+  {
+    id: 'microsoft-graph',
+    label: 'Microsoft Graph',
+    apiPrefix: '/microsoft-graph',
+    icon: 'mail',
+    endpoints: [
+      { id: 'send-mail', label: 'Send Mail', method: 'POST', pathTemplate: '/send-mail', hasBody: true },
+    ]
+  },
 ];
 
 export const MODULE_MAP = new Map<string, ModuleDef>(MODULES.map(m => [m.id, m]));
