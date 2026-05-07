@@ -3,7 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { UserManagementService } from './user-management.service';
 
-export type ShareItemType = 'dashboard' | 'form' | 'workflow';
+export type ShareItemType = 'dashboard' | 'form' | 'workflow' | 'application';
 
 export interface ShareLink {
   token: string;

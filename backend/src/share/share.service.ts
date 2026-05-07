@@ -6,6 +6,7 @@ import { ShareEntity } from './share.entity';
 import { DashboardEntity } from '../dashboard/dashboard.entity';
 import { FormEntity } from '../form/form.entity';
 import { WorkflowEntity } from '../workflow/workflow.entity';
+import { ApplicationEntity } from '../application/application.entity';
 import type {
   CreateShareDto,
   ShareResponseDto,
@@ -23,6 +24,8 @@ export class ShareService {
     private readonly formRepo: Repository<FormEntity>,
     @InjectRepository(WorkflowEntity)
     private readonly workflowRepo: Repository<WorkflowEntity>,
+    @InjectRepository(ApplicationEntity)
+    private readonly applicationRepo: Repository<ApplicationEntity>,
   ) {}
 
   private toDto(s: ShareEntity): ShareResponseDto {
@@ -150,6 +153,39 @@ export class ShareService {
           inputs: wf.inputs,
           outputs: wf.outputs,
           status: wf.status,
+        };
+        break;
+      }
+      case 'application': {
+        const app = await this.applicationRepo.findOneBy({ id: share.itemId });
+        if (!app) throw new NotFoundException('Application not found');
+
+        // Resolve each page's referenced item so the shared viewer has all data
+        const resolvedPages: Record<string, unknown> = {};
+        for (const page of app.pages as any[]) {
+          if (!page.itemId) continue;
+          try {
+            if (page.type === 'form') {
+              const f = await this.formRepo.findOneBy({ id: page.itemId });
+              if (f) resolvedPages[page.itemId] = { id: f.id, name: f.name, description: f.description, fields: f.fields, submitActions: f.submitActions, status: f.status };
+            } else if (page.type === 'dashboard') {
+              const d = await this.dashboardRepo.findOneBy({ id: page.itemId });
+              if (d) resolvedPages[page.itemId] = { id: d.id, name: d.name, description: d.description, widgets: d.widgets, status: d.status };
+            } else if (page.type === 'workflow') {
+              const w = await this.workflowRepo.findOneBy({ id: page.itemId });
+              if (w) resolvedPages[page.itemId] = { id: w.id, name: w.name, description: w.description, steps: w.steps, inputs: w.inputs, outputs: w.outputs, status: w.status };
+            }
+          } catch { /* skip unresolvable pages */ }
+        }
+
+        data = {
+          id: app.id,
+          name: app.name,
+          description: app.description,
+          pages: app.pages,
+          navigation: app.navigation,
+          status: app.status,
+          resolvedPages,
         };
         break;
       }

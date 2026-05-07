@@ -4,6 +4,7 @@ import { ShareEntity } from './share.entity';
 import { DashboardEntity } from '../dashboard/dashboard.entity';
 import { FormEntity } from '../form/form.entity';
 import { WorkflowEntity } from '../workflow/workflow.entity';
+import { ApplicationEntity } from '../application/application.entity';
 import { ShareController } from './share.controller';
 import { ShareService } from './share.service';
 
@@ -14,6 +15,7 @@ import { ShareService } from './share.service';
       DashboardEntity,
       FormEntity,
       WorkflowEntity,
+      ApplicationEntity,
     ]),
   ],
   controllers: [ShareController],

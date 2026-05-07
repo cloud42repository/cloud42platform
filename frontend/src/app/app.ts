@@ -160,6 +160,14 @@ const MODULE_VIEWS: Record<string, ModuleSubViews> = {
             <span matListItemTitle>{{ 'nav.forms' | t }}</span>
           </a>
           <a mat-list-item
+             routerLink="/applications"
+             routerLinkActive="active-link"
+             [matTooltip]="'nav.applications' | t"
+             matTooltipPosition="right">
+            <mat-icon matListItemIcon>apps</mat-icon>
+            <span matListItemTitle>{{ 'nav.applications' | t }}</span>
+          </a>
+          <a mat-list-item
              routerLink="/api-tester"
              routerLinkActive="active-link"
              [matTooltip]="'nav.api-tester' | t"

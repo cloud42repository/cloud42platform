@@ -15,6 +15,7 @@ export const DE: Record<TranslationKey, string> = {
   'nav.api-modules': 'API-Module',
   'nav.dashboard': 'Dashboard',
   'nav.forms': 'Formulare',
+  'nav.applications': 'Anwendungen',
   'nav.api-tester': 'API-Tester',
   'nav.management': 'Verwaltung',
   'nav.api-explorer': 'API-Explorer',

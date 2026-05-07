@@ -13,6 +13,7 @@ export const EN = {
   'nav.api-modules': 'API Modules',
   'nav.dashboard': 'Dashboard',
   'nav.forms': 'Forms',
+  'nav.applications': 'Applications',
   'nav.api-tester': 'API Tester',
   'nav.management': 'Management',
   'nav.api-explorer': 'API Explorer',

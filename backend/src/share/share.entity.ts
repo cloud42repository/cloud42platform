@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { UserEntity } from '../user/user.entity';
 
-export type ShareItemType = 'dashboard' | 'form' | 'workflow';
+export type ShareItemType = 'dashboard' | 'form' | 'workflow' | 'application';
 
 @Entity('shares')
 export class ShareEntity {

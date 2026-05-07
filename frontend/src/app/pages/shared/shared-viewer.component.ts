@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +13,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ShareService, SharedItemData } from '../../services/share.service';
 import { WorkflowService } from '../../services/workflow.service';
+import { ApplicationDefinition, AppPage, AppNavigation } from '../../config/application.types';
 import { TranslatePipe } from '../../i18n/translate.pipe';
 import { ApiService } from '../../services/api.service';
 import { NotificationService } from '../../services/notification.service';
@@ -47,6 +48,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
           <mat-icon class="shared-icon">
             @if (data()!.itemType === 'dashboard') { dashboard }
             @else if (data()!.itemType === 'form') { edit_note }
+            @else if (data()!.itemType === 'application') { apps }
             @else { account_tree }
           </mat-icon>
           <span class="shared-title">{{ itemName() }}</span>
@@ -55,8 +57,22 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
           <span class="spacer"></span>
         </div>
 
+        <!-- ═══ APPLICATION NAV ═══ -->
+        @if (data()!.itemType === 'application' && sharedAppDef()) {
+          <div class="app-nav-bar" [class.app-nav-sidebar]="sharedAppDef()!.navigation.style === 'sidebar'">
+            @for (page of sharedAppDef()!.pages; track page.id) {
+              <button class="app-nav-item"
+                      [class.active]="appActivePageId() === page.id"
+                      (click)="switchAppPage(page.id)">
+                <mat-icon>{{ page.icon || 'article' }}</mat-icon>
+                <span>{{ page.label }}</span>
+              </button>
+            }
+          </div>
+        }
+
         <!-- ═══ DASHBOARD ═══ -->
-        @if (data()!.itemType === 'dashboard') {
+        @if (viewType() === 'dashboard') {
           <div class="dashboard-preview">
             <div class="canvas-area">
               @for (widget of dashboardWidgets(); track widget.id) {
@@ -195,7 +211,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
         }
 
         <!-- ═══ FORM ═══ -->
-        @if (data()!.itemType === 'form') {
+        @if (viewType() === 'form') {
           <div class="form-preview">
             <div class="canvas-area form-canvas">
               @for (field of formFields(); track field.id) {
@@ -356,7 +372,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
         }
 
         <!-- ═══ WORKFLOW ═══ -->
-        @if (data()!.itemType === 'workflow') {
+        @if (viewType() === 'workflow') {
           <div class="workflow-preview">
             <div class="wf-toolbar">
               <button mat-flat-button color="primary"
@@ -585,6 +601,25 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
       padding: 12px 24px; background: white; border-bottom: 1px solid #e2e8f0;
       box-shadow: 0 1px 3px rgba(0,0,0,.06);
     }
+
+    /* ── Application navigation ── */
+    .app-nav-bar {
+      display: flex; gap: 4px; padding: 0 16px;
+      background: #1e293b; flex-shrink: 0;
+    }
+    .app-nav-bar.app-nav-sidebar {
+      flex-direction: column; width: 220px; padding: 8px;
+      position: absolute; left: 0; top: 0; bottom: 0; z-index: 2;
+    }
+    .app-nav-item {
+      display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+      border: none; background: transparent; color: #94a3b8; font-size: 13px;
+      cursor: pointer; border-radius: 6px; transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .app-nav-item:hover { background: #334155; color: #e2e8f0; }
+    .app-nav-item.active { background: #4f46e5; color: #fff; }
+    .app-nav-item mat-icon { font-size: 18px; width: 18px; height: 18px; }
     .shared-icon { color: #64748b; }
     .shared-title { font-size: 16px; font-weight: 700; color: #1e293b; }
     .shared-badge {
@@ -845,6 +880,20 @@ export class SharedViewerComponent implements OnInit {
   readonly wfRunning = signal(false);
   readonly wfRunLog = signal<WorkflowRunLog | null>(null);
 
+  // Application
+  readonly sharedAppDef = signal<ApplicationDefinition | null>(null);
+  readonly appActivePageId = signal<string | null>(null);
+  readonly appActivePageType = signal<'form' | 'dashboard' | 'workflow' | null>(null);
+  private appResolvedPages: Record<string, Record<string, unknown>> = {};
+
+  /** The effective item type to render — for applications, tracks the active page type. */
+  readonly viewType = computed(() => {
+    if (this.data()?.itemType === 'application') {
+      return this.appActivePageType();
+    }
+    return this.data()?.itemType ?? null;
+  });
+
   async ngOnInit() {
     const token = this.route.snapshot.paramMap.get('token') ?? '';
     try {
@@ -872,12 +921,79 @@ export class SharedViewerComponent implements OnInit {
         this.workflowSteps.set((d['steps'] || []) as WorkflowNode[]);
         this.wfInputs.set((d['inputs'] || []) as WorkflowInput[]);
         this.wfOutputs.set((d['outputs'] || []) as WorkflowOutput[]);
+      } else if (result.itemType === 'application') {
+        const appDef: ApplicationDefinition = {
+          id: d['id'] ?? '',
+          name: d['name'] ?? 'Application',
+          description: d['description'] ?? '',
+          pages: (d['pages'] ?? []) as AppPage[],
+          navigation: (d['navigation'] ?? { style: 'sidebar' }) as AppNavigation,
+          status: (d['status'] as 'draft' | 'published') ?? 'published',
+          resolvedPages: (d['resolvedPages'] ?? {}) as Record<string, Record<string, unknown>>,
+        };
+        this.sharedAppDef.set(appDef);
+        this.appResolvedPages = appDef.resolvedPages ?? {};
+        // Navigate to the home page
+        const homeId = appDef.navigation?.homePage ?? appDef.pages[0]?.id;
+        if (homeId) this.switchAppPage(homeId);
       }
     } catch (e: any) {
       this.error.set(e?.message || 'Share link not found');
     } finally {
       this.loading.set(false);
     }
+  }
+
+  // ── Application page switching ──
+
+  switchAppPage(pageId: string) {
+    const appDef = this.sharedAppDef();
+    if (!appDef) return;
+    const page = appDef.pages.find(p => p.id === pageId);
+    if (!page) return;
+
+    this.appActivePageId.set(pageId);
+    const pageData = this.appResolvedPages[page.itemId];
+
+    // Reset previous state
+    this.dashboardWidgets.set([]);
+    this.formFields.set([]);
+    this.formActions.set([]);
+    this.fieldValues.set({});
+    this.formResponse.set(null);
+    this.workflowSteps.set([]);
+    this.wfInputs.set([]);
+    this.wfOutputs.set([]);
+    this.wfInputValues.set({});
+    this.wfRunLog.set(null);
+    this.searchFilter.set('');
+
+    if (!pageData) {
+      this.appActivePageType.set(page.type);
+      return;
+    }
+
+    if (page.type === 'dashboard') {
+      const widgets = (pageData['widgets'] || []) as DashboardWidget[];
+      this.dashboardWidgets.set(widgets);
+      for (const w of widgets) {
+        if (w.dataSource && w.lastData == null) this.fetchWidgetData(w);
+      }
+    } else if (page.type === 'form') {
+      const fields = (pageData['fields'] || []) as any[];
+      this.formFields.set(fields);
+      this.formActions.set((pageData['submitActions'] || []) as any[]);
+      for (const f of fields) {
+        if (f.dataSource || f.dataSourceMode === 'script') this.fetchFieldData(f);
+      }
+    } else if (page.type === 'workflow') {
+      this.workflowSteps.set((pageData['steps'] || []) as WorkflowNode[]);
+      this.wfInputs.set((pageData['inputs'] || []) as WorkflowInput[]);
+      this.wfOutputs.set((pageData['outputs'] || []) as WorkflowOutput[]);
+    }
+
+    this.appActivePageType.set(page.type);
+    this.itemName.set((pageData['name'] as string) || page.label);
   }
 
   // ── Dashboard helpers ──

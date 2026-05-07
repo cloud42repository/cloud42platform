@@ -25,6 +25,9 @@ import { ApiTesterComponent } from './pages/api-tester/api-tester.component';
 import { SharedViewerComponent } from './pages/shared/shared-viewer.component';
 import { SharedListComponent } from './pages/shared/shared-list.component';
 import { SetPasswordComponent } from './pages/set-password/set-password.component';
+import { ApplicationListComponent } from './pages/application/application-list.component';
+import { ApplicationBuilderComponent } from './pages/application/application-builder.component';
+import { ApplicationViewerComponent } from './pages/application/application-viewer.component';
 import { authGuard } from './guards/auth.guard';
 import { MODULES } from './config/endpoints';
 
@@ -69,6 +72,15 @@ export const routes: Routes = [
   { path: 'campaigns-dashboard', component: CampaignsDashboardComponent, canActivate: [authGuard], title: 'Campaigns Dashboard' },
   { path: 'campaigns-management', component: CampaignsManagementComponent, canActivate: [authGuard], title: 'Campaigns Management' },
   { path: 'invoice-management', component: InvoiceManagementComponent, canActivate: [authGuard], title: 'Invoice Management' },
+  {
+    path: 'applications',
+    children: [
+      { path: '', component: ApplicationListComponent, canActivate: [authGuard], title: 'Applications' },
+      { path: 'new', component: ApplicationBuilderComponent, canActivate: [authGuard], title: 'New Application' },
+      { path: ':id/edit', component: ApplicationBuilderComponent, canActivate: [authGuard], title: 'Edit Application' },
+      { path: ':id/view', component: ApplicationViewerComponent, canActivate: [authGuard], title: 'View Application' },
+    ],
+  },
   { path: 'agent', component: AgentComponent, canActivate: [authGuard], title: 'Agent' },
   { path: 'api-tester', component: ApiTesterComponent, canActivate: [authGuard], title: 'API Tester' },
   { path: 'shares', component: SharedListComponent, canActivate: [authGuard], title: 'Shared Views' },
