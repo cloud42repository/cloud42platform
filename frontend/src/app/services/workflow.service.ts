@@ -10,6 +10,7 @@ import {
   WorkflowRunLog, WorkflowRunStepLog, PayloadSource,
 } from '../config/workflow.types';
 import { MODULES, extractPathParams } from '../config/endpoints';
+import { ScriptDebugResult } from '../shared/script-editor-dialog.component';
 
 @Injectable({ providedIn: 'root' })
 export class WorkflowService {
@@ -468,6 +469,13 @@ export class WorkflowService {
         args[name] = proxy;
       }
 
+      // Inject log() helper for script debugging
+      const scriptLogs: unknown[][] = [];
+      args['log'] = (...values: unknown[]) => {
+        scriptLogs.push(values);
+        console.log('[Script]', ...values);
+      };
+
       stepLog.resolvedParams = Object.fromEntries(
         Object.entries(args)
           .filter(([k]) => !apiProxies[k])  // don't log proxy objects
@@ -483,6 +491,9 @@ export class WorkflowService {
       const result = await fn(...argValues);
 
       stepLog.response = result;
+      if (scriptLogs.length > 0) {
+        (stepLog as any).scriptLogs = scriptLogs;
+      }
       stepLog.success = true;
       stepResults.set(block.id, result);
     } catch (err: unknown) {
@@ -557,6 +568,46 @@ export class WorkflowService {
     }
 
     return proxies;
+  }
+
+  /** Build a debug runner callback for the script editor dialog */
+  buildScriptDebugRunner(block: ScriptBlock, stepResults: Map<string, unknown>): (code: string) => Promise<ScriptDebugResult> {
+    return async (code: string): Promise<ScriptDebugResult> => {
+      const logs: { timestamp: number; args: unknown[] }[] = [];
+      const logFn = (...args: unknown[]) => { logs.push({ timestamp: Date.now(), args }); };
+
+      const args: Record<string, unknown> = { log: logFn };
+
+      // Resolve input bindings
+      for (const binding of block.inputBindings) {
+        if (!binding.name) continue;
+        if (binding.source.type === 'from-step') {
+          const srcResult = stepResults.get(binding.source.stepId);
+          args[binding.name] = this.resolveBinding(srcResult, binding.source.field);
+        } else {
+          args[binding.name] = binding.source.value;
+        }
+      }
+
+      // Add API proxies
+      const apiProxies = this.buildScriptApiProxies();
+      for (const [name, proxy] of Object.entries(apiProxies)) {
+        args[name] = proxy;
+      }
+
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+
+      const start = performance.now();
+      try {
+        const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+        const fn = new AsyncFunction(...argNames, code);
+        const result = await fn(...argValues);
+        return { logs, result, duration: performance.now() - start };
+      } catch (err) {
+        return { logs, error: err instanceof Error ? err.message : String(err), duration: performance.now() - start };
+      }
+    };
   }
 
   private async executeEndpoint(

@@ -289,3 +289,17 @@ mat-card {
   display: flex;
   flex-direction: column;
 }
+
+/* ── Script editor breakpoint decorations (Monaco glyph margin — must be global) ── */
+.debug-breakpoint-glyph {
+  background: #e51400;
+  border-radius: 50%;
+  width: 10px !important;
+  height: 10px !important;
+  margin-left: 4px;
+  margin-top: 4px;
+  cursor: pointer;
+}
+.debug-breakpoint-line {
+  background: rgba(229, 20, 0, 0.08);
+}

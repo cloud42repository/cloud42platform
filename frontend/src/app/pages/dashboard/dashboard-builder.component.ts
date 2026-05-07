@@ -33,7 +33,7 @@ import {
 } from '../../config/dashboard.types';
 import { MODULES, ModuleDef, EndpointDef, extractPathParams } from '../../config/endpoints';
 import { TranslatePipe } from '../../i18n/translate.pipe';
-import { ScriptEditorDialogComponent, ScriptEditorDialogData } from '../../shared/script-editor-dialog.component';
+import { ScriptEditorDialogComponent, ScriptEditorDialogData, ScriptDebugResult } from '../../shared/script-editor-dialog.component';
 import { firstValueFrom } from 'rxjs';
 
 interface WidgetTypeRef {
@@ -1746,7 +1746,7 @@ export class DashboardBuilderComponent implements OnInit {
     this.fetching.set(true);
     try {
       const apiProxies = this.buildScriptApiProxies();
-      const args: Record<string, unknown> = { ...apiProxies };
+      const args: Record<string, unknown> = { log: (...v: unknown[]) => console.log('[Script]', ...v), ...apiProxies };
 
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
@@ -1840,6 +1840,30 @@ export class DashboardBuilderComponent implements OnInit {
     }
 
     return proxies;
+  }
+
+  /** Build a debug runner callback for the script editor dialog */
+  private buildScriptDebugRunner(): (code: string) => Promise<ScriptDebugResult> {
+    return async (code: string): Promise<ScriptDebugResult> => {
+      const logs: { timestamp: number; args: unknown[] }[] = [];
+      const logFn = (...args: unknown[]) => { logs.push({ timestamp: Date.now(), args }); };
+
+      const apiProxies = this.buildScriptApiProxies();
+      const args: Record<string, unknown> = { log: logFn, ...apiProxies };
+
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+
+      const start = performance.now();
+      try {
+        const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+        const fn = new AsyncFunction(...argNames, code);
+        const result = await fn(...argValues);
+        return { logs, result, duration: performance.now() - start };
+      } catch (err) {
+        return { logs, error: err instanceof Error ? err.message : String(err), duration: performance.now() - start };
+      }
+    };
   }
 
   private resolveProxyPathParams(hasParams: boolean, args: unknown[]): Record<string, string> {
@@ -2359,8 +2383,9 @@ export class DashboardBuilderComponent implements OnInit {
 
   /** Open the Monaco script editor popup */
   openScriptEditor(widget: DashboardWidget) {
+    const onRun = this.buildScriptDebugRunner();
     const ref = this.dialog.open(ScriptEditorDialogComponent, {
-      data: { code: widget.scriptCode ?? '', title: 'Script Editor', mode: 'dashboard-script' as const } as ScriptEditorDialogData,
+      data: { code: widget.scriptCode ?? '', title: 'Script Editor', mode: 'dashboard-script' as const, onRun } as ScriptEditorDialogData,
       panelClass: 'script-editor-dialog-panel',
       width: '85vw',
       maxWidth: '1400px',

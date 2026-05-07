@@ -472,6 +472,13 @@ export class WorkflowExecutionService {
         return this.microsoftGraphService.sendMail(options as any);
       };
 
+      // Inject log() helper for script debugging — captures output into step log
+      const scriptLogs: unknown[][] = [];
+      args['log'] = (...values: unknown[]) => {
+        scriptLogs.push(values);
+        this.logger.log(`[Script log] ${values.map(v => typeof v === 'string' ? v : JSON.stringify(v)).join(' ')}`);
+      };
+
       stepLog.resolvedParams = Object.fromEntries(
         Object.entries(args)
           .filter(([k]) => !apiProxies[k])
@@ -487,6 +494,9 @@ export class WorkflowExecutionService {
       const result = await fn(...argValues);
 
       stepLog.response = result;
+      if (scriptLogs.length > 0) {
+        (stepLog as any).scriptLogs = scriptLogs;
+      }
       stepLog.success = true;
       stepResults.set(block.id, result);
     } catch (err: unknown) {

@@ -4000,8 +4000,9 @@ export class WorkflowBuilderComponent implements OnInit {
     for (const b of block.inputBindings) {
       if (b.name) extras[b.name] = 'any';
     }
+    const onRun = this.svc.buildScriptDebugRunner(block, new Map());
     const ref = this.dialog.open(ScriptEditorDialogComponent, {
-      data: { code: block.code || '', title: 'Script Editor', mode: 'workflow-script' as const, extraGlobals: Object.keys(extras).length ? extras : undefined } as ScriptEditorDialogData,
+      data: { code: block.code || '', title: 'Script Editor', mode: 'workflow-script' as const, extraGlobals: Object.keys(extras).length ? extras : undefined, onRun } as ScriptEditorDialogData,
       panelClass: 'script-editor-dialog-panel',
       width: '85vw',
       maxWidth: '1400px',

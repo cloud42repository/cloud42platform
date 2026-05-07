@@ -39,7 +39,7 @@ import { MODULES, EndpointDef, extractPathParams } from '../../config/endpoints'
 import { getEndpointPayload } from '../../config/endpoint-payloads';
 import { getEndpointInputSchema } from '../../config/endpoint-schemas';
 import { TranslatePipe } from '../../i18n/translate.pipe';
-import { ScriptEditorDialogComponent, ScriptEditorDialogData } from '../../shared/script-editor-dialog.component';
+import { ScriptEditorDialogComponent, ScriptEditorDialogData, ScriptDebugResult } from '../../shared/script-editor-dialog.component';
 import { NotificationService } from '../../services/notification.service';
 import {
   LabelFieldComponent,
@@ -2092,7 +2092,7 @@ export class FormBuilderComponent implements OnInit {
       for (const f of this.fields()) {
         formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
       }
-      const args: Record<string, unknown> = { FormFields: formFields, addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...apiProxies };
+      const args: Record<string, unknown> = { FormFields: formFields, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...apiProxies };
 
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
@@ -2132,7 +2132,7 @@ export class FormBuilderComponent implements OnInit {
         const id = labelToId[nameOrId] || nameOrId;
         this.setFieldEnabled(id, enabled);
       };
-      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, setFieldEnabled: enableField, ...apiProxies };
+      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, setFieldEnabled: enableField, log: (...v: unknown[]) => console.log('[Script]', ...v), ...apiProxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -2165,7 +2165,7 @@ export class FormBuilderComponent implements OnInit {
         const id = labelToId[nameOrId] || nameOrId;
         this.setFieldEnabled(id, enabled);
       };
-      const args: Record<string, unknown> = { row, rowIndex, FormFields: formFields, setFieldValue: setField, setFieldEnabled: enableField, ...apiProxies };
+      const args: Record<string, unknown> = { row, rowIndex, FormFields: formFields, setFieldValue: setField, setFieldEnabled: enableField, log: (...v: unknown[]) => console.log('[Script]', ...v), ...apiProxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -2416,6 +2416,7 @@ export class FormBuilderComponent implements OnInit {
         FormFields: formFields,
         setFieldValue: setField,
         setFieldEnabled: enableField,
+        log: (...v: unknown[]) => console.log('[Script]', ...v),
         addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) =>
           this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}),
         sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) =>
@@ -2507,6 +2508,76 @@ export class FormBuilderComponent implements OnInit {
     }
 
     return proxies;
+  }
+
+  /** Build a debug runner callback for the script editor dialog */
+  private buildScriptDebugRunner(mode: 'field-script' | 'field-onChange' | 'field-rowSelect' | 'action-script', id: string): (code: string) => Promise<ScriptDebugResult> {
+    return async (code: string): Promise<ScriptDebugResult> => {
+      const logs: { timestamp: number; args: unknown[] }[] = [];
+      const logFn = (...args: unknown[]) => { logs.push({ timestamp: Date.now(), args }); };
+
+      const apiProxies = this.buildScriptApiProxies();
+      const formFields: Record<string, unknown> = {};
+      const labelToId: Record<string, string> = {};
+      for (const f of this.fields()) {
+        const key = f.label || f.id;
+        formFields[key] = this.fieldValues()[f.id] ?? '';
+        labelToId[key] = f.id;
+      }
+
+      const setField = (nameOrId: string, val: unknown) => {
+        const fid = labelToId[nameOrId] || nameOrId;
+        this.setFieldValue(fid, val);
+        formFields[nameOrId] = val;
+      };
+      const enableField = (nameOrId: string, enabled: boolean) => {
+        const fid = labelToId[nameOrId] || nameOrId;
+        this.setFieldEnabled(fid, enabled);
+      };
+
+      const args: Record<string, unknown> = {
+        log: logFn,
+        addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) =>
+          this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}),
+        sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) =>
+          firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)),
+        ...apiProxies,
+      };
+
+      // Add mode-specific args
+      if (mode === 'field-script') {
+        args['FormFields'] = formFields;
+      } else if (mode === 'field-onChange') {
+        const field = this.fields().find(f => f.id === id);
+        args['value'] = field ? this.fieldValues()[field.id] ?? '' : '';
+        args['FormFields'] = formFields;
+        args['setFieldValue'] = setField;
+        args['setFieldEnabled'] = enableField;
+      } else if (mode === 'field-rowSelect') {
+        args['row'] = {};
+        args['rowIndex'] = 0;
+        args['FormFields'] = formFields;
+        args['setFieldValue'] = setField;
+        args['setFieldEnabled'] = enableField;
+      } else if (mode === 'action-script') {
+        args['FormFields'] = formFields;
+        args['setFieldValue'] = setField;
+        args['setFieldEnabled'] = enableField;
+      }
+
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+
+      const start = performance.now();
+      try {
+        const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+        const fn = new AsyncFunction(...argNames, code);
+        const result = await fn(...argValues);
+        return { logs, result, duration: performance.now() - start };
+      } catch (err) {
+        return { logs, error: err instanceof Error ? err.message : String(err), duration: performance.now() - start };
+      }
+    };
   }
 
   private resolveProxyPathParams(hasParams: boolean, args: unknown[]): Record<string, string> {
@@ -2963,8 +3034,9 @@ export class FormBuilderComponent implements OnInit {
 
   /** Open the Monaco script editor popup */
   openScriptEditor(code: string, mode: 'field-script' | 'field-onChange' | 'field-rowSelect' | 'action-script', id: string, extraGlobals?: Record<string, string>) {
+    const onRun = this.buildScriptDebugRunner(mode, id);
     const ref = this.dialog.open(ScriptEditorDialogComponent, {
-      data: { code, title: 'Script Editor', mode, extraGlobals } as ScriptEditorDialogData,
+      data: { code, title: 'Script Editor', mode, extraGlobals, onRun } as ScriptEditorDialogData,
       panelClass: 'script-editor-dialog-panel',
       width: '85vw',
       maxWidth: '1400px',

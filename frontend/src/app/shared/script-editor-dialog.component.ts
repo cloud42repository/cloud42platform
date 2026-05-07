@@ -10,6 +10,13 @@ import { MODULES, extractPathParams } from '../config/endpoints';
 
 declare const monaco: any;
 
+export interface ScriptDebugResult {
+  logs: { timestamp: number; args: unknown[] }[];
+  result?: unknown;
+  error?: string;
+  duration: number;
+}
+
 export interface ScriptEditorDialogData {
   code: string;
   title?: string;
@@ -17,6 +24,8 @@ export interface ScriptEditorDialogData {
   mode?: 'field-script' | 'field-onChange' | 'field-rowSelect' | 'action-script' | 'workflow-script' | 'dashboard-script';
   /** Extra global variables available in the script (e.g. { value: 'string', FormFields: 'Record<string, unknown>' }) */
   extraGlobals?: Record<string, string>;
+  /** Callback to execute the script in debug mode. Receives code (with debugger; injected at breakpoints). */
+  onRun?: (code: string) => Promise<ScriptDebugResult>;
 }
 
 @Component({
@@ -28,6 +37,14 @@ export interface ScriptEditorDialogData {
       <div class="editor-header">
         <span class="title-group"><mat-icon>code</mat-icon> {{ data.title || 'Script Editor' }}</span>
         <div class="header-actions">
+          @if (data.onRun) {
+            <button mat-icon-button class="run-btn" [class.running]="running()" (click)="runScript()" [disabled]="running()" matTooltip="Run & Debug (breakpoints + log() output)">
+              <mat-icon>{{ running() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
+            </button>
+            <button mat-icon-button class="console-btn" [class.active]="showConsole()" (click)="showConsole.set(!showConsole())" matTooltip="Debug Console">
+              <mat-icon>terminal</mat-icon>
+            </button>
+          }
           <button mat-icon-button class="help-btn" [class.active]="showHelp()" (click)="showHelp.set(!showHelp())" matTooltip="Script Documentation">
             <mat-icon>help_outline</mat-icon>
           </button>
@@ -35,11 +52,39 @@ export interface ScriptEditorDialogData {
         </div>
       </div>
       <div class="editor-content">
-        <div class="editor-body" #editorContainer>
-          @if (loadError()) {
-            <div class="editor-error">
-              <mat-icon>error_outline</mat-icon>
-              <span>Failed to load editor: {{ loadError() }}</span>
+        <div class="editor-main">
+          <div class="editor-body" #editorContainer>
+            @if (loadError()) {
+              <div class="editor-error">
+                <mat-icon>error_outline</mat-icon>
+                <span>Failed to load editor: {{ loadError() }}</span>
+              </div>
+            }
+          </div>
+          @if (showConsole()) {
+            <div class="debug-console">
+              <div class="debug-console-header">
+                <span class="debug-console-title"><mat-icon>terminal</mat-icon> Debug Console</span>
+                <div class="debug-console-actions">
+                  @if (debugDuration() !== null) {
+                    <span class="debug-timing">{{ debugDuration() }}ms</span>
+                  }
+                  <button mat-icon-button class="debug-clear-btn" (click)="clearConsole()" matTooltip="Clear Console">
+                    <mat-icon>delete_sweep</mat-icon>
+                  </button>
+                </div>
+              </div>
+              <div class="debug-console-body">
+                @if (debugEntries().length === 0 && !debugError()) {
+                  <div class="debug-empty">Click ▶ Run & Debug to execute the script. Use <code>log()</code> in your script to output values here.</div>
+                }
+                @for (entry of debugEntries(); track $index) {
+                  <div class="debug-entry" [class.debug-entry-error]="entry.type === 'error'" [class.debug-entry-result]="entry.type === 'result'">
+                    <span class="debug-entry-badge">{{ entry.type === 'log' ? 'LOG' : entry.type === 'result' ? 'RETURN' : 'ERROR' }}</span>
+                    <span class="debug-entry-text">{{ entry.text }}</span>
+                  </div>
+                }
+              </div>
             </div>
           }
         </div>
@@ -67,6 +112,7 @@ export interface ScriptEditorDialogData {
                   }
                   <tr><td><code>addNotification(title, message?, type?, metadata?)</code></td><td>Create a notification. Type: 'info' | 'success' | 'warning' | 'error'</td></tr>
                   <tr><td><code>sendMail(&#123; to, subject, body, contentType?, cc?, bcc? &#125;)</code></td><td>Send email via Microsoft Graph</td></tr>
+                  <tr><td><code>log(...values)</code></td><td>Output values to the Debug Console (click ▶ Run & Debug)</td></tr>
                   @if (data.mode === 'workflow-script') {
                     <tr><td><code>[input bindings]</code></td><td>Variables from connected steps (configured in Input Bindings)</td></tr>
                   }
@@ -565,7 +611,8 @@ const accounts =
                   }
                   <li>API responses are auto-unwrapped — arrays are returned directly</li>
                   <li>Use <code>try/catch</code> for error handling</li>
-                  <li>Use <code>console.log()</code> to debug (check browser DevTools)</li>
+                  <li>Use <code>log(value)</code> to output to the Debug Console</li>
+                  <li>Click the gutter (left of line numbers) to toggle breakpoints — requires DevTools open</li>
                   @if (data.mode === 'dashboard-script') {
                     <li>Return <code>[&#123; name, value &#125;]</code> arrays for chart widgets</li>
                   }
@@ -598,7 +645,11 @@ const accounts =
     .header-actions { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 2px; }
     .header-actions button { color: #d4d4d4; }
     .help-btn.active { color: #60a5fa; }
+    .run-btn { color: #4ec9b0 !important; }
+    .run-btn.running { color: #d4d4d4 !important; opacity: 0.6; }
+    .console-btn.active { color: #dcdcaa !important; }
     .editor-content { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+    .editor-main { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
     .editor-body { flex: 1; min-width: 0; min-height: 0; position: relative; }
     .editor-error {
       display: flex; align-items: center; gap: 8px; padding: 24px;
@@ -608,6 +659,43 @@ const accounts =
       display: flex; justify-content: flex-end; gap: 8px; padding: 10px 16px;
       border-top: 1px solid #e2e8f0; background: #fafafa; flex-shrink: 0;
     }
+
+    /* Debug console */
+    .debug-console {
+      height: 180px; flex-shrink: 0; display: flex; flex-direction: column;
+      background: #1e1e1e; border-top: 1px solid #333;
+    }
+    .debug-console-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 12px; background: #252526; border-bottom: 1px solid #333;
+      font-size: 11px; color: #d4d4d4; flex-shrink: 0;
+    }
+    .debug-console-title { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+    .debug-console-title mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .debug-console-actions { display: flex; align-items: center; gap: 4px; }
+    .debug-timing { font-size: 10px; color: #4ec9b0; font-family: monospace; }
+    .debug-clear-btn { width: 24px !important; height: 24px !important; line-height: 24px !important; }
+    .debug-clear-btn mat-icon { font-size: 16px; width: 16px; height: 16px; color: #d4d4d4; }
+    .debug-console-body {
+      flex: 1; overflow-y: auto; padding: 6px 12px;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 12px;
+    }
+    .debug-empty { color: #6a737d; font-size: 11px; padding: 8px 0; }
+    .debug-empty code { color: #dcdcaa; }
+    .debug-entry {
+      display: flex; align-items: flex-start; gap: 8px; padding: 2px 0;
+      color: #d4d4d4; border-bottom: 1px solid #2d2d2d;
+    }
+    .debug-entry-badge {
+      font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .debug-entry .debug-entry-badge { background: #2d4f7c; color: #9cdcfe; }
+    .debug-entry-result .debug-entry-badge { background: #2d5a3d; color: #4ec9b0; }
+    .debug-entry-error .debug-entry-badge { background: #5a2d2d; color: #f48771; }
+    .debug-entry-error { color: #f48771; }
+    .debug-entry-result { color: #4ec9b0; }
+    .debug-entry-text { white-space: pre-wrap; word-break: break-word; }
 
     /* Help panel */
     .help-panel {
@@ -655,6 +743,15 @@ export class ScriptEditorDialogComponent implements AfterViewInit, OnDestroy {
   showHelp = signal(false);
   readonly moduleNames = MODULES.map(m => m.label.split(/\s+/).join(''));
 
+  // Debug mode state
+  showConsole = signal(false);
+  running = signal(false);
+  debugEntries = signal<{ type: 'log' | 'result' | 'error'; text: string }[]>([]);
+  debugDuration = signal<number | null>(null);
+  debugError = signal('');
+  private readonly breakpoints = new Set<number>();
+  private breakpointDecorationIds: string[] = [];
+
   constructor(
     public dialogRef: MatDialogRef<ScriptEditorDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: ScriptEditorDialogData,
@@ -663,6 +760,7 @@ export class ScriptEditorDialogComponent implements AfterViewInit, OnDestroy {
   ) {
     effect(() => {
       this.showHelp(); // track
+      this.showConsole(); // track
       setTimeout(() => this.editor?.layout(), 50);
     });
   }
@@ -714,6 +812,22 @@ export class ScriptEditorDialogComponent implements AfterViewInit, OnDestroy {
       quickSuggestions: true,
       parameterHints: { enabled: true },
       fixedOverflowWidgets: true,
+      glyphMargin: true,
+    });
+
+    // Gutter click to toggle breakpoints
+    this.editor.onMouseDown((e: any) => {
+      if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
+          e.target.type === monaco.editor.MouseTargetType.GUTTER_LINE_NUMBERS) {
+        const line = e.target.position?.lineNumber;
+        if (!line) return;
+        if (this.breakpoints.has(line)) {
+          this.breakpoints.delete(line);
+        } else {
+          this.breakpoints.add(line);
+        }
+        this.updateBreakpointDecorations();
+      }
     });
 
     // Force layout once the dialog animation finishes, then focus
@@ -721,6 +835,97 @@ export class ScriptEditorDialogComponent implements AfterViewInit, OnDestroy {
       this.editor?.layout();
       this.editor?.focus();
     }, 400);
+  }
+
+  /** Update red-dot breakpoint decorations in the Monaco gutter */
+  private updateBreakpointDecorations() {
+    const decorations = Array.from(this.breakpoints).map(line => ({
+      range: new monaco.Range(line, 1, line, 1),
+      options: {
+        isWholeLine: true,
+        glyphMarginClassName: 'debug-breakpoint-glyph',
+        className: 'debug-breakpoint-line',
+      },
+    }));
+    this.breakpointDecorationIds = this.editor.deltaDecorations(
+      this.breakpointDecorationIds,
+      decorations,
+    );
+  }
+
+  /** Run the script with debug instrumentation */
+  async runScript() {
+    if (!this.data.onRun || this.running()) return;
+
+    this.running.set(true);
+    this.showConsole.set(true);
+    this.debugEntries.set([]);
+    this.debugDuration.set(null);
+    this.debugError.set('');
+
+    try {
+      // Get current code and inject debugger; at breakpoint lines
+      const code = this.editor?.getValue() ?? this.data.code;
+      const instrumented = this.injectBreakpoints(code);
+
+      const result = await this.data.onRun(instrumented);
+
+      const entries: { type: 'log' | 'result' | 'error'; text: string }[] = [];
+
+      // Add log entries
+      for (const log of result.logs) {
+        entries.push({
+          type: 'log',
+          text: log.args.map(a => typeof a === 'string' ? a : JSON.stringify(a, null, 2)).join(' '),
+        });
+      }
+
+      // Add return value
+      if (result.result !== undefined) {
+        entries.push({
+          type: 'result',
+          text: typeof result.result === 'string' ? result.result : JSON.stringify(result.result, null, 2),
+        });
+      }
+
+      // Add error
+      if (result.error) {
+        entries.push({ type: 'error', text: result.error });
+        this.debugError.set(result.error);
+      }
+
+      this.zone.run(() => {
+        this.debugEntries.set(entries);
+        this.debugDuration.set(Math.round(result.duration));
+      });
+    } catch (err) {
+      this.zone.run(() => {
+        this.debugEntries.set([{ type: 'error', text: err instanceof Error ? err.message : String(err) }]);
+        this.debugError.set(err instanceof Error ? err.message : String(err));
+      });
+    } finally {
+      this.zone.run(() => this.running.set(false));
+    }
+  }
+
+  /** Inject `debugger;` statements at breakpoint lines */
+  private injectBreakpoints(code: string): string {
+    if (this.breakpoints.size === 0) return code;
+    const lines = code.split('\n');
+    // Insert in reverse order so line numbers stay correct
+    const sorted = Array.from(this.breakpoints).sort((a, b) => b - a);
+    for (const lineNum of sorted) {
+      if (lineNum >= 1 && lineNum <= lines.length) {
+        lines.splice(lineNum - 1, 0, 'debugger;');
+      }
+    }
+    return lines.join('\n');
+  }
+
+  clearConsole() {
+    this.debugEntries.set([]);
+    this.debugDuration.set(null);
+    this.debugError.set('');
   }
 
   private registerCompletions() {
@@ -874,6 +1079,8 @@ export class ScriptEditorDialogComponent implements AfterViewInit, OnDestroy {
     // addNotification helper
     lines.push(`declare function addNotification(title: string, message?: string, type?: 'info' | 'success' | 'warning' | 'error', metadata?: Record<string, unknown>): Promise<{ id: string; title: string; message: string; type: string; createdAt: string }>;`);
     lines.push(`declare function sendMail(options: { to: string | string[]; subject: string; body: string; contentType?: 'text' | 'html'; cc?: string | string[]; bcc?: string | string[] }): Promise<{ success: boolean; message: string }>;`);
+    lines.push(`/** Output values to the Debug Console. Use with Run & Debug. */`);
+    lines.push(`declare function log(...values: any[]): void;`);
 
     return lines.join('\n');
   }
