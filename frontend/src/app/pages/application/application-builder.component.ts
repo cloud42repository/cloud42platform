@@ -64,6 +64,10 @@ import { TranslatePipe } from '../../i18n/translate.pipe';
           <mat-icon>visibility</mat-icon>
         </button>
 
+        <button mat-icon-button (click)="exportApp()" matTooltip="Export application">
+          <mat-icon>download</mat-icon>
+        </button>
+
         <button mat-icon-button (click)="shareApp()" matTooltip="Share application">
           <mat-icon>share</mat-icon>
         </button>
@@ -513,6 +517,24 @@ export class ApplicationBuilderComponent implements OnInit {
   preview() {
     this.save();
     this.router.navigate(['/applications', this.appId, 'view']);
+  }
+
+  exportApp(): void {
+    const data = {
+      _type: 'application',
+      name: this.appName(),
+      description: this.appDescription(),
+      pages: this.pages(),
+      navigation: this.navigation(),
+      status: this.appStatus(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${data.name || 'application'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   async shareApp() {

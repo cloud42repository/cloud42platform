@@ -25,9 +25,15 @@ import { TranslatePipe } from '../../i18n/translate.pipe';
           <p>Build multi-page apps from forms, dashboards & workflows</p>
         </div>
       </div>
-      <button mat-flat-button color="primary" routerLink="/applications/new">
-        <mat-icon>add</mat-icon> New Application
-      </button>
+      <div style="display:flex;gap:8px">
+        <button mat-stroked-button (click)="fileInput.click()" matTooltip="Import application JSON">
+          <mat-icon>upload_file</mat-icon> {{ 'common.import' | t }}
+        </button>
+        <button mat-flat-button color="primary" routerLink="/applications/new">
+          <mat-icon>add</mat-icon> New Application
+        </button>
+      </div>
+      <input #fileInput type="file" accept=".json" hidden (change)="importFile($event)">
     </div>
 
     @if (svc.apps().length === 0) {
@@ -82,6 +88,9 @@ import { TranslatePipe } from '../../i18n/translate.pipe';
             <div class="app-card-actions">
               <button mat-icon-button (click)="open(app); $event.stopPropagation()" matTooltip="Edit">
                 <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button (click)="exportItem(app); $event.stopPropagation()" matTooltip="Export">
+                <mat-icon>download</mat-icon>
               </button>
               <button mat-icon-button (click)="duplicate(app); $event.stopPropagation()" matTooltip="Duplicate">
                 <mat-icon>content_copy</mat-icon>
@@ -172,5 +181,44 @@ export class ApplicationListComponent {
 
   remove(app: ApplicationDefinition) {
     this.svc.remove(app.id);
+  }
+
+  exportItem(app: ApplicationDefinition): void {
+    const { createdAt, updatedAt, resolvedPages, ...data } = app as any;
+    const blob = new Blob([JSON.stringify({ _type: 'application', ...data }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${app.name || 'application'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  importFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const json = JSON.parse(reader.result as string);
+        if (json._type && json._type !== 'application') { alert('This file is not an application export.'); return; }
+        delete json._type;
+        const now = new Date().toISOString();
+        const imported: ApplicationDefinition = {
+          ...json,
+          id: `app-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          status: 'draft',
+          createdAt: now,
+          updatedAt: now,
+        };
+        this.svc.upsert(imported);
+        this.router.navigate(['/applications', imported.id, 'edit']);
+      } catch {
+        alert('Invalid JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    input.value = '';
   }
 }
