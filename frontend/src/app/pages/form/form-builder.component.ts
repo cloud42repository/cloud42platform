@@ -2427,6 +2427,8 @@ export class FormBuilderComponent implements OnInit {
         ...apiProxies,
       };
 
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
       // eslint-disable-next-line no-new-func
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
       const fn = new AsyncFunction(...argNames, code);
