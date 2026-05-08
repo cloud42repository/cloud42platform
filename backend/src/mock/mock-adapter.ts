@@ -47,6 +47,8 @@ function seedStore(): void {
     'Task',           // tasks
     'Not',            // notes  (Notes → strip 'es' → Not)
     // ── Zoho Books (/api/zoho-books/) ──────────────────────────────────────
+    'Books-contact',  // contacts (distinct from CRM Contact)
+    'Books-item',     // items (distinct from Softvalue Item)
     'Invoic',         // invoices  (Invoices → strip 'es' → Invoic)
     'Bill',           // bills
     'Expens',         // expenses  (Expenses → strip 'es' → Expens)
@@ -210,6 +212,10 @@ function buildRecord(resourceName: string, id?: string): Record<string, unknown>
       return { id: recordId, Note_Title: `Note ${recordId}`, Note_Content: 'Mock note content.', Parent_Id: 'mock-parent-001' };
 
     // ── Zoho Books ──────────────────────────────────────────────────────────
+    case 'books-contact':
+      return { contact_id: recordId, contact_name: `Bowman and Co ${recordId}`, company_name: `Bowman and Co ${recordId}`, contact_type: 'customer', status: 'active', payment_terms: 15, payment_terms_label: 'Net 15', currency_id: '460000000000097', currency_code: 'USD', outstanding_receivable_amount: randomInt(0, 50000) / 100, unused_credits_receivable_amount: randomInt(0, 20000) / 100, first_name: 'Will', last_name: `Smith-${recordId}`, email: `contact-${recordId}@bowmanfurniture.com`, phone: '+1-925-921-9201', mobile: '+1-4054439562', created_time: now, last_modified_time: now };
+    case 'books-item':
+      return { item_id: recordId, name: `Hard Drive ${recordId}`, status: 'active', description: '500GB', rate: randomInt(50, 500), unit: '100GB', tax_id: '982000000037049', purchase_tax_rule_id: '127919000000106780', sales_tax_rule_id: '127919000000106780', tax_name: 'Sales Tax', tax_percentage: '70%', tax_type: 'tax', sku: `SKU-${recordId}`, product_type: 'goods', sat_item_key_code: '12345678', unitkey_code: '12345678', custom_fields: [{ customfield_id: '46000000012845', value: 'Normal' }] };
     case 'invoic':    // "Invoices" → "Invoic" (strips 'es')
       return { invoice_id: recordId, invoice_number: `INV-${recordId}`, customer_id: 'mock-cust-001', customer_name: 'Mock Customer', status: 'draft', date: today, due_date: in30, sub_total: randomInt(100, 4000) / 100, total: randomInt(100, 5000) / 100, balance: randomInt(0, 5000) / 100, currency_code: 'USD' };
     case 'bill':
@@ -408,10 +414,63 @@ function buildRecord(resourceName: string, id?: string): Record<string, unknown>
 }
 
 /** GET /resource or /resource/:id — reads from the in-memory store */
+/** Map Zoho Books URL resource segments to their response envelope key */
+const BOOKS_RESOURCE_KEY: Record<string, string> = {
+  contacts: 'contacts', invoices: 'invoices', bills: 'bills',
+  expenses: 'expenses', payments: 'payments', items: 'items',
+  customers: 'customers', recurringinvoices: 'recurring_invoices',
+};
+
+/** Detect if url is a Zoho Books API call and return the resource segment (e.g. 'contacts') */
+function booksResourceSegment(url: string): string | null {
+  if (!url.includes('/books/')) return null;
+  const segments = url.split('?')[0].split('/').filter(Boolean);
+  // Find the segment AFTER 'v3' (the version tag)
+  const v3Idx = segments.indexOf('v3');
+  if (v3Idx >= 0 && v3Idx < segments.length - 1) {
+    return segments[v3Idx + 1];
+  }
+  return null;
+}
+
 function handleGet(url: string): unknown {
+  const booksSegment = booksResourceSegment(url);
+  const id = idFromUrl(url);
+
+  // ── Zoho Books envelope ─────────────────────────────────────────────────
+  if (booksSegment) {
+    const envelopeKey = BOOKS_RESOURCE_KEY[booksSegment] ?? booksSegment;
+    // Use Books-specific record names to avoid clashes with CRM/Softvalue
+    const recordName = booksSegment === 'contacts' ? 'Books-contact'
+      : booksSegment === 'items' ? 'Books-item'
+      : resourceFromUrl(url);
+    const col = getCollection(recordName);
+
+    if (id) {
+      let record = col.get(id);
+      if (!record) {
+        record = buildRecord(recordName, id);
+        col.set(id, record);
+      }
+      // Zoho Books single-record: { code: 0, message: "success", <singular>: record }
+      const singularKey = envelopeKey.endsWith('s') ? envelopeKey.slice(0, -1) : envelopeKey;
+      return { code: 0, message: 'success', [singularKey]: record };
+    }
+
+    const records = [...col.values()];
+    return {
+      code: 0, message: 'success',
+      [envelopeKey]: records,
+      page_context: {
+        page: 1, per_page: 200, has_more_page: false,
+        applied_filter: 'Status.All', sort_column: 'created_time', sort_order: 'D',
+      },
+    };
+  }
+
+  // ── Default (CRM-style) envelope ────────────────────────────────────────
   const name = resourceFromUrl(url);
   const col  = getCollection(name);
-  const id   = idFromUrl(url);
 
   if (id) {
     // Single-record lookup
@@ -514,12 +573,12 @@ export function attachMockAdapter(instance: AxiosInstance): void {
     delayResponse: 80, // simulate slight latency
     onNoMatch: 'throwException',
   }) as {
-    onAny(url?: RegExp): { reply: (fn: (cfg: { url?: string; method?: string; data?: unknown }) => [number, unknown]) => void };
+    onAny(url?: RegExp): { reply: (fn: (cfg: { url?: string; baseURL?: string; method?: string; data?: unknown }) => [number, unknown]) => void };
   };
 
-  mock.onAny().reply((config: { url?: string; method?: string; data?: unknown }) => {
+  mock.onAny().reply((config: { url?: string; baseURL?: string; method?: string; data?: unknown }) => {
     const method = (config.method ?? 'get').toLowerCase();
-    const url    = config.url ?? '/';
+    const url    = (config.baseURL ?? '') + (config.url ?? '/');
     // Axios serialises the body as a JSON string; parse it back
     let body: unknown = config.data;
     if (typeof body === 'string') {

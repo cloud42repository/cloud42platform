@@ -303,3 +303,11 @@ mat-card {
 .debug-breakpoint-line {
   background: rgba(229, 20, 0, 0.08);
 }
+
+/* ── Snackbar panelClass styles ── */
+.snack-error .mdc-snackbar__surface { background: #d32f2f !important; }
+.snack-error .mdc-snackbar__label  { color: #fff !important; }
+.snack-warning .mdc-snackbar__surface { background: #f57c00 !important; }
+.snack-warning .mdc-snackbar__label  { color: #fff !important; }
+.snack-info .mdc-snackbar__surface { background: #0288d1 !important; }
+.snack-info .mdc-snackbar__label  { color: #fff !important; }

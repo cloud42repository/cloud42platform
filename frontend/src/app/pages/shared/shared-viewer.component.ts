@@ -11,6 +11,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ShareService, SharedItemData } from '../../services/share.service';
 import { WorkflowService } from '../../services/workflow.service';
 import { ApplicationDefinition, AppPage, AppNavigation } from '../../config/application.types';
@@ -27,7 +28,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
   imports: [
     CommonModule, FormsModule,
     MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatDividerModule, MatTooltipModule,
-    MatFormFieldModule, MatInputModule, MatSelectModule, MatSlideToggleModule,
+    MatFormFieldModule, MatInputModule, MatSelectModule, MatSlideToggleModule, MatSnackBarModule,
     TranslatePipe,
   ],
   template: `
@@ -936,6 +937,7 @@ export class SharedViewerComponent implements OnInit {
   private readonly wfSvc = inject(WorkflowService);
   private readonly api = inject(ApiService);
   private readonly notifSvc = inject(NotificationService);
+  private readonly snackBar = inject(MatSnackBar);
 
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
@@ -1425,7 +1427,7 @@ export class SharedViewerComponent implements OnInit {
       for (const f of this.formFields()) {
         formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
       }
-      const args: Record<string, unknown> = { FormFields: formFields, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
+      const args: Record<string, unknown> = { FormFields: formFields, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -1556,7 +1558,7 @@ export class SharedViewerComponent implements OnInit {
         this.setFieldValue(id, val);
         formFields[nameOrId] = val;
       };
-      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
+      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -1670,7 +1672,7 @@ export class SharedViewerComponent implements OnInit {
       for (const f of this.formFields()) {
         formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
       }
-      const args: Record<string, unknown> = { FormFields: formFields, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
+      const args: Record<string, unknown> = { FormFields: formFields, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;

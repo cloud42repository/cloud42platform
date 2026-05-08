@@ -12,6 +12,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import {
   CdkDragDrop,
   CdkDrag,
@@ -54,7 +55,7 @@ interface EndpointRef {
   imports: [
     CommonModule, RouterLink, FormsModule,
     MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatTooltipModule, MatDividerModule, MatProgressSpinnerModule, MatCheckboxModule, MatDialogModule,
+    MatSelectModule, MatTooltipModule, MatDividerModule, MatProgressSpinnerModule, MatCheckboxModule, MatDialogModule, MatSnackBarModule,
     CdkDrag, CdkDropList, CdkDropListGroup, CdkDragPlaceholder, CdkDragHandle,
     TranslatePipe,
   ],
@@ -1085,6 +1086,7 @@ export class DashboardBuilderComponent implements OnInit {
   private readonly svc = inject(DashboardService);
   private readonly shareSvc = inject(ShareService);
   private readonly api = inject(ApiService);
+  private readonly snackBar = inject(MatSnackBar);
 
   readonly allModules = MODULES;
   readonly widthOptions = [3, 4, 6, 8, 12];
@@ -1746,7 +1748,7 @@ export class DashboardBuilderComponent implements OnInit {
     this.fetching.set(true);
     try {
       const apiProxies = this.buildScriptApiProxies();
-      const args: Record<string, unknown> = { log: (...v: unknown[]) => console.log('[Script]', ...v), ...apiProxies };
+      const args: Record<string, unknown> = { log: (...v: unknown[]) => console.log('[Script]', ...v), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), ...apiProxies };
 
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
@@ -1849,7 +1851,7 @@ export class DashboardBuilderComponent implements OnInit {
       const logFn = (...args: unknown[]) => { logs.push({ timestamp: Date.now(), args }); };
 
       const apiProxies = this.buildScriptApiProxies();
-      const args: Record<string, unknown> = { log: logFn, ...apiProxies };
+      const args: Record<string, unknown> = { log: logFn, showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), ...apiProxies };
 
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);

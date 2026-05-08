@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApiService } from './api.service';
 import { UserManagementService } from './user-management.service';
 import {
@@ -16,6 +17,7 @@ import { ScriptDebugResult } from '../shared/script-editor-dialog.component';
 export class WorkflowService {
   private readonly api = inject(ApiService);
   private readonly userMgmt = inject(UserManagementService);
+  private readonly snackBar = inject(MatSnackBar);
   private readonly STORAGE_KEY = 'cloud42_workflows';
   private readonly API_PREFIX = '/workflows';
 
@@ -475,6 +477,7 @@ export class WorkflowService {
         scriptLogs.push(values);
         console.log('[Script]', ...values);
       };
+      args['showMessage'] = (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' });
 
       stepLog.resolvedParams = Object.fromEntries(
         Object.entries(args)

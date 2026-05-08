@@ -111,6 +111,7 @@ export interface ScriptEditorDialogData {
                     <tr><td><code>setFieldEnabled(name, enabled)</code></td><td>Enable or disable a field by label or ID</td></tr>
                   }
                   <tr><td><code>addNotification(title, message?, type?, metadata?)</code></td><td>Create a notification. Type: 'info' | 'success' | 'warning' | 'error'</td></tr>
+                  <tr><td><code>showMessage(text, type?)</code></td><td>Show a toast message. Type: 'info' | 'warning' | 'error'</td></tr>
                   <tr><td><code>sendMail(&#123; to, subject, body, contentType?, cc?, bcc? &#125;)</code></td><td>Send email via Microsoft Graph</td></tr>
                   <tr><td><code>log(...values)</code></td><td>Output values to the Debug Console (click ▶ Run & Debug)</td></tr>
                   @if (data.mode === 'workflow-script') {
@@ -457,7 +458,28 @@ return Object.entries(byMonth)
               }
 
               <div class="help-section">
-                <h4>Notifications</h4>
+                <h4>Messages &amp; Notifications</h4>
+                <p class="help-hint">Use <code>showMessage()</code> for lightweight inline toasts. Use <code>addNotification()</code> for persistent notifications stored in the database (bell icon).</p>
+                <table class="help-table">
+                  <tr><td><code>text</code></td><td>Required — message text</td></tr>
+                  <tr><td><code>type</code></td><td>Optional — <code>'info'</code> | <code>'warning'</code> | <code>'error'</code> (default: <code>'info'</code>)</td></tr>
+                </table>
+                <div class="help-example">
+                  <div class="example-title">Info message (default)</div>
+                  <pre><code>showMessage('Record saved successfully');</code></pre>
+                </div>
+                <div class="help-example">
+                  <div class="example-title">Warning message</div>
+                  <pre><code>showMessage('Some fields are empty', 'warning');</code></pre>
+                </div>
+                <div class="help-example">
+                  <div class="example-title">Error message (longer duration)</div>
+                  <pre><code>showMessage('Failed to save record', 'error');</code></pre>
+                </div>
+              </div>
+
+              <div class="help-section">
+                <h4>Persistent Notifications</h4>
                 <p class="help-hint">Use <code>addNotification()</code> to create in-app notifications stored in the database. They appear in the bell icon in the toolbar.</p>
                 <table class="help-table">
                   <tr><td><code>title</code></td><td>Required — notification title</td></tr>
@@ -617,7 +639,8 @@ const accounts =
                     <li>Return <code>[&#123; name, value &#125;]</code> arrays for chart widgets</li>
                   }
                   <li>Use <code>Promise.all()</code> for parallel API calls</li>
-                  <li>Use <code>await addNotification(title, message, type)</code> to notify users</li>
+                  <li>Use <code>showMessage(text, type)</code> for quick inline toasts</li>
+                  <li>Use <code>await addNotification(title, message, type)</code> for persistent notifications</li>
                   <li>Use <code>await sendMail(&#123; to, subject, body &#125;)</code> to send emails via Microsoft Graph</li>
                 </ul>
               </div>
@@ -1076,8 +1099,10 @@ export class ScriptEditorDialogComponent implements AfterViewInit, OnDestroy {
       }
     }
 
-    // addNotification helper
+    // addNotification & showMessage helpers
     lines.push(`declare function addNotification(title: string, message?: string, type?: 'info' | 'success' | 'warning' | 'error', metadata?: Record<string, unknown>): Promise<{ id: string; title: string; message: string; type: string; createdAt: string }>;`);
+    lines.push(`/** Show an inline toast message. Type: 'info' (default) | 'warning' | 'error'. */`);
+    lines.push(`declare function showMessage(text: string, type?: 'info' | 'warning' | 'error'): void;`);
     lines.push(`declare function sendMail(options: { to: string | string[]; subject: string; body: string; contentType?: 'text' | 'html'; cc?: string | string[]; bcc?: string | string[] }): Promise<{ success: boolean; message: string }>;`);
     lines.push(`/** Output values to the Debug Console. Use with Run & Debug. */`);
     lines.push(`declare function log(...values: any[]): void;`);

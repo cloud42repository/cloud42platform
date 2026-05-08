@@ -13,6 +13,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import {
   CdkDragDrop,
   CdkDrag,
@@ -66,7 +67,7 @@ interface FieldTypeRef {
     CommonModule, RouterLink, FormsModule,
     MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule,
     MatSelectModule, MatTooltipModule, MatDividerModule, MatCheckboxModule,
-    MatSlideToggleModule, MatProgressSpinnerModule, MatDialogModule,
+    MatSlideToggleModule, MatProgressSpinnerModule, MatDialogModule, MatSnackBarModule,
     CdkDrag, CdkDropList, CdkDropListGroup, CdkDragPlaceholder, CdkDragHandle,
     TranslatePipe,
     LabelFieldComponent, TextFieldComponent, NumberFieldComponent,
@@ -1422,6 +1423,7 @@ export class FormBuilderComponent implements OnInit {
   private readonly userMgmt = inject(UserManagementService);
   private readonly dialog = inject(MatDialog);
   private readonly notifSvc = inject(NotificationService);
+  private readonly snackBar = inject(MatSnackBar);
 
   readonly allModules = MODULES;
   readonly widthOptions = [3, 4, 6, 8, 12];
@@ -2092,7 +2094,7 @@ export class FormBuilderComponent implements OnInit {
       for (const f of this.fields()) {
         formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
       }
-      const args: Record<string, unknown> = { FormFields: formFields, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...apiProxies };
+      const args: Record<string, unknown> = { FormFields: formFields, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...apiProxies };
 
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
@@ -2419,13 +2421,11 @@ export class FormBuilderComponent implements OnInit {
         log: (...v: unknown[]) => console.log('[Script]', ...v),
         addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) =>
           this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}),
+        showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }),
         sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) =>
           firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)),
         ...apiProxies,
       };
-
-      const argNames = Object.keys(args);
-      const argValues = argNames.map(n => args[n]);
 
       // eslint-disable-next-line no-new-func
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -2539,6 +2539,7 @@ export class FormBuilderComponent implements OnInit {
         log: logFn,
         addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) =>
           this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}),
+        showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }),
         sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) =>
           firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)),
         ...apiProxies,
