@@ -109,6 +109,7 @@ export interface ScriptEditorDialogData {
                   @if (data.mode === 'field-onChange' || data.mode === 'field-rowSelect' || data.mode === 'action-script') {
                     <tr><td><code>setFieldValue(name, val)</code></td><td>Set another field's value by label or ID</td></tr>
                     <tr><td><code>setFieldEnabled(name, enabled)</code></td><td>Enable or disable a field by label or ID</td></tr>
+                    <tr><td><code>setFieldProposals(name, proposals)</code></td><td>Set autocomplete suggestions on a text field</td></tr>
                   }
                   <tr><td><code>addNotification(title, message?, type?, metadata?)</code></td><td>Create a notification. Type: 'info' | 'success' | 'warning' | 'error'</td></tr>
                   <tr><td><code>showMessage(text, type?)</code></td><td>Show a toast message. Type: 'info' | 'warning' | 'error'</td></tr>
@@ -200,6 +201,13 @@ if (value === 'VIP') &#123;
                     <pre><code>// price * quantity → total
 const qty = FormFields['Quantity'] || 0;
 setFieldValue('Total', Number(value) * Number(qty));</code></pre>
+                  </div>
+                  <div class="help-example">
+                    <div class="example-title">Autocomplete suggestions</div>
+                    <pre><code>// Suggest matching contacts as user types
+const contacts = await ZohoBooks.ListContacts();
+const names = contacts.map(c => c.contact_name);
+setFieldProposals('Customer', names);</code></pre>
                   </div>
                 </div>
               }

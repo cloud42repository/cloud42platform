@@ -12,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ShareService, SharedItemData } from '../../services/share.service';
 import { WorkflowService } from '../../services/workflow.service';
 import { ApplicationDefinition, AppPage, AppNavigation } from '../../config/application.types';
@@ -28,7 +29,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
   imports: [
     CommonModule, FormsModule,
     MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatDividerModule, MatTooltipModule,
-    MatFormFieldModule, MatInputModule, MatSelectModule, MatSlideToggleModule, MatSnackBarModule,
+    MatFormFieldModule, MatInputModule, MatSelectModule, MatSlideToggleModule, MatSnackBarModule, MatAutocompleteModule,
     TranslatePipe,
   ],
   template: `
@@ -259,7 +260,13 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                       <input [type]="field.masked ? 'password' : 'text'" class="preview-text-input"
                              [placeholder]="field.placeholder || field.label || 'Text input'"
                              [value]="getFieldValue(field.id)"
-                             (input)="onFieldInput(field, $any($event.target).value)" />
+                             (input)="onFieldInput(field, $any($event.target).value)"
+                             [matAutocomplete]="ac" />
+                      <mat-autocomplete #ac="matAutocomplete" (optionSelected)="onFieldInput(field, $event.option.value)">
+                        @for (opt of getFieldProposals(field.id); track opt) {
+                          <mat-option [value]="opt">{{ opt }}</mat-option>
+                        }
+                      </mat-autocomplete>
                     }
                     @if (field.kind === 'number') {
                       <input type="number" class="preview-text-input"
@@ -952,6 +959,7 @@ export class SharedViewerComponent implements OnInit {
   readonly formFields = signal<any[]>([]);
   readonly formActions = signal<any[]>([]);
   readonly fieldValues = signal<Record<string, unknown>>({});
+  readonly fieldProposals = signal<Record<string, string[]>>({});
   readonly selectedTableRow = signal<{ fieldId: string; rowIndex: number } | null>(null);
   readonly formExecuting = signal(false);
   readonly formResponse = signal<{ status: string; data: unknown } | null>(null);
@@ -1424,10 +1432,17 @@ export class SharedViewerComponent implements OnInit {
     try {
       const proxies = this.buildScriptApiProxies();
       const formFields: Record<string, unknown> = {};
+      const labelToId: Record<string, string> = {};
       for (const f of this.formFields()) {
-        formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
+        const key = f.label || f.id;
+        formFields[key] = this.fieldValues()[f.id] ?? '';
+        labelToId[key] = f.id;
       }
-      const args: Record<string, unknown> = { FormFields: formFields, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
+      const proposalsField = (nameOrId: string, proposals: string[]) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.setFieldProposals(id, proposals);
+      };
+      const args: Record<string, unknown> = { FormFields: formFields, setFieldProposals: proposalsField, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -1533,6 +1548,14 @@ export class SharedViewerComponent implements OnInit {
     this.fieldValues.update(v => ({ ...v, [fieldId]: value }));
   }
 
+  getFieldProposals(fieldId: string): string[] {
+    return this.fieldProposals()[fieldId] ?? [];
+  }
+
+  setFieldProposals(fieldId: string, proposals: string[]) {
+    this.fieldProposals.update(p => ({ ...p, [fieldId]: proposals }));
+  }
+
   onFieldInput(field: any, value: unknown) {
     this.setFieldValue(field.id, value);
     if (field.onChangeScript?.trim()) {
@@ -1558,7 +1581,11 @@ export class SharedViewerComponent implements OnInit {
         this.setFieldValue(id, val);
         formFields[nameOrId] = val;
       };
-      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
+      const proposalsField = (nameOrId: string, proposals: string[]) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.setFieldProposals(id, proposals);
+      };
+      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, setFieldProposals: proposalsField, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -1669,10 +1696,21 @@ export class SharedViewerComponent implements OnInit {
     try {
       const proxies = this.buildScriptApiProxies();
       const formFields: Record<string, unknown> = {};
+      const labelToId: Record<string, string> = {};
       for (const f of this.formFields()) {
-        formFields[f.label || f.id] = this.fieldValues()[f.id] ?? '';
+        const key = f.label || f.id;
+        formFields[key] = this.fieldValues()[f.id] ?? '';
+        labelToId[key] = f.id;
       }
-      const args: Record<string, unknown> = { FormFields: formFields, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
+      const setField = (nameOrId: string, val: unknown) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.setFieldValue(id, val);
+      };
+      const proposalsField = (nameOrId: string, proposals: string[]) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.setFieldProposals(id, proposals);
+      };
+      const args: Record<string, unknown> = { FormFields: formFields, setFieldValue: setField, setFieldProposals: proposalsField, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;

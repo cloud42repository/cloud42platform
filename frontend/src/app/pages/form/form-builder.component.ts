@@ -281,6 +281,7 @@ interface FieldTypeRef {
                     <app-text-field [field]="field" [value]="getFieldValue(field.id)"
                                     [boundTableLabel]="getBoundTableLabel(field)"
                                     [disabled]="isFieldDisabled(field.id)"
+                                    [proposals]="getFieldProposals(field.id)"
                                     (inputChange)="onFieldInput(field, $event)"
                                     (selectField)="selectField(field.id)" />
                   }
@@ -565,7 +566,7 @@ interface FieldTypeRef {
                   {{ 'form.on-change-script' | t }}
                   <button mat-icon-button class="open-editor-btn"
                           matTooltip="{{ 'form.open-editor' | t }}"
-                          (click)="openScriptEditor(field.onChangeScript ?? '', 'field-onChange', field.id, { value: 'unknown', FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void', setFieldEnabled: '(nameOrId: string, enabled: boolean) => void' })">
+                          (click)="openScriptEditor(field.onChangeScript ?? '', 'field-onChange', field.id, { value: 'unknown', FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void', setFieldEnabled: '(nameOrId: string, enabled: boolean) => void', setFieldProposals: '(nameOrId: string, proposals: string[]) => void' })">
                     <mat-icon>open_in_new</mat-icon>
                   </button>
                 </div>
@@ -615,7 +616,7 @@ interface FieldTypeRef {
                   {{ 'form.on-row-select-script' | t }}
                   <button mat-icon-button class="open-editor-btn"
                           matTooltip="{{ 'form.open-editor' | t }}"
-                          (click)="openScriptEditor(field.onRowSelectScript ?? '', 'field-rowSelect', field.id, { row: 'Record<string, string>', rowIndex: 'number', FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void', setFieldEnabled: '(nameOrId: string, enabled: boolean) => void' })">
+                          (click)="openScriptEditor(field.onRowSelectScript ?? '', 'field-rowSelect', field.id, { row: 'Record<string, string>', rowIndex: 'number', FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void', setFieldEnabled: '(nameOrId: string, enabled: boolean) => void', setFieldProposals: '(nameOrId: string, proposals: string[]) => void' })">
                     <mat-icon>open_in_new</mat-icon>
                   </button>
                 </div>
@@ -763,7 +764,7 @@ interface FieldTypeRef {
                 {{ 'form.script-code' | t }}
                 <button mat-icon-button class="open-editor-btn"
                         matTooltip="{{ 'form.open-editor' | t }}"
-                        (click)="openScriptEditor(action.scriptCode ?? '', 'action-script', action.id, { FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void', setFieldEnabled: '(nameOrId: string, enabled: boolean) => void' })">
+                        (click)="openScriptEditor(action.scriptCode ?? '', 'action-script', action.id, { FormFields: 'Record<string, unknown>', setFieldValue: '(nameOrId: string, value: unknown) => void', setFieldEnabled: '(nameOrId: string, enabled: boolean) => void', setFieldProposals: '(nameOrId: string, proposals: string[]) => void' })">
                   <mat-icon>open_in_new</mat-icon>
                 </button>
               </div>
@@ -1457,6 +1458,8 @@ export class FormBuilderComponent implements OnInit {
   readonly fieldValues = signal<Record<string, unknown>>({});
   /** Runtime disabled state per field (fieldId → true means disabled) */
   readonly fieldDisabled = signal<Record<string, boolean>>({});
+  /** Runtime autocomplete proposals per field (fieldId → string[]) */
+  readonly fieldProposals = signal<Record<string, string[]>>({});
   /** Currently selected datatable row: { fieldId, rowIndex } */
   readonly selectedTableRow = signal<{ fieldId: string; rowIndex: number } | null>(null);
 
@@ -2134,7 +2137,11 @@ export class FormBuilderComponent implements OnInit {
         const id = labelToId[nameOrId] || nameOrId;
         this.setFieldEnabled(id, enabled);
       };
-      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, setFieldEnabled: enableField, log: (...v: unknown[]) => console.log('[Script]', ...v), ...apiProxies };
+      const proposalsField = (nameOrId: string, proposals: string[]) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.setFieldProposals(id, proposals);
+      };
+      const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, setFieldEnabled: enableField, setFieldProposals: proposalsField, log: (...v: unknown[]) => console.log('[Script]', ...v), ...apiProxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -2167,7 +2174,11 @@ export class FormBuilderComponent implements OnInit {
         const id = labelToId[nameOrId] || nameOrId;
         this.setFieldEnabled(id, enabled);
       };
-      const args: Record<string, unknown> = { row, rowIndex, FormFields: formFields, setFieldValue: setField, setFieldEnabled: enableField, log: (...v: unknown[]) => console.log('[Script]', ...v), ...apiProxies };
+      const proposalsField = (nameOrId: string, proposals: string[]) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.setFieldProposals(id, proposals);
+      };
+      const args: Record<string, unknown> = { row, rowIndex, FormFields: formFields, setFieldValue: setField, setFieldEnabled: enableField, setFieldProposals: proposalsField, log: (...v: unknown[]) => console.log('[Script]', ...v), ...apiProxies };
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -2261,10 +2272,26 @@ export class FormBuilderComponent implements OnInit {
 
   readonly previewMode = signal(false);
 
-  preview() {
-    this.previewMode.set(true);
-    this.selectedFieldId.set(null);
-    this.selectedActionId.set(null);
+  async preview() {
+    const id = this.formId();
+    if (!id) {
+      await this.save();
+    }
+    const formId = this.formId();
+    if (!formId) return;
+    try {
+      await this.save();
+      const links = await this.shareSvc.createShare('form', formId);
+      if (links.length > 0) {
+        const url = this.shareSvc.getShareUrl(links[0].token);
+        globalThis.open(url, '_blank');
+      }
+    } catch {
+      // fallback to inline preview
+      this.previewMode.set(true);
+      this.selectedFieldId.set(null);
+      this.selectedActionId.set(null);
+    }
   }
 
   // ── Field values (runtime) ─────────────────────────────────────────────
@@ -2283,6 +2310,14 @@ export class FormBuilderComponent implements OnInit {
 
   setFieldEnabled(fieldId: string, enabled: boolean) {
     this.fieldDisabled.update(d => ({ ...d, [fieldId]: !enabled }));
+  }
+
+  getFieldProposals(fieldId: string): string[] {
+    return this.fieldProposals()[fieldId] ?? [];
+  }
+
+  setFieldProposals(fieldId: string, proposals: string[]) {
+    this.fieldProposals.update(p => ({ ...p, [fieldId]: proposals }));
   }
 
   /** Called on text/number/date input — sets value and triggers onChange script if configured */
@@ -2414,10 +2449,16 @@ export class FormBuilderComponent implements OnInit {
         this.setFieldEnabled(id, enabled);
       };
 
+      const proposalsField = (nameOrId: string, proposals: string[]) => {
+        const id = labelToId[nameOrId] ?? nameOrId;
+        this.setFieldProposals(id, proposals);
+      };
+
       const args: Record<string, unknown> = {
         FormFields: formFields,
         setFieldValue: setField,
         setFieldEnabled: enableField,
+        setFieldProposals: proposalsField,
         log: (...v: unknown[]) => console.log('[Script]', ...v),
         addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) =>
           this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}),
@@ -2536,6 +2577,10 @@ export class FormBuilderComponent implements OnInit {
         const fid = labelToId[nameOrId] || nameOrId;
         this.setFieldEnabled(fid, enabled);
       };
+      const proposalsField = (nameOrId: string, proposals: string[]) => {
+        const fid = labelToId[nameOrId] || nameOrId;
+        this.setFieldProposals(fid, proposals);
+      };
 
       const args: Record<string, unknown> = {
         log: logFn,
@@ -2556,16 +2601,19 @@ export class FormBuilderComponent implements OnInit {
         args['FormFields'] = formFields;
         args['setFieldValue'] = setField;
         args['setFieldEnabled'] = enableField;
+        args['setFieldProposals'] = proposalsField;
       } else if (mode === 'field-rowSelect') {
         args['row'] = {};
         args['rowIndex'] = 0;
         args['FormFields'] = formFields;
         args['setFieldValue'] = setField;
         args['setFieldEnabled'] = enableField;
+        args['setFieldProposals'] = proposalsField;
       } else if (mode === 'action-script') {
         args['FormFields'] = formFields;
         args['setFieldValue'] = setField;
         args['setFieldEnabled'] = enableField;
+        args['setFieldProposals'] = proposalsField;
       }
 
       const argNames = Object.keys(args);
