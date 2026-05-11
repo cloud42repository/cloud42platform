@@ -9,6 +9,8 @@ import { UserService } from '../user/user.service';
 import type { JwtPayload } from './jwt.strategy';
 import type { UserResponseDto } from '../user/user.dto';
 import * as crypto from 'node:crypto';
+import * as jwt from 'jsonwebtoken';
+import JwksRsa from 'jwks-rsa';
 
 // Google token verifier — dynamic import for ESM compatibility
 let _verifyGoogleToken: ((idToken: string, clientId: string) => Promise<Record<string, unknown>>) | null = null;
@@ -36,6 +38,46 @@ export interface TokenPair {
   user: UserResponseDto;
 }
 
+// Microsoft token verifier — uses JWKS to validate the ID token
+const msJwksClient = JwksRsa({
+  jwksUri: 'https://login.microsoftonline.com/common/discovery/v2.0/keys',
+  cache: true,
+  rateLimit: true,
+});
+
+function getMsSigningKey(header: jwt.JwtHeader): Promise<string> {
+  return new Promise((resolve, reject) => {
+    msJwksClient.getSigningKey(header.kid!, (err: Error | null, key: JwksRsa.SigningKey | undefined) => {
+      if (err) return reject(err);
+      resolve(key!.getPublicKey());
+    });
+  });
+}
+
+async function verifyMicrosoftIdToken(
+  idToken: string,
+  clientId: string,
+): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    jwt.verify(
+      idToken,
+      (header, callback) => {
+        getMsSigningKey(header)
+          .then(key => callback(null, key))
+          .catch(err => callback(err));
+      },
+      {
+        audience: clientId,
+        algorithms: ['RS256'],
+      } as jwt.VerifyOptions,
+      (err, decoded) => {
+        if (err) return reject(err);
+        resolve(decoded as Record<string, unknown>);
+      },
+    );
+  });
+}
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -45,6 +87,7 @@ export class AuthService {
   private readonly jwtExpiry: string;
   private readonly jwtRefreshExpiry: string;
   private readonly googleClientId: string;
+  private readonly microsoftClientId: string;
 
   constructor(
     private readonly jwtService: JwtService,
@@ -58,6 +101,10 @@ export class AuthService {
     this.googleClientId = this.configService.get<string>(
       'GOOGLE_CLIENT_ID',
       '293033288145-egi954spbnkgmp4a6htnkhhhnc0lds6b.apps.googleusercontent.com',
+    );
+    this.microsoftClientId = this.configService.get<string>(
+      'MICROSOFT_CLIENT_ID',
+      '17b78aab-95eb-456f-b71f-c80f9c20e196',
     );
   }
 
@@ -119,6 +166,60 @@ export class AuthService {
     }
 
     this.logger.log(`Google token verified for ${email}`);
+
+    // Upsert user in DB
+    const user = await this.userService.registerLogin(email, name, photoUrl);
+
+    // Generate tokens
+    const jwtPayload: JwtPayload = {
+      sub: user.email,
+      name: user.name,
+      role: user.role,
+    };
+
+    const accessToken = this.jwtService.sign(jwtPayload as unknown as Record<string, unknown>, {
+      secret: this.jwtSecret,
+      expiresIn: this.jwtExpiry as any,
+    });
+
+    const refreshToken = this.jwtService.sign(
+      { sub: user.email } as unknown as Record<string, unknown>,
+      { secret: this.jwtRefreshSecret, expiresIn: this.jwtRefreshExpiry as any },
+    );
+
+    // Store hashed refresh token
+    await this.userService.setHashedRefreshToken(email, this.hashToken(refreshToken));
+
+    return { accessToken, refreshToken, user };
+  }
+
+  /* ── Microsoft Login ── */
+
+  /**
+   * Verify Microsoft ID token (MSAL) server-side, upsert user, return token pair.
+   */
+  async loginWithMicrosoft(microsoftIdToken: string): Promise<{ accessToken: string; refreshToken: string; user: UserResponseDto }> {
+    let payload: Record<string, unknown>;
+
+    this.logger.log(`Login attempt — verifying Microsoft token (clientId: ${this.microsoftClientId.slice(0, 12)}…)`);
+
+    try {
+      payload = await verifyMicrosoftIdToken(microsoftIdToken, this.microsoftClientId);
+    } catch (err) {
+      this.logger.warn(`Microsoft token verification failed: ${(err as Error).message}`);
+      throw new UnauthorizedException('Invalid Microsoft token');
+    }
+
+    // Microsoft tokens use 'preferred_username' or 'email' for email, 'name' for display name
+    const email = (payload['preferred_username'] ?? payload['email']) as string;
+    const name = (payload['name'] as string) || '';
+    const photoUrl = '';
+
+    if (!email) {
+      throw new UnauthorizedException('Microsoft token missing email claim');
+    }
+
+    this.logger.log(`Microsoft token verified for ${email}`);
 
     // Upsert user in DB
     const user = await this.userService.registerLogin(email, name, photoUrl);

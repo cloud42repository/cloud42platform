@@ -55,6 +55,15 @@ declare global {
               <button class="dev-login-btn" (click)="handleDevLogin()">🧪 Dev Login (Mock Mode)</button>
             } @else {
               <div class="google-btn-wrap" #googleBtn></div>
+              <button class="ms-login-btn" (click)="handleMicrosoftLogin()" [disabled]="busy">
+                <svg class="ms-logo" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                  <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                  <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                  <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                </svg>
+                Sign in with Microsoft
+              </button>
             }
 
             <div class="login-divider-text"><span>or sign in with password</span></div>
@@ -195,6 +204,34 @@ declare global {
       min-height: 44px;
     }
 
+    /* ── Microsoft button ── */
+    .ms-login-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 280px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #3c4043;
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      font-family: 'Segoe UI', Roboto, sans-serif;
+    }
+    .ms-login-btn:hover:not(:disabled) {
+      background: #f8f9fa;
+      box-shadow: 0 1px 3px rgba(0,0,0,.12);
+    }
+    .ms-login-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .ms-logo { width: 20px; height: 20px; flex-shrink: 0; }
+
     /* ── Divider with text ── */
     .login-divider-text {
       width: 100%;
@@ -327,6 +364,42 @@ export class LoginComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     if (this.authService.isLoggedIn()) {
       this.redirectAfterLogin();
+      return;
+    }
+    // If Microsoft auth code landed on this page, process it
+    if (globalThis.location.hash?.includes('code=') || globalThis.location.hash?.includes('error=')) {
+      this.handleMsalRedirectResponse();
+    }
+  }
+
+  private async handleMsalRedirectResponse(): Promise<void> {
+    this.busy = true;
+    try {
+      const msal = await this.loadMsal();
+      const instance = new msal.PublicClientApplication({
+        auth: {
+          clientId: environment.microsoftClientId,
+          authority: `https://login.microsoftonline.com/${environment.microsoftTenantId ?? 'common'}`,
+          redirectUri: globalThis.location.origin + '/login',
+        },
+        cache: { cacheLocation: 'sessionStorage' },
+      });
+      await instance.initialize();
+      const response = await instance.handleRedirectPromise();
+      if (response?.idToken) {
+        await this.authService.loginWithMicrosoft(response.idToken);
+        this.redirectAfterLogin();
+      }
+    } catch (err: any) {
+      console.error('Microsoft redirect handling failed', err);
+      this.loginErrorMessage = err?.message || 'Microsoft login failed.';
+      this.loginError = true;
+    } finally {
+      this.busy = false;
+      // Clean hash from URL
+      if (globalThis.location.hash) {
+        history.replaceState(null, '', globalThis.location.pathname);
+      }
     }
   }
 
@@ -388,6 +461,48 @@ export class LoginComponent implements OnInit, AfterViewInit {
         || 'Dev login failed. Is the backend running in MOCK_MODE?';
       this.loginError = true;
     }
+  }
+
+  /* ── Microsoft Login ── */
+
+  private msalInstance: any = null;
+
+  private async getMsalInstance(): Promise<any> {
+    if (this.msalInstance) return this.msalInstance;
+    const msal = await this.loadMsal();
+    this.msalInstance = new msal.PublicClientApplication({
+      auth: {
+        clientId: environment.microsoftClientId,
+        authority: `https://login.microsoftonline.com/${environment.microsoftTenantId ?? 'common'}`,
+        redirectUri: globalThis.location.origin + '/login',
+      },
+      cache: { cacheLocation: 'sessionStorage' },
+    });
+    await this.msalInstance.initialize();
+    return this.msalInstance;
+  }
+
+  async handleMicrosoftLogin(): Promise<void> {
+    this.busy = true;
+    this.clearErrors();
+    try {
+      const instance = await this.getMsalInstance();
+
+      // Use redirect flow — the response will be handled in ngOnInit
+      await instance.loginRedirect({
+        scopes: ['openid', 'profile', 'email'],
+      });
+    } catch (err: any) {
+      console.error('Microsoft login failed', err);
+      this.loginErrorMessage = err?.error?.message || err?.message || 'Microsoft login failed. Please try again.';
+      this.loginError = true;
+      this.busy = false;
+    }
+  }
+
+  private loadMsal(): Promise<any> {
+    if ((globalThis as any).msal) return Promise.resolve((globalThis as any).msal);
+    return import('@azure/msal-browser');
   }
 
   private redirectAfterLogin(): void {

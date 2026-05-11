@@ -18,6 +18,10 @@ interface GoogleLoginDto {
   idToken: string;
 }
 
+interface MicrosoftLoginDto {
+  idToken: string;
+}
+
 interface DevLoginDto {
   email?: string;
   name?: string;
@@ -49,6 +53,23 @@ export class AuthController {
   ) {
     const { accessToken, refreshToken, user } =
       await this.authService.loginWithGoogle(dto.idToken);
+
+    this.setRefreshCookie(res, refreshToken);
+
+    return { accessToken, refreshToken, user };
+  }
+
+  /* ── POST /api/auth/microsoft-login ── */
+
+  @Public()
+  @Post('microsoft-login')
+  @HttpCode(HttpStatus.OK)
+  async microsoftLogin(
+    @Body() dto: MicrosoftLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken, user } =
+      await this.authService.loginWithMicrosoft(dto.idToken);
 
     this.setRefreshCookie(res, refreshToken);
 
