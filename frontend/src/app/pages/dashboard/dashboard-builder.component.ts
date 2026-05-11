@@ -793,7 +793,7 @@ interface EndpointRef {
       border: 1px solid #e2e8f0; border-radius: 12px;
       background: white; padding: 12px 16px;
       cursor: pointer; transition: border-color .15s, box-shadow .15s;
-      position: relative;
+      position: relative; overflow: hidden;
       display: flex; flex-direction: column;
     }
     .widget-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
@@ -804,8 +804,6 @@ interface EndpointRef {
     .widget-card--data-table { border-left: 4px solid #16a34a; }
     .widget-card--badge      { border-left: 4px solid #7c3aed; }
     .widget-card--search-text { border-left: 4px solid #0f172a; }
-
-    .bar-chart-svg { width: 100%; height: auto; }
 
     /* Search text widget */
     .search-text-preview {
@@ -859,7 +857,7 @@ interface EndpointRef {
     .widget-refresh-btn mat-icon { font-size: 15px; width: 15px; height: 15px; }
     .drag-handle { cursor: grab; color: #94a3b8; font-size: 18px; width: 18px; height: 18px; }
 
-    .widget-preview { margin-top: 8px; flex: 1; overflow: auto; }
+    .widget-preview { margin-top: 8px; flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
     .data-source-tag {
       display: inline-flex; align-items: center; gap: 4px;
       font-size: 11px; color: #0284c7; background: #f0f9ff;
@@ -1021,12 +1019,12 @@ interface EndpointRef {
     .ep-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* ── Chart visualizations ── */
-    .chart-container { margin-top: 10px; }
-    .line-chart-svg { width: 100%; height: auto; max-height: 200px; }
+    .chart-container { flex: 1; min-height: 0; position: relative; }
+    .line-chart-svg, .bar-chart-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     .chart-dot-label { font-size: 9px; fill: #475569; font-weight: 600; }
     .chart-axis-label { font-size: 8px; fill: #94a3b8; }
 
-    .pie-container { display: flex; align-items: flex-start; gap: 12px; }
+    .pie-container { display: flex; align-items: center; gap: 12px; flex: 1; min-height: 0; }
     .pie-chart-svg { width: 140px; min-width: 140px; height: auto; }
     .pie-legend { flex: 1; display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
     .pie-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; }
@@ -1923,6 +1921,29 @@ export class DashboardBuilderComponent implements OnInit {
   readonly previewMode = signal(false);
 
   async preview() {
+    // Save without navigating away
+    const dashboard: Dashboard = {
+      id: this.dashboardId(),
+      name: this.dashboardName() || 'Untitled Dashboard',
+      widgets: this.widgets().map(w => ({ ...w, lastData: undefined })),
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const existing = this.svc.getById(dashboard.id);
+    if (existing) dashboard.createdAt = existing.createdAt;
+    this.svc.upsert(dashboard);
+
+    try {
+      const links = await this.shareSvc.createShare('dashboard', this.dashboardId());
+      if (links.length > 0) {
+        const url = this.shareSvc.getShareUrl(links[0].token);
+        globalThis.open(url, '_blank');
+        return;
+      }
+    } catch { /* fallback below */ }
+
+    // Fallback: inline preview
     this.previewMode.set(true);
     this.selectedWidgetId.set(null);
     const promises = this.widgets()

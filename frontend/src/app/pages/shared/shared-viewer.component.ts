@@ -745,11 +745,12 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
     .data-table tbody tr.row-selected td { background: #dbeafe; font-weight: 500; }
 
     /* ── Charts ── */
-    .chart-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .chart-container svg { width: 100%; height: 100%; max-height: 100%; }
+    .chart-container { flex: 1; min-height: 0; position: relative; width: 100%; height: 100%; }
+    .chart-container svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     .chart-dot-label { font-size: 9px; fill: #334155; font-weight: 600; }
     .chart-axis-label { font-size: 9px; fill: #94a3b8; }
-    .pie-container { flex-direction: row; gap: 12px; }
+    .pie-container { position: static; display: flex; flex-direction: row; gap: 12px; }
+    .pie-container svg { position: static; }
     .pie-chart-svg { max-width: 180px; flex-shrink: 0; }
     .pie-legend { display: flex; flex-direction: column; gap: 4px; font-size: 11px; overflow: hidden; }
     .pie-legend-item { display: flex; align-items: center; gap: 6px; }
