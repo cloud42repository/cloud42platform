@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -60,6 +60,14 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
           </div>
           <span class="shared-badge">{{ data()!.itemType | uppercase }}</span>
           <span class="spacer"></span>
+          @if (viewType() === 'dashboard' || viewType() === 'form') {
+            <button mat-icon-button (click)="exportExcel()" matTooltip="Export to Excel" [disabled]="exporting()">
+              <mat-icon>table_chart</mat-icon>
+            </button>
+            <button mat-icon-button (click)="exportPdf()" matTooltip="Export to PDF" [disabled]="exporting()">
+              <mat-icon>picture_as_pdf</mat-icon>
+            </button>
+          }
           <span class="shared-badge shared-badge--readonly">
             <mat-icon style="font-size:12px;width:12px;height:12px">visibility</mat-icon>
             {{ 'shared.read-only' | t }}
@@ -103,7 +111,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                       @else { table_chart }
                     </mat-icon>
                     <span class="widget-title">{{ widget.label || widget.kind }}</span>
-                    @if (widget.dataSource && widget.kind !== 'search-text') {
+                    @if ((widget.dataSource || widget.dataSourceMode === 'script') && widget.kind !== 'search-text') {
                       <button mat-icon-button class="widget-refresh-btn" (click)="refreshWidget(widget)" matTooltip="Refresh data">
                         <mat-icon>refresh</mat-icon>
                       </button>
@@ -123,7 +131,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                           </button>
                         }
                       </div>
-                    } @else if (!widget.dataSource) {
+                    } @else if (!widget.dataSource && widget.dataSourceMode !== 'script') {
                       <div class="no-data"><mat-icon>cloud_off</mat-icon> {{ 'shared.no-data-source' | t }}</div>
                     } @else if (widget.kind === 'badge') {
                       <div class="badge-vis">
@@ -334,7 +342,7 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
                             </tbody>
                           </table>
                         </div>
-                      } @else if (!field.dataSource) {
+                      } @else if (!field.dataSource && field.dataSourceMode !== 'script') {
                         <div class="no-data"><mat-icon>cloud_off</mat-icon> No data source</div>
                       } @else {
                         <div class="no-data"><mat-icon>hourglass_empty</mat-icon> Loading…</div>
@@ -651,6 +659,8 @@ import type { WorkflowNode, WorkflowStep, TryCatchBlock, LoopBlock, IfElseBlock,
       display: flex; align-items: center; gap: 4px;
       background: rgba(99,102,241,.15); color: #a5b4fc;
     }
+    .shared-toolbar button[mat-icon-button] { color: #94a3b8; }
+    .shared-toolbar button[mat-icon-button]:hover { color: #e2e8f0; }
     .spacer { flex: 1; }
 
     /* ── Application navigation ── */
@@ -946,6 +956,7 @@ export class SharedViewerComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly notifSvc = inject(NotificationService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly el = inject(ElementRef);
 
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
@@ -964,6 +975,7 @@ export class SharedViewerComponent implements OnInit {
   readonly selectedTableRow = signal<{ fieldId: string; rowIndex: number } | null>(null);
   readonly formExecuting = signal(false);
   readonly formResponse = signal<{ status: string; data: unknown } | null>(null);
+  readonly exporting = signal(false);
   private onChangeScriptTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Workflow
@@ -1001,7 +1013,7 @@ export class SharedViewerComponent implements OnInit {
         this.dashboardWidgets.set(widgets);
         // Fetch live data only for widgets that don't have snapshotted lastData
         for (const w of widgets) {
-          if (w.dataSource && w.lastData == null) this.fetchWidgetData(w);
+          if ((w.dataSource || w.dataSourceMode === 'script') && w.lastData == null) this.fetchWidgetData(w);
         }
       } else if (result.itemType === 'form') {
         const fields = (d['fields'] || []) as any[];
@@ -1071,7 +1083,7 @@ export class SharedViewerComponent implements OnInit {
       const widgets = (pageData['widgets'] || []) as DashboardWidget[];
       this.dashboardWidgets.set(widgets);
       for (const w of widgets) {
-        if (w.dataSource && w.lastData == null) this.fetchWidgetData(w);
+        if ((w.dataSource || w.dataSourceMode === 'script') && w.lastData == null) this.fetchWidgetData(w);
       }
     } else if (page.type === 'form') {
       const fields = (pageData['fields'] || []) as any[];
@@ -1096,6 +1108,10 @@ export class SharedViewerComponent implements OnInit {
   }
 
   private async fetchWidgetData(widget: DashboardWidget) {
+    const mode = widget.dataSourceMode ?? 'api';
+    if (mode === 'script') {
+      return this.fetchWidgetDataFromScript(widget);
+    }
     if (!widget.dataSource) return;
     const ds = widget.dataSource;
     try {
@@ -1124,6 +1140,41 @@ export class SharedViewerComponent implements OnInit {
         ws.map(w => w.id === widget.id ? { ...w, lastData: data } : w)
       );
     } catch { /* ignore fetch errors in shared view */ }
+  }
+
+  private async fetchWidgetDataFromScript(widget: DashboardWidget) {
+    const code = widget.scriptCode ?? '';
+    if (!code.trim()) return;
+    try {
+      const proxies = this.buildScriptApiProxies();
+      const args: Record<string, unknown> = {
+        log: (...v: unknown[]) => console.log('[Script]', ...v),
+        showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }),
+        ...proxies,
+      };
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      const res = await fn(...argValues);
+      let data: unknown = res;
+      if (widget.dataPath) {
+        data = this.getPath(res, widget.dataPath);
+      }
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const obj = data as Record<string, unknown>;
+        for (const key of ['data', 'records', 'items', 'result']) {
+          if (Array.isArray(obj[key])) { data = obj[key]; break; }
+        }
+        if (!Array.isArray(data)) {
+          const firstArr = Object.values(obj).find(v => Array.isArray(v));
+          if (firstArr) data = firstArr;
+        }
+      }
+      this.dashboardWidgets.update(ws =>
+        ws.map(w => w.id === widget.id ? { ...w, lastData: data } : w)
+      );
+    } catch (err) { console.error('[SharedViewer] widget script error:', err); }
   }
 
   private getPath(obj: unknown, path: string): unknown {
@@ -1368,6 +1419,7 @@ export class SharedViewerComponent implements OnInit {
 
   private async fetchFieldData(field: any) {
     const mode = field.dataSourceMode ?? 'api';
+    console.log('[SharedViewer] fetchFieldData', field.id, 'kind=', field.kind, 'mode=', mode, 'hasScript=', !!field.scriptCode, 'hasDS=', !!field.dataSource);
 
     if (mode === 'script') {
       return this.fetchFieldDataFromScript(field);
@@ -1866,5 +1918,184 @@ export class SharedViewerComponent implements OnInit {
 
   formatJson(data: unknown): string {
     try { return JSON.stringify(data, null, 2); } catch { return String(data); }
+  }
+
+  // ── Export ─────────────────────────────────────────────────────────────
+
+  async exportPdf() {
+    const contentEl = (this.el.nativeElement as HTMLElement).querySelector(
+      this.viewType() === 'dashboard' ? '.dashboard-preview' : '.form-preview'
+    ) as HTMLElement;
+    if (!contentEl) return;
+
+    this.exporting.set(true);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const canvas = await html2canvas(contentEl, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#f8fafc',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+
+      const pdf = new jsPDF({
+        orientation: imgWidth > imgHeight ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [imgWidth / 2, imgHeight / 2 + 40],
+      });
+
+      pdf.setFontSize(16);
+      pdf.text(this.itemName() || 'Export', 20, 25);
+      pdf.addImage(imgData, 'PNG', 0, 35, imgWidth / 2, imgHeight / 2);
+      pdf.save((this.itemName() || 'export') + '.pdf');
+    } catch {
+      this.snackBar.open('Failed to export PDF', 'OK', { duration: 3000 });
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
+  async exportExcel() {
+    this.exporting.set(true);
+    try {
+      const ExcelJS = await import('exceljs');
+      const { saveAs } = await import('file-saver');
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'cloud42 Platform';
+      wb.created = new Date();
+
+      const name = this.itemName() || 'Export';
+
+      if (this.viewType() === 'dashboard') {
+        this.exportDashboardSheets(wb);
+      } else if (this.viewType() === 'form') {
+        this.exportFormSheets(wb);
+      }
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      saveAs(blob, (name + '.xlsx').replace(/[\\/:*?"<>|]/g, '_'));
+    } catch {
+      this.snackBar.open('Failed to export Excel', 'OK', { duration: 3000 });
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
+  private exportDashboardSheets(wb: import('exceljs').Workbook) {
+    // Summary sheet
+    const summaryWs = wb.addWorksheet('Summary');
+    summaryWs.columns = [
+      { header: 'Dashboard', key: 'name', width: 30 },
+      { header: 'Exported', key: 'date', width: 22 },
+      { header: 'Widgets', key: 'count', width: 12 },
+    ];
+    summaryWs.addRow({
+      name: this.itemName(),
+      date: new Date().toLocaleString(),
+      count: this.dashboardWidgets().length,
+    });
+    this.styleHeaderRow(summaryWs);
+
+    for (const widget of this.dashboardWidgets()) {
+      if (widget.kind === 'search-text') continue;
+      const sheetName = this.sanitizeSheetName(widget.label || widget.kind, wb);
+      const ws = wb.addWorksheet(sheetName);
+
+      if (widget.kind === 'data-table') {
+        const columns = this.getTableColumns(widget);
+        const rows = this.getTableRows(widget);
+        ws.columns = columns.map(col => ({
+          header: col, key: col,
+          width: Math.max(12, Math.min(40, col.length + 4)),
+        }));
+        for (const row of rows) { ws.addRow(row); }
+        this.styleHeaderRow(ws);
+      } else if (widget.kind === 'badge') {
+        ws.columns = [
+          { header: 'Metric', key: 'metric', width: 25 },
+          { header: 'Value', key: 'value', width: 20 },
+        ];
+        ws.addRow({ metric: widget.label || 'Badge', value: this.getBadgeValue(widget) });
+        this.styleHeaderRow(ws);
+      } else {
+        // Chart widgets — export the underlying data
+        const items = this.getItems(widget);
+        const labelField = widget.bindings['labelField'];
+        const valueField = widget.bindings['valueField'];
+        ws.columns = [
+          { header: labelField || 'Label', key: 'label', width: 25 },
+          { header: valueField || 'Value', key: 'value', width: 18 },
+        ];
+        for (const item of items) {
+          ws.addRow({
+            label: labelField ? String(this.extractField(item, labelField) ?? '') : '',
+            value: valueField ? (Number(this.extractField(item, valueField)) || 0) : 0,
+          });
+        }
+        this.styleHeaderRow(ws);
+      }
+    }
+  }
+
+  private exportFormSheets(wb: import('exceljs').Workbook) {
+    // Form values sheet
+    const valuesWs = wb.addWorksheet('Form Values');
+    valuesWs.columns = [
+      { header: 'Field', key: 'field', width: 30 },
+      { header: 'Type', key: 'type', width: 15 },
+      { header: 'Value', key: 'value', width: 40 },
+    ];
+    const values = this.fieldValues();
+    for (const field of this.formFields()) {
+      valuesWs.addRow({
+        field: field.label || field.id,
+        type: field.kind,
+        value: values[field.id] != null ? String(values[field.id]) : '',
+      });
+    }
+    this.styleHeaderRow(valuesWs);
+
+    // Data table fields — one sheet per table
+    for (const field of this.formFields()) {
+      if (field.kind !== 'datatable' || !field.lastData) continue;
+      const sheetName = this.sanitizeSheetName(field.label || 'DataTable', wb);
+      const ws = wb.addWorksheet(sheetName);
+      const columns = this.getFormTableColumns(field);
+      const rows = this.getFormTableRows(field);
+      ws.columns = columns.map(col => ({
+        header: col, key: col,
+        width: Math.max(12, Math.min(40, col.length + 4)),
+      }));
+      for (const row of rows) { ws.addRow(row); }
+      this.styleHeaderRow(ws);
+    }
+  }
+
+  private sanitizeSheetName(name: string, wb: import('exceljs').Workbook): string {
+    let clean = name.replace(/[\\/:*?[\]]/g, '').substring(0, 28);
+    if (!clean) clean = 'Sheet';
+    let suffix = 1;
+    let final = clean;
+    while (wb.getWorksheet(final)) {
+      final = clean.substring(0, 28 - String(suffix).length - 1) + '_' + suffix;
+      suffix++;
+    }
+    return final;
+  }
+
+  private styleHeaderRow(ws: import('exceljs').Worksheet) {
+    const row = ws.getRow(1);
+    row.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+    row.alignment = { vertical: 'middle', horizontal: 'left' };
+    row.height = 24;
   }
 }

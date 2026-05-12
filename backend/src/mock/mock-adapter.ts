@@ -54,6 +54,7 @@ function seedStore(): void {
     'Expens',         // expenses  (Expenses → strip 'es' → Expens)
     'Payment',        // payments
     'Item',           // items
+    'Recurringinvoic', // recurringinvoices (Recurringinvoices → strip 'es' → Recurringinvoic)
     // ── Zoho Invoice (/api/zoho-invoice/) ──────────────────────────────────
     'Customer',       // customers
     'Estimat',        // estimates (Estimates → strip 'es' → Estimat)
@@ -224,6 +225,8 @@ function buildRecord(resourceName: string, id?: string): Record<string, unknown>
       return { expense_id: recordId, merchant_name: 'Mock Merchant', date: today, amount: randomInt(500, 20000) / 100, tax_amount: randomInt(0, 500) / 100, description: 'Business expense', currency_code: 'USD', category_id: 'mock-cat-001', vendor_id: 'mock-vendor-001' };
     case 'customer':
       return { customer_id: recordId, customer_name: `Mock Customer ${recordId}`, display_name: `Mock Customer ${recordId}`, contact_id: recordId, contact_name: `Mock Customer ${recordId}`, contact_type: 'customer', first_name: 'Mock', last_name: `Customer-${recordId}`, email: `customer-${recordId}@example.com`, phone: '+1-555-0400', status: 'active', created_time: now };
+    case 'recurringinvoic':
+      return { recurring_invoice_id: recordId, recurrence_name: `MonthlyInvoice-${recordId}`, customer_name: 'John Smith', customer_id: 'mock-cust-001', currency_id: '982000000000190', currency_code: 'USD', start_date: today, end_date: in30, last_sent_date: today, next_invoice_date: in30, custom_fields: [{ value: '129890', label: 'label', data_type: 'text' }], billing_address: { address: '4900 Hopyard Rd, Suite 310', street2: 'McMillan Avenue', city: 'Pleasanton', state: 'CA', zip: '94588', country: 'U.S.A', fax: '+1-925-924-9600' }, shipping_address: { address: '4900 Hopyard Rd, Suite 310', city: 'Pleasanton', state: 'CA', zip: '94588', country: 'U.S.A', fax: '+1-925-924-9600' }, tags: [{ tag_id: '460000000000567', tag_option_id: '460000000014044' }] };
 
     // ── Zoho Invoice ────────────────────────────────────────────────────────
     case 'estimat':   // "Estimates" → "Estimat" (strips 'es')
