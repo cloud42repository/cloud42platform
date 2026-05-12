@@ -133,6 +133,9 @@ import { TranslatePipe } from '../../i18n/translate.pipe';
                 </div>
 
                 <div class="share-actions">
+                  <button mat-stroked-button (click)="copyLink(share.token)" [matTooltip]="'shares.copy-link' | t">
+                    <mat-icon>content_copy</mat-icon> {{ 'shares.copy-link' | t }}
+                  </button>
                   <a mat-stroked-button [routerLink]="['/shared', share.token]" target="_blank">
                     <mat-icon>open_in_new</mat-icon> {{ 'shares.open' | t }}
                   </a>
