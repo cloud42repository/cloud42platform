@@ -13,6 +13,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ApplicationService } from '../../services/application.service';
 import { ApplicationDefinition, AppPage, AppNavigation } from '../../config/application.types';
 import { ShareService } from '../../services/share.service';
@@ -21,6 +22,8 @@ import { firstValueFrom } from 'rxjs';
 import { FormService } from '../../services/form.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { WorkflowService } from '../../services/workflow.service';
+import { NotificationService } from '../../services/notification.service';
+import { MODULES, extractPathParams } from '../../config/endpoints';
 
 @Component({
   selector: 'app-application-viewer',
@@ -29,7 +32,7 @@ import { WorkflowService } from '../../services/workflow.service';
     CommonModule, FormsModule,
     MatButtonModule, MatIconModule, MatTooltipModule, MatProgressSpinnerModule,
     MatDividerModule, MatTabsModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatSlideToggleModule, MatSidenavModule,
+    MatSelectModule, MatSlideToggleModule, MatSidenavModule, MatSnackBarModule,
   ],
   template: `
     @if (loading()) {
@@ -388,6 +391,8 @@ export class ApplicationViewerComponent implements OnInit {
   private readonly wfSvc = inject(WorkflowService);
   private readonly shareSvc = inject(ShareService);
   private readonly api = inject(ApiService);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly notifSvc = inject(NotificationService);
 
   /** When set externally, the viewer skips route-param loading and uses this definition directly. */
   @Input() appDefinition?: ApplicationDefinition;
@@ -406,6 +411,9 @@ export class ApplicationViewerComponent implements OnInit {
   workflowInputValues = signal<Record<string, string>>({});
   workflowRunning = signal(false);
 
+  /** Application context — shared mutable object available to all scripts */
+  applicationContext: Record<string, unknown> = {};
+
   /** Whether this is a shared/public view (loaded via share token) */
   private isSharedView = false;
 
@@ -420,6 +428,7 @@ export class ApplicationViewerComponent implements OnInit {
     // If an appDefinition was passed via @Input, use it directly
     if (this.appDefinition) {
       this.app.set(this.appDefinition);
+      this.applicationContext = this.appDefinition.context ? { ...this.appDefinition.context } : {};
       this.loading.set(false);
       this.navigateToHome();
       return;
@@ -445,6 +454,7 @@ export class ApplicationViewerComponent implements OnInit {
     const existing = this.appSvc.getById(id);
     if (existing) {
       this.app.set(existing);
+      this.applicationContext = existing.context ? { ...existing.context } : {};
       this.loading.set(false);
       this.navigateToHome();
     } else {
@@ -467,9 +477,11 @@ export class ApplicationViewerComponent implements OnInit {
         description: data['description'] as string,
         pages: (data['pages'] ?? []) as AppPage[],
         navigation: (data['navigation'] ?? { style: 'sidebar' }) as AppNavigation,
+        context: (data['context'] ?? {}) as Record<string, unknown>,
         status: (data['status'] as 'draft' | 'published') ?? 'published',
       };
       this.app.set(appDef);
+      this.applicationContext = appDef.context ? { ...appDef.context } : {};
       this.navigateToHome();
     } catch {
       this.error.set('Application not found or link expired');
@@ -548,6 +560,13 @@ export class ApplicationViewerComponent implements OnInit {
       }
 
       this.pageData.set(data);
+
+      // Execute data source scripts after page loads
+      if (data && page.type === 'form') {
+        this.loadFormFieldScripts();
+      } else if (data && page.type === 'dashboard') {
+        this.loadDashboardWidgetScripts();
+      }
     } catch (err) {
       console.error('Failed to load page data', err);
       this.pageData.set(null);
@@ -594,11 +613,180 @@ export class ApplicationViewerComponent implements OnInit {
 
   setFieldValue(fieldId: string, value: unknown) {
     this.fieldValues.update(fv => ({ ...fv, [fieldId]: value }));
+    // Trigger onChange script if present
+    const field = this.getFormFields().find(f => f['id'] === fieldId);
+    if (field?.['onChangeScript']?.trim()) {
+      this.executeOnChangeScript(field, value);
+    }
   }
 
   async executeFormAction(action: Record<string, any>) {
-    // Placeholder: in a real app, this would call the API or run a script
-    console.log('Executing form action:', action['label'], this.fieldValues());
+    const code = action['scriptCode'] ?? '';
+    if (!code.trim()) {
+      console.log('Executing form action:', action['label'], this.fieldValues());
+      return;
+    }
+    await this.executeFormScriptAction(action);
+  }
+
+  private async executeFormScriptAction(action: Record<string, any>) {
+    const code = action['scriptCode'] ?? '';
+    if (!code.trim()) return;
+    try {
+      const apiProxies = this.buildScriptApiProxies();
+      const formFields: Record<string, unknown> = {};
+      const labelToId: Record<string, string> = {};
+      for (const f of this.getFormFields()) {
+        const key = f['label'] || f['id'];
+        formFields[key] = this.fieldValues()[f['id']] ?? '';
+        labelToId[key] = f['id'];
+      }
+      const setField = (nameOrId: string, val: unknown) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.fieldValues.update(fv => ({ ...fv, [id]: val }));
+        formFields[nameOrId] = val;
+      };
+      const args: Record<string, unknown> = {
+        ApplicationContext: this.applicationContext,
+        FormFields: formFields,
+        setFieldValue: setField,
+        log: (...v: unknown[]) => console.log('[Script]', ...v),
+        addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) =>
+          this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}),
+        showMessage: (text: string, type?: string) =>
+          this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }),
+        sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) =>
+          firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)),
+        ...apiProxies,
+      };
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      await fn(...argValues);
+      this.persistContext();
+    } catch (err) {
+      console.error('[AppViewer] script action error:', err);
+    }
+  }
+
+  private async executeOnChangeScript(field: Record<string, any>, value: unknown) {
+    const code = field['onChangeScript'] ?? '';
+    if (!code.trim()) return;
+    try {
+      const apiProxies = this.buildScriptApiProxies();
+      const formFields: Record<string, unknown> = {};
+      const labelToId: Record<string, string> = {};
+      for (const f of this.getFormFields()) {
+        const key = f['label'] || f['id'];
+        formFields[key] = this.fieldValues()[f['id']] ?? '';
+        labelToId[key] = f['id'];
+      }
+      const setField = (nameOrId: string, val: unknown) => {
+        const id = labelToId[nameOrId] || nameOrId;
+        this.fieldValues.update(fv => ({ ...fv, [id]: val }));
+        formFields[nameOrId] = val;
+      };
+      const args: Record<string, unknown> = {
+        ApplicationContext: this.applicationContext,
+        value,
+        FormFields: formFields,
+        setFieldValue: setField,
+        log: (...v: unknown[]) => console.log('[Script]', ...v),
+        addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) =>
+          this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}),
+        showMessage: (text: string, type?: string) =>
+          this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }),
+        sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) =>
+          firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)),
+        ...apiProxies,
+      };
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      await fn(...argValues);
+      this.persistContext();
+    } catch (err) {
+      console.error('[AppViewer] onChange script error:', err);
+    }
+  }
+
+  /** Fetch data for form fields that have script data sources */
+  async loadFormFieldScripts() {
+    for (const field of this.getFormFields()) {
+      if (field['dataSourceMode'] === 'script' && field['scriptCode']?.trim()) {
+        await this.fetchFieldDataFromScript(field);
+      }
+    }
+  }
+
+  private async fetchFieldDataFromScript(field: Record<string, any>) {
+    const code = field['scriptCode'] ?? '';
+    if (!code.trim()) return;
+    try {
+      const apiProxies = this.buildScriptApiProxies();
+      const formFields: Record<string, unknown> = {};
+      for (const f of this.getFormFields()) {
+        formFields[f['label'] || f['id']] = this.fieldValues()[f['id']] ?? '';
+      }
+      const args: Record<string, unknown> = {
+        ApplicationContext: this.applicationContext,
+        FormFields: formFields,
+        log: (...v: unknown[]) => console.log('[Script]', ...v),
+        addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) =>
+          this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}),
+        showMessage: (text: string, type?: string) =>
+          this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }),
+        sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) =>
+          firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)),
+        ...apiProxies,
+      };
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      const res = await fn(...argValues);
+      // Store result in field value (simple scalar extraction)
+      if (res != null) {
+        this.fieldValues.update(fv => ({ ...fv, [field['id']]: res }));
+      }
+      this.persistContext();
+    } catch (err) {
+      console.error('[AppViewer] field script error:', err);
+    }
+  }
+
+  /** Fetch data for dashboard widgets that have script data sources */
+  async loadDashboardWidgetScripts() {
+    for (const widget of this.getDashboardWidgets()) {
+      if (widget['dataSourceMode'] === 'script' && widget['scriptCode']?.trim()) {
+        await this.fetchWidgetDataFromScript(widget);
+      }
+    }
+  }
+
+  private async fetchWidgetDataFromScript(widget: Record<string, any>) {
+    const code = widget['scriptCode'] ?? '';
+    if (!code.trim()) return;
+    try {
+      const apiProxies = this.buildScriptApiProxies();
+      const args: Record<string, unknown> = {
+        ApplicationContext: this.applicationContext,
+        log: (...v: unknown[]) => console.log('[Script]', ...v),
+        showMessage: (text: string, type?: string) =>
+          this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }),
+        ...apiProxies,
+      };
+      const argNames = Object.keys(args);
+      const argValues = argNames.map(n => args[n]);
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const fn = new AsyncFunction(...argNames, code);
+      await fn(...argValues);
+      this.persistContext();
+    } catch (err) {
+      console.error('[AppViewer] widget script error:', err);
+    }
   }
 
   // ── Workflow interactions ───────────────────────────────────────────────────
@@ -612,10 +800,11 @@ export class ApplicationViewerComponent implements OnInit {
     try {
       const page = this.activePage();
       if (!page) return;
-      // Execute via API
+      // Execute via API, passing applicationContext
       await firstValueFrom(
         this.api.post('/workflows', '/:id/execute', { id: page.itemId }, {
           inputValues: this.workflowInputValues(),
+          applicationContext: this.applicationContext,
         })
       );
     } catch (err) {
@@ -623,5 +812,65 @@ export class ApplicationViewerComponent implements OnInit {
     } finally {
       this.workflowRunning.set(false);
     }
+  }
+
+  // ── Script API proxies ─────────────────────────────────────────────────────
+
+  private buildScriptApiProxies(): Record<string, Record<string, (...a: unknown[]) => Promise<unknown>>> {
+    const proxies: Record<string, Record<string, (...a: unknown[]) => Promise<unknown>>> = {};
+    for (const mod of MODULES) {
+      const proxyName = mod.label.split(/\s+/).join('');
+      const obj: Record<string, (...a: unknown[]) => Promise<unknown>> = {};
+      for (const ep of mod.endpoints) {
+        const methodName = ep.label.split(/\s+/).join('');
+        const httpMethod = ep.method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
+        const paramNames = extractPathParams(ep.pathTemplate);
+        const hasParams = paramNames.length > 0;
+        const hasBody = (ep as any).hasBody ?? false;
+        obj[methodName] = async (...args: unknown[]): Promise<unknown> => {
+          const pathParams: Record<string, string> = {};
+          if (hasParams && args[0] && typeof args[0] === 'object') {
+            for (const [k, v] of Object.entries(args[0] as Record<string, unknown>)) {
+              pathParams[k] = v != null ? String(v) : '';
+            }
+          }
+          const body = hasBody ? (hasParams ? args[1] : args[0]) as Record<string, unknown> | undefined : undefined;
+          let res: unknown;
+          if (httpMethod === 'get' || httpMethod === 'delete') {
+            res = await firstValueFrom(this.api[httpMethod](mod.apiPrefix, ep.pathTemplate, pathParams));
+          } else {
+            const call = ({ post: this.api.post, put: this.api.put, patch: this.api.patch } as Record<string, typeof this.api.post>)[httpMethod] ?? this.api.post;
+            res = await firstValueFrom(call.call(this.api, mod.apiPrefix, ep.pathTemplate, pathParams, body ?? {}));
+          }
+          return this.unwrapProxyResponse(res);
+        };
+      }
+      proxies[proxyName] = obj;
+    }
+    return proxies;
+  }
+
+  private unwrapProxyResponse(res: unknown): unknown {
+    if (Array.isArray(res)) return res;
+    if (res && typeof res === 'object') {
+      const obj = res as Record<string, unknown>;
+      for (const key of ['data', 'records', 'items', 'result']) {
+        if (Array.isArray(obj[key])) return obj[key];
+      }
+      const firstArr = Object.values(obj).find(v => Array.isArray(v));
+      if (firstArr) return firstArr;
+    }
+    return res;
+  }
+
+  // ── Context persistence ────────────────────────────────────────────────────
+
+  private persistContext() {
+    const appId = this.app()?.id;
+    if (!appId || this.isSharedView) return;
+    // Persist context back to API (fire-and-forget)
+    firstValueFrom(
+      this.api.put('/applications', '/:id/context', { id: appId }, this.applicationContext)
+    ).catch(err => console.warn('[AppViewer] Failed to persist context', err));
   }
 }

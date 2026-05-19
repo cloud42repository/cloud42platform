@@ -38,6 +38,10 @@ export class ApplicationEntity {
   @Column({ type: 'jsonb', default: {} })
   navigation!: unknown;
 
+  /** Shared context object available to all scripts in this application */
+  @Column({ type: 'jsonb', default: {} })
+  context!: Record<string, unknown>;
+
   @Column({ type: 'varchar', length: 20, default: 'draft' })
   status!: ApplicationStatus;
 

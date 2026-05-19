@@ -25,6 +25,7 @@ export class ApplicationService {
       description: a.description ?? '',
       pages: a.pages ?? [],
       navigation: a.navigation ?? {},
+      context: a.context ?? {},
       status: a.status,
       createdAt: a.createdAt.toISOString(),
       updatedAt: a.updatedAt.toISOString(),
@@ -63,6 +64,7 @@ export class ApplicationService {
       description: dto.description ?? '',
       pages: dto.pages ?? [],
       navigation: dto.navigation ?? {},
+      context: dto.context ?? {},
       status: dto.status ?? 'draft',
     });
     const saved = await this.repo.save(app);
@@ -82,10 +84,30 @@ export class ApplicationService {
     if (dto.description !== undefined) app.description = dto.description;
     if (dto.pages !== undefined) app.pages = dto.pages;
     if (dto.navigation !== undefined) app.navigation = dto.navigation;
+    if (dto.context !== undefined) app.context = dto.context;
     if (dto.status !== undefined) app.status = dto.status;
 
     const saved = await this.repo.save(app);
     return this.toDto(saved);
+  }
+
+  /* ── Context ── */
+
+  async getContext(id: string): Promise<Record<string, unknown>> {
+    const app = await this.repo.findOneBy({ id });
+    if (!app) throw new NotFoundException(`Application ${id} not found`);
+    return app.context ?? {};
+  }
+
+  async updateContext(
+    id: string,
+    context: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    const app = await this.repo.findOneBy({ id });
+    if (!app) throw new NotFoundException(`Application ${id} not found`);
+    app.context = context;
+    await this.repo.save(app);
+    return app.context;
   }
 
   /* ── Delete ── */

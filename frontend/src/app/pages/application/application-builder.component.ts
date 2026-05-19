@@ -298,6 +298,16 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
                         rows="3"
                         placeholder="App description"></textarea>
             </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Application Context (JSON)</mat-label>
+              <textarea matInput
+                        [value]="appContext()"
+                        (input)="appContext.set($any($event.target).value)"
+                        (blur)="save()"
+                        rows="5"
+                        placeholder='{"key": "value"}'></textarea>
+              <mat-hint>Shared object accessible as ApplicationContext in all scripts</mat-hint>
+            </mat-form-field>
           </div>
         </div>
       </div>
@@ -482,6 +492,7 @@ export class ApplicationBuilderComponent implements OnInit {
 
   appName = signal('New Application');
   appDescription = signal('');
+  appContext = signal('{}');
   appStatus = signal<'draft' | 'published'>('draft');
   pages = signal<AppPage[]>([]);
   navigation = signal<AppNavigation>({ style: 'sidebar' });
@@ -511,6 +522,7 @@ export class ApplicationBuilderComponent implements OnInit {
       if (existing) {
         this.appName.set(existing.name);
         this.appDescription.set(existing.description ?? '');
+        this.appContext.set(JSON.stringify(existing.context ?? {}, null, 2));
         this.appStatus.set(existing.status);
         this.pages.set([...existing.pages]);
         this.navigation.set({ ...existing.navigation });
@@ -592,12 +604,15 @@ export class ApplicationBuilderComponent implements OnInit {
 
   save() {
     if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; }
+    let parsedContext: Record<string, unknown> = {};
+    try { parsedContext = JSON.parse(this.appContext()); } catch { /* keep empty */ }
     const app: ApplicationDefinition = {
       id: this.appId,
       name: this.appName(),
       description: this.appDescription(),
       pages: this.pages(),
       navigation: this.navigation(),
+      context: parsedContext,
       status: this.appStatus(),
     };
     this.appSvc.upsert(app);

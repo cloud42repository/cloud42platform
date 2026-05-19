@@ -36,6 +36,7 @@ export class WorkflowExecutionService {
   async execute(
     workflowId: string,
     inputValues?: Record<string, string>,
+    applicationContext?: Record<string, unknown>,
   ): Promise<WorkflowRunLog> {
     const wf = await this.repo.findOneBy({ id: workflowId });
     if (!wf) throw new NotFoundException(`Workflow ${workflowId} not found`);
@@ -63,6 +64,9 @@ export class WorkflowExecutionService {
     }
     stepResults.set('__input__', resolvedInputs);
     stepResults.set('__owner__', wf.userEmail);
+    if (applicationContext) {
+      stepResults.set('__applicationContext__', applicationContext);
+    }
 
     this.executingSteps = steps;
     const success = await this.executeNodes(steps, stepResults, log);
@@ -478,6 +482,12 @@ export class WorkflowExecutionService {
         scriptLogs.push(values);
         this.logger.log(`[Script log] ${values.map(v => typeof v === 'string' ? v : JSON.stringify(v)).join(' ')}`);
       };
+
+      // Inject ApplicationContext if running within an application
+      const appCtx = stepResults.get('__applicationContext__') as Record<string, unknown> | undefined;
+      if (appCtx) {
+        args['ApplicationContext'] = appCtx;
+      }
 
       stepLog.resolvedParams = Object.fromEntries(
         Object.entries(args)

@@ -26,6 +26,7 @@ export interface ApplicationDefinition {
   description?: string;
   pages: AppPage[];
   navigation: AppNavigation;
+  context?: Record<string, unknown>;
   status: ApplicationStatus;
   createdAt?: string;
   updatedAt?: string;

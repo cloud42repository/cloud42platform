@@ -121,6 +121,7 @@ export interface ScriptEditorDialogData {
                   @if (data.mode === 'field-script' || data.mode === 'workflow-script' || data.mode === 'dashboard-script') {
                     <tr><td><code>return</code></td><td>Return a value to set the result data</td></tr>
                   }
+                  <tr><td><code>ApplicationContext</code></td><td>Shared object across all scripts in the application (read/write, only available when running inside an application)</td></tr>
                   <tr><td><code>await</code></td><td>All scripts are async — use <code>await</code> for API calls</td></tr>
                   <tr><td colspan="2" style="color:#64748b;font-size:10px;border:none;padding-top:6px;">+ all API modules (see below)</td></tr>
                 </table>

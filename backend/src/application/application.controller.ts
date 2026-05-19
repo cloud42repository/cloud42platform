@@ -39,6 +39,18 @@ export class ApplicationController {
     return this.service.update(id, dto);
   }
 
+  /** GET /api/applications/:id/context — get the application context */
+  @Get(':id/context')
+  getContext(@Param('id') id: string) {
+    return this.service.getContext(id);
+  }
+
+  /** PUT /api/applications/:id/context — update the application context */
+  @Put(':id/context')
+  updateContext(@Param('id') id: string, @Body() context: Record<string, unknown>) {
+    return this.service.updateContext(id, context);
+  }
+
   /** DELETE /api/applications/:id — delete an app */
   @Delete(':id')
   remove(@Param('id') id: string) {

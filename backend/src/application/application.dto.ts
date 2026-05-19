@@ -10,6 +10,7 @@ export interface CreateApplicationDto {
   description?: string;
   pages?: unknown[];
   navigation?: unknown;
+  context?: Record<string, unknown>;
   status?: ApplicationStatus;
 }
 
@@ -19,6 +20,7 @@ export interface UpdateApplicationDto {
   description?: string;
   pages?: unknown[];
   navigation?: unknown;
+  context?: Record<string, unknown>;
   status?: ApplicationStatus;
 }
 
@@ -31,6 +33,7 @@ export interface ApplicationResponseDto {
   description: string;
   pages: unknown[];
   navigation: unknown;
+  context: Record<string, unknown>;
   status: ApplicationStatus;
   createdAt: string;
   updatedAt: string;

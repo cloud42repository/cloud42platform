@@ -30,6 +30,7 @@ export interface UpdateWorkflowDto {
 /** POST /api/workflows/:id/execute — run a workflow */
 export interface ExecuteWorkflowDto {
   inputValues?: Record<string, string>;
+  applicationContext?: Record<string, unknown>;
 }
 
 /* ── Response DTO ── */

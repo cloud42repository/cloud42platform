@@ -991,6 +991,7 @@ export class SharedViewerComponent implements OnInit {
   readonly appActivePageId = signal<string | null>(null);
   readonly appActivePageType = signal<'form' | 'dashboard' | 'workflow' | null>(null);
   private appResolvedPages: Record<string, Record<string, unknown>> = {};
+  private applicationContext: Record<string, unknown> = {};
 
   /** The effective item type to render — for applications, tracks the active page type. */
   readonly viewType = computed(() => {
@@ -1034,11 +1035,13 @@ export class SharedViewerComponent implements OnInit {
           description: d['description'] ?? '',
           pages: (d['pages'] ?? []) as AppPage[],
           navigation: (d['navigation'] ?? { style: 'sidebar' }) as AppNavigation,
+          context: (d['context'] ?? {}) as Record<string, unknown>,
           status: (d['status'] as 'draft' | 'published') ?? 'published',
           resolvedPages: (d['resolvedPages'] ?? {}) as Record<string, Record<string, unknown>>,
         };
         this.sharedAppDef.set(appDef);
         this.appResolvedPages = appDef.resolvedPages ?? {};
+        this.applicationContext = appDef.context ? { ...appDef.context } : {};
         // Navigate to the home page
         const homeId = appDef.navigation?.homePage ?? appDef.pages[0]?.id;
         if (homeId) this.switchAppPage(homeId);
@@ -1152,6 +1155,7 @@ export class SharedViewerComponent implements OnInit {
         showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }),
         ...proxies,
       };
+      if (this.sharedAppDef()) { args['ApplicationContext'] = this.applicationContext; }
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -1496,6 +1500,7 @@ export class SharedViewerComponent implements OnInit {
         this.setFieldProposals(id, proposals);
       };
       const args: Record<string, unknown> = { FormFields: formFields, setFieldProposals: proposalsField, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
+      if (this.sharedAppDef()) { args['ApplicationContext'] = this.applicationContext; }
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -1639,6 +1644,7 @@ export class SharedViewerComponent implements OnInit {
         this.setFieldProposals(id, proposals);
       };
       const args: Record<string, unknown> = { value, FormFields: formFields, setFieldValue: setField, setFieldProposals: proposalsField, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
+      if (this.sharedAppDef()) { args['ApplicationContext'] = this.applicationContext; }
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -1764,6 +1770,7 @@ export class SharedViewerComponent implements OnInit {
         this.setFieldProposals(id, proposals);
       };
       const args: Record<string, unknown> = { FormFields: formFields, setFieldValue: setField, setFieldProposals: proposalsField, log: (...v: unknown[]) => console.log('[Script]', ...v), addNotification: (title: string, message?: string, type?: string, metadata?: Record<string, unknown>) => this.notifSvc.addNotification(title, message ?? '', (type as any) ?? 'info', metadata ?? {}), showMessage: (text: string, type?: string) => this.snackBar.open(text, 'OK', { duration: type === 'error' ? 6000 : 4000, panelClass: type === 'error' ? 'snack-error' : type === 'warning' ? 'snack-warning' : 'snack-info' }), sendMail: (options: { to: string | string[]; subject: string; body: string; contentType?: string; cc?: string | string[]; bcc?: string | string[] }) => firstValueFrom(this.api.post('/microsoft-graph', '/send-mail', {}, options)), ...proxies };
+      if (this.sharedAppDef()) { args['ApplicationContext'] = this.applicationContext; }
       const argNames = Object.keys(args);
       const argValues = argNames.map(n => args[n]);
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;

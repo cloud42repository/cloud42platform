@@ -47,6 +47,7 @@ export class ApplicationService {
           description: app.description ?? '',
           pages: app.pages,
           navigation: app.navigation,
+          context: app.context ?? {},
           status: app.status,
         })
       );
@@ -63,6 +64,7 @@ export class ApplicationService {
           description: app.description ?? '',
           pages: app.pages,
           navigation: app.navigation,
+          context: app.context ?? {},
           status: app.status,
         })
       );
@@ -88,6 +90,7 @@ export class ApplicationService {
       description: (dto['description'] as string) || undefined,
       pages: (dto['pages'] ?? []) as AppPage[],
       navigation: (dto['navigation'] ?? { style: 'sidebar' }) as AppNavigation,
+      context: (dto['context'] ?? {}) as Record<string, unknown>,
       status: (dto['status'] as ApplicationStatus) ?? 'draft',
       createdAt: dto['createdAt'] as string,
       updatedAt: dto['updatedAt'] as string,

@@ -34,7 +34,7 @@ export class WorkflowController {
   /** POST /api/workflows/:id/execute — execute a workflow on the backend */
   @Post(':id/execute')
   execute(@Param('id') id: string, @Body() dto: ExecuteWorkflowDto) {
-    return this.execution.execute(id, dto?.inputValues);
+    return this.execution.execute(id, dto?.inputValues, dto?.applicationContext);
   }
 
   /** POST /api/workflows — create a new workflow */
